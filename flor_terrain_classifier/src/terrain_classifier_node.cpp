@@ -24,11 +24,10 @@ TerrainClassifierNode::TerrainClassifierNode()
 
   // subscribe topics
   //point_cloud_sub = nh.subscribe("/worldmodel_main/pointcloud_vis", 1, &TerrainClassifierNode::setPointCloud, this);
-  lower_body_state_sub = nh.subscribe("/flor/state/lower_body_world", 1, &TerrainClassifierNode::setLowerBodyState, this);
   generate_terrain_model_sub = nh.subscribe("/flor/terrain_classifier/generate_terrain_model", 1, &TerrainClassifierNode::generateTerrainModel, this);
 
   // start service clients
-  point_cloud_client = nh.serviceClient<flor_perception_msgs::PointCloudRegionRequest>("/flor/worldmodel/pointcloud_roi");
+  //point_cloud_client = nh.serviceClient<flor_perception_msgs::PointCloudRegionRequest>("/flor/worldmodel/pointcloud_roi");
 
   // publish topics
   cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 1);
@@ -83,55 +82,45 @@ void TerrainClassifierNode::loadTestPointCloud()
 
 bool TerrainClassifierNode::terrainModelService(TerrainModelService::Request &req, TerrainModelService::Response &resp)
 {
-//  // generate terrain model
-//  if (!generateTerrainModel())
-//    return false;
+//  if (lower_body_state)
+//  {
+//    // request new point cloud
+//    flor_perception_msgs::PointCloudRegionRequest srv;
 
-//  pcl::toROSMsg(*(terrain_classifier->getPointsWithsNormals()), resp.terrain_model.cloud_points_with_normals);
-//  resp.terrain_model.ground_level_map = *(terrain_classifier->getGroundLevelGridMap());
-//  resp.terrain_model.height_map = *(terrain_classifier->getHeightGridMap(resp.terrain_model.height_map_scale));
+//    geometry_msgs::Point min;
+//    geometry_msgs::Point max;
+//    uint32_t aggregation_size = 0;
 
-//  return true;
+//    if (req.terrain_model_request.use_default_region_request)
+//    {
+//      min = min_bounding_box;
+//      max = max_bounding_box;
+//      aggregation_size = this->aggregation_size;
+//    }
+//    else
+//    {
+//      min = req.terrain_model_request.region_req.bounding_box_min;
+//      max = req.terrain_model_request.region_req.bounding_box_max;
+//      aggregation_size = req.terrain_model_request.aggregation_size;
+//    }
 
-  if (lower_body_state)
-  {
-    // request new point cloud
-    flor_perception_msgs::PointCloudRegionRequest srv;
+//    srv.request.region_req.header.frame_id = "/world";
+//    srv.request.region_req.header.stamp = ros::Time::now();
+//    srv.request.region_req.bounding_box_min.x = min.x + lower_body_state->pelvis_pose.position.x;
+//    srv.request.region_req.bounding_box_min.y = min.y + lower_body_state->pelvis_pose.position.y;
+//    srv.request.region_req.bounding_box_min.z = min.z + std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
+//    srv.request.region_req.bounding_box_max.x = max.x + lower_body_state->pelvis_pose.position.x;
+//    srv.request.region_req.bounding_box_max.y = max.y + lower_body_state->pelvis_pose.position.y;
+//    srv.request.region_req.bounding_box_max.z = max.z + std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
+//    srv.request.region_req.resolution = 0.0;
+//    srv.request.aggregation_size = aggregation_size;
 
-    geometry_msgs::Point min;
-    geometry_msgs::Point max;
-    uint32_t aggregation_size = 0;
-
-    if (req.terrain_model_request.use_default_region_request)
-    {
-      min = min_bounding_box;
-      max = max_bounding_box;
-      aggregation_size = this->aggregation_size;
-    }
-    else
-    {
-      min = req.terrain_model_request.region_req.bounding_box_min;
-      max = req.terrain_model_request.region_req.bounding_box_max;
-      aggregation_size = req.terrain_model_request.aggregation_size;
-    }
-
-    srv.request.region_req.header.frame_id = "/world";
-    srv.request.region_req.header.stamp = ros::Time::now();
-    srv.request.region_req.bounding_box_min.x = min.x + lower_body_state->pelvis_pose.position.x;
-    srv.request.region_req.bounding_box_min.y = min.y + lower_body_state->pelvis_pose.position.y;
-    srv.request.region_req.bounding_box_min.z = min.z + std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-    srv.request.region_req.bounding_box_max.x = max.x + lower_body_state->pelvis_pose.position.x;
-    srv.request.region_req.bounding_box_max.y = max.y + lower_body_state->pelvis_pose.position.y;
-    srv.request.region_req.bounding_box_max.z = max.z + std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-    srv.request.region_req.resolution = 0.0;
-    srv.request.aggregation_size = aggregation_size;
-
-    if (point_cloud_client.call(srv.request, srv.response))
-      setPointCloud(srv.response.cloud);
-    else
-      ROS_WARN("Point cloud request failed!");
-  }
-  else
+//    if (point_cloud_client.call(srv.request, srv.response))
+//      setPointCloud(srv.response.cloud);
+//    else
+//      ROS_WARN("Point cloud request failed!");
+//  }
+//  else
     ROS_WARN("Can't request new cloud point due to missing pelvis pose! Using last one if available.");
 
   // generate terrain model
@@ -143,12 +132,6 @@ bool TerrainClassifierNode::terrainModelService(TerrainModelService::Request &re
   resp.terrain_model.height_map = *(terrain_classifier->getHeightGridMap(resp.terrain_model.height_map_scale));
 
   return true;
-}
-
-void TerrainClassifierNode::setLowerBodyState(const flor_state_msgs::LowerBodyStateConstPtr &lower_body_state)
-{
-  this->lower_body_state = lower_body_state;
-  this->terrain_classifier->setLowerBodyState(lower_body_state);
 }
 
 void TerrainClassifierNode::setPointCloud(const sensor_msgs::PointCloud2 &cloud_input)

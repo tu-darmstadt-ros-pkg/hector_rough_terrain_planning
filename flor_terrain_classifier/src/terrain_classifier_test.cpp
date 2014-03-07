@@ -34,8 +34,6 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/intensity_gradient.h>
 
-#include <flor_utilities/timing.h>
-
 #include <flor_terrain_classifier/terrain_classifier.h>
 
 
@@ -61,9 +59,6 @@ void test_normals()
   pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/ramp2.pcd", *cloud_original);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/new.pcd", *cloud_original);
 
-  Timing perf_timer;
-  perf_timer.start();
-
   // add filtered point cloud to classifier
   terrain_classifier->addCloud(cloud_original);
 
@@ -78,9 +73,6 @@ void test_normals()
   // generate grid map
   ROS_INFO("Generate grid map...");
   terrain_classifier->generateGroundLevelGridmap();
-
-  perf_timer.end();
-  perf_timer.printStats();
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");

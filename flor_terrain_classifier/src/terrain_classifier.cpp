@@ -39,11 +39,6 @@ void TerrainClassifier::setParams(const TerrainClassifierParams &params)
   setDataOutdated();
 }
 
-void TerrainClassifier::setLowerBodyState(const flor_state_msgs::LowerBodyStateConstPtr &lower_body_state)
-{
-  this->lower_body_state = lower_body_state;
-}
-
 void TerrainClassifier::addCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud, const std::string &frame_id)
 {
   if (lock_input_cloud)
@@ -203,9 +198,9 @@ bool TerrainClassifier::computeNormals()
 
   // init map with standard data
   double ground_z = 0.0;
-  if (lower_body_state)
-    ground_z = std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-  else
+  //if (lower_body_state)
+  //  ground_z = std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
+  //else
     ROS_WARN("computeNormals: No state estimation of feet available. Assuming default ground level to be zero!");
 
   // preprocessing of cloud point
@@ -517,12 +512,12 @@ bool TerrainClassifier::generateGroundLevelGridmap()
   bool ignore_near = false;
   double robot_x = 0.0;
   double robot_y = 0.0;
-  if (lower_body_state)
-  {
-    robot_x = lower_body_state->pelvis_pose.position.x;
-    robot_y = lower_body_state->pelvis_pose.position.y;
-    ignore_near = true;
-  }
+  //if (lower_body_state)
+  //{
+  //  robot_x = lower_body_state->pelvis_pose.position.x;
+  //  robot_y = lower_body_state->pelvis_pose.position.y;
+  //  ignore_near = true;
+  //}
 
   // add data from gradients point cloud
   if (cloud_gradients)
@@ -606,10 +601,10 @@ bool TerrainClassifier::generateHeightGridmap()
   }
 
   double ground_z = 0.0;
-  if (lower_body_state)
-    ground_z = std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-  else
-    ROS_WARN("generateHeightGridmap: No state estimation of feet available. Assuming default ground level to be zero!");
+  //if (lower_body_state)
+  //  ground_z = std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
+  //else
+  //  ROS_WARN("generateHeightGridmap: No state estimation of feet available. Assuming default ground level to be zero!");
 
   min_z = std::min(min_z, ground_z);
   max_z = std::max(max_z, ground_z);

@@ -26,74 +26,51 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
 
-#ifndef TERRAIN_CLASSIFIER_NODE_H__
-#define TERRAIN_CLASSIFIER_NODE_H__
+#ifndef FLOR_WALK_MONITOR_LOGGER_H__
+#define FLOR_WALK_MONITOR_LOGGER_H__
+
+#include <map>
 
 #include <ros/ros.h>
 #include <tf/tf.h>
 
-#include <std_msgs/Bool.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/PoseArray.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <flor_footstep_plan_transformer/footstep_plan_transformer.h>
 
-#include <flor_terrain_classifier/TerrainModelRequest.h>
-#include <flor_terrain_classifier/TerrainModelService.h>
-#include <flor_terrain_classifier/TerrainModel.h>
+#include <flor_footstep_planner_msgs/flor_footstep_planner_msgs.h>
+#include <flor_footstep_planner_msgs/FootstepPlan.h>
+#include <flor_footstep_planner_msgs/FeetPoses.h>
+#include <flor_footstep_planner_msgs/StepTarget.h>
 
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
+#include <flor_walk_monitor/helper.h>
+#include <flor_walk_monitor/walk_performance.h>
 
-#include <flor_terrain_classifier/terrain_classifier.h>
 
-namespace flor_terrain_classifier
+namespace flor_walk_monitor
 {
-class TerrainClassifierNode
+class WalkMonitorLogger
 {
 public:
-  TerrainClassifierNode();
-  virtual ~TerrainClassifierNode();
+  WalkMonitorLogger();
+  virtual ~WalkMonitorLogger();
 
-  void loadTestPointCloud();
+  void reset();
+
+  // setters for saving ros messages
+  void setFootstepPlan(const flor_footstep_planner_msgs::FootstepPlan &footstep_plan);
+  void setFootstepStart(const flor_footstep_planner_msgs::FeetPoses &feet_start_poses);
+  void setTransformPoseBdiToWorld(const geometry_msgs::PoseStamped::ConstPtr &transform);
+
+  // getters
+  const flor_footstep_planner_msgs::FootstepPlanPtr &getFootstepPlan() const { return footstep_plan; }
+  const flor_footstep_planner_msgs::FeetPosesPtr &getFeetStartPoses() const { return feet_start_poses; }
 
 protected:
-  bool terrainModelService(TerrainModelService::Request &req, TerrainModelService::Response &resp);
+  // current footstep plan
+  flor_footstep_planner_msgs::FootstepPlanPtr footstep_plan;
+  flor_footstep_planner_msgs::FeetPosesPtr feet_start_poses;
 
-  void setPointCloud(const sensor_msgs::PointCloud2 &cloud_input);
-
-  void generateTerrainModel(const TerrainModelRequest &req);
-  bool generateTerrainModel();
-
-  void publishResult() const;
-
-  // subscribers
-  ros::Subscriber point_cloud_sub;
-  ros::Subscriber generate_terrain_model_sub;
-
-  // service clients
-  ros::ServiceClient point_cloud_client;
-
-  // publisher
-  ros::Publisher cloud_input_pub;
-  ros::Publisher cloud_points_processed_pub;
-  ros::Publisher cloud_points_processed_low_res_pub;
-  ros::Publisher cloud_points_outfiltered_pub;
-  ros::Publisher cloud_normals_pub;
-  ros::Publisher cloud_gradients_pub;
-  ros::Publisher ground_level_grid_map_pub;
-  ros::Publisher height_grid_map_pub;
-  ros::Publisher mesh_surface_pub;
-  ros::Publisher terrain_model_pub;
-
-  // services
-  ros::ServiceServer generate_terrain_model_srv;
-
-  TerrainClassifier::Ptr terrain_classifier;
-
-  // parameters
-  geometry_msgs::Point min_bounding_box;
-  geometry_msgs::Point max_bounding_box;
-  uint32_t aggregation_size;
+  // state of robot
+  flor_navigation::FootstepPlanTransformer bdi_to_world_transformer;
 };
 }
 

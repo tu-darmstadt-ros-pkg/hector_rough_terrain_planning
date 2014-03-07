@@ -7,6 +7,5 @@ srv_gen
 qtcreator-build
 *.user
 *~
-src/flor_terrain_classifier/*
-*.pcd
-
+mongodb/
+src/flor_walk_monitor/

@@ -7,6 +7,4 @@ srv_gen
 qtcreator-build
 *.user
 *~
-src/flor_terrain_classifier/*
-*.pcd
 

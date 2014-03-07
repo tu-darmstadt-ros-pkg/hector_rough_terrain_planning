@@ -26,74 +26,65 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
 
-#ifndef TERRAIN_CLASSIFIER_NODE_H__
-#define TERRAIN_CLASSIFIER_NODE_H__
+#ifndef FLOR_WALK_MONITOR_VIS_NODE_H__
+#define FLOR_WALK_MONITOR_VIS_NODE_H__
 
 #include <ros/ros.h>
 #include <tf/tf.h>
 
-#include <std_msgs/Bool.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/PoseArray.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <nav_msgs/Path.h>
 
-#include <flor_terrain_classifier/TerrainModelRequest.h>
-#include <flor_terrain_classifier/TerrainModelService.h>
-#include <flor_terrain_classifier/TerrainModel.h>
+#include <flor_walk_monitor/walk_performance.h>
 
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
+#include <flor_footstep_plan_vis/flor_footstep_plan_vis.h>
 
-#include <flor_terrain_classifier/terrain_classifier.h>
+#include <flor_walk_monitor/helper.h>
+#include <flor_walk_monitor/walk_monitor_mongodb.h>
 
-namespace flor_terrain_classifier
+
+namespace flor_walk_monitor
 {
-class TerrainClassifierNode
+enum data_type { ZMP, CoP, CoP_posn_left, CoP_posn_right, CoP_force_left, CoP_force_right };
+
+class WalkMonitorVisNode
 {
 public:
-  TerrainClassifierNode();
-  virtual ~TerrainClassifierNode();
+  WalkMonitorVisNode();
+  virtual ~WalkMonitorVisNode();
 
-  void loadTestPointCloud();
+//protected:
+  void loadAndVisData(const ros::TimerEvent &timer_event);
 
-protected:
-  bool terrainModelService(TerrainModelService::Request &req, TerrainModelService::Response &resp);
+  // visualization functions
+  void publishVis(const walk_performance &data);
+  void publishFootstepVis(const walk_performance &data);
+  void publishPathVis(const walk_performance &data);
+  void publishPointVecVis(ros::Publisher &pub, data_type select);
 
-  void setPointCloud(const sensor_msgs::PointCloud2 &cloud_input);
-
-  void generateTerrainModel(const TerrainModelRequest &req);
-  bool generateTerrainModel();
-
-  void publishResult() const;
-
-  // subscribers
-  ros::Subscriber point_cloud_sub;
-  ros::Subscriber generate_terrain_model_sub;
-
-  // service clients
-  ros::ServiceClient point_cloud_client;
+  // converter functions
+  void point32ToPoint(const geometry_msgs::Point32 &point32, geometry_msgs::Point &point) const;
+  void extractPointVec() const;
+  void extractFootstepPlan(/*const flor_gpr::footstep_planner_gpr_data_set &data_set,*/ std::vector<atlas_msgs::AtlasBehaviorStepData> &footstep_plan) const;
 
   // publisher
-  ros::Publisher cloud_input_pub;
-  ros::Publisher cloud_points_processed_pub;
-  ros::Publisher cloud_points_processed_low_res_pub;
-  ros::Publisher cloud_points_outfiltered_pub;
-  ros::Publisher cloud_normals_pub;
-  ros::Publisher cloud_gradients_pub;
-  ros::Publisher ground_level_grid_map_pub;
-  ros::Publisher height_grid_map_pub;
-  ros::Publisher mesh_surface_pub;
-  ros::Publisher terrain_model_pub;
+  ros::Publisher footstep_plan_vis_pub;
+  ros::Publisher feet_poses_start_vis_pub;
+  ros::Publisher footstep_path_vis_pub;
+  ros::Publisher zmp_vis_pub;
+  ros::Publisher cop_vis_pub;
+  ros::Publisher cop_posn_left_vis_pub;
+  ros::Publisher cop_posn_right_vis_pub;
+  ros::Publisher cop_force_left_vis_pub;
+  ros::Publisher cop_force_right_vis_pub;
 
-  // services
-  ros::ServiceServer generate_terrain_model_srv;
+  // timer
+  ros::Timer timer;
 
-  TerrainClassifier::Ptr terrain_classifier;
+  // mongodb handler
+  flor_walk_monitor::WalkMonitorMongodb::Ptr mongodb;
 
-  // parameters
-  geometry_msgs::Point min_bounding_box;
-  geometry_msgs::Point max_bounding_box;
-  uint32_t aggregation_size;
+  flor_footstep_plan_vis::FootstepPlannerVis::Ptr footstep_planner_vis;
 };
 }
 

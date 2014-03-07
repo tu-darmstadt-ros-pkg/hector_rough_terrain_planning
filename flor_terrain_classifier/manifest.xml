@@ -13,11 +13,7 @@
   <depend package="sensor_msgs"/>
   <depend package="nav_msgs" />
   <depend package="visualization_msgs"/>
-  <depend package="flor_perception_msgs" />
-  <depend package="flor_state_msgs" />
-  <depend package="flor_utilities" />
   <depend package="pcl_conversions" />
-  <depend package="vigir_worldmodel_main" />
 </package>
 
 

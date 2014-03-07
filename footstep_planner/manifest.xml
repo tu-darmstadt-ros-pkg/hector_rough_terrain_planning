@@ -23,7 +23,6 @@
   </export>  
   
   <depend package="actionlib"/>
-  <depend package="flor_atlas_msgs" />
   <depend package="flor_footstep_planner_msgs" />
   <depend package="flor_terrain_classifier" />
   <depend package="flor_footstep_plan_transformer" />
@@ -35,7 +34,6 @@
   <depend package="angles"/>
   <depend package="tf"/>
   <depend package="visualization_msgs"/>
-  <depend package="flor_gpr" />
   <depend package="pcl_conversions"/>
   
   <!-- for electric: 

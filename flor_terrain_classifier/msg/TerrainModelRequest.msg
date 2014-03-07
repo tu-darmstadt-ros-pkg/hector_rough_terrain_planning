@@ -2,7 +2,7 @@
 bool use_default_region_request
 
 # The environment region specification (relative to robot)
-flor_perception_msgs/EnvironmentRegionRequest region_req
+#flor_perception_msgs/EnvironmentRegionRequest region_req
 
 # The aggregation size to be used for this request.
 # This indicates the number of LIDAR scans used to

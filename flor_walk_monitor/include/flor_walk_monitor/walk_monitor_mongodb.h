@@ -26,74 +26,48 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
 
-#ifndef TERRAIN_CLASSIFIER_NODE_H__
-#define TERRAIN_CLASSIFIER_NODE_H__
+#ifndef FLOR_WALK_MONITOR_MONGODB_H__
+#define FLOR_WALK_MONITOR_MONGODB_H__
 
+#include <mongo_ros/message_collection.h>
+#include <mongo_ros/exceptions.h>
 #include <ros/ros.h>
-#include <tf/tf.h>
 
-#include <std_msgs/Bool.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/PoseArray.h>
-#include <sensor_msgs/PointCloud2.h>
+//#include <flor_walk_monitor/mongodb_serialization.h>
+#include <flor_walk_monitor/walk_performance.h>
 
-#include <flor_terrain_classifier/TerrainModelRequest.h>
-#include <flor_terrain_classifier/TerrainModelService.h>
-#include <flor_terrain_classifier/TerrainModel.h>
 
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <flor_terrain_classifier/terrain_classifier.h>
-
-namespace flor_terrain_classifier
+namespace flor_walk_monitor
 {
-class TerrainClassifierNode
+typedef mongo_ros::MessageWithMetadata<flor_walk_monitor::walk_performance> WalkPerformanceWithMetadata;
+typedef WalkPerformanceWithMetadata::ConstPtr WalkPerformanceMetaPtr;
+
+// Helper function that creates metadata for a message.
+mongo_ros::Metadata makeMetadata(const walk_performance& data)
+{
+  /// TODO: walltime seems not to work as expected
+  return mongo_ros::Metadata("time", (long long int)ros::WallTime().now().toNSec(), "plan_size", (long long int)data.planned_footsteps.size(), "has_fallen", data.has_fallen);
+}
+
+class WalkMonitorMongodb
+  : public mongo_ros::MessageCollection<walk_performance>
 {
 public:
-  TerrainClassifierNode();
-  virtual ~TerrainClassifierNode();
+  WalkMonitorMongodb(const std::string& db_name, const std::string& db_host, unsigned int db_port = 0, float timeout = 300);
+  virtual ~WalkMonitorMongodb();
 
-  void loadTestPointCloud();
+  bool insert(const walk_performance &data);
 
-protected:
-  bool terrainModelService(TerrainModelService::Request &req, TerrainModelService::Response &resp);
+  void getAllData(std::list<walk_performance> &data) const;
+  bool getLatestEntry(walk_performance &data) const;
 
-  void setPointCloud(const sensor_msgs::PointCloud2 &cloud_input);
+  void printPerformanceDataInfo(const flor_walk_monitor::walk_performance &data) const;
 
-  void generateTerrainModel(const TerrainModelRequest &req);
-  bool generateTerrainModel();
+  void test();
 
-  void publishResult() const;
-
-  // subscribers
-  ros::Subscriber point_cloud_sub;
-  ros::Subscriber generate_terrain_model_sub;
-
-  // service clients
-  ros::ServiceClient point_cloud_client;
-
-  // publisher
-  ros::Publisher cloud_input_pub;
-  ros::Publisher cloud_points_processed_pub;
-  ros::Publisher cloud_points_processed_low_res_pub;
-  ros::Publisher cloud_points_outfiltered_pub;
-  ros::Publisher cloud_normals_pub;
-  ros::Publisher cloud_gradients_pub;
-  ros::Publisher ground_level_grid_map_pub;
-  ros::Publisher height_grid_map_pub;
-  ros::Publisher mesh_surface_pub;
-  ros::Publisher terrain_model_pub;
-
-  // services
-  ros::ServiceServer generate_terrain_model_srv;
-
-  TerrainClassifier::Ptr terrain_classifier;
-
-  // parameters
-  geometry_msgs::Point min_bounding_box;
-  geometry_msgs::Point max_bounding_box;
-  uint32_t aggregation_size;
+  // typedefs
+  typedef boost::shared_ptr<WalkMonitorMongodb> Ptr;
+  typedef boost::shared_ptr<const WalkMonitorMongodb> ConstPtr;
 };
 }
 

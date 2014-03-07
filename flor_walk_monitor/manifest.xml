@@ -1,0 +1,17 @@
+<package>
+  <description brief="flor_walk_monitor">
+
+     flor_walk_monitor
+
+  </description>
+  <author>alex</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/flor_walk_monitor</url>
+  <depend package="roscpp" />
+  <depend package="warehouse_ros" />
+  <depend package="flor_footstep_planner_msgs" />
+  <depend package="flor_footstep_plan_vis" />
+</package>
+
+

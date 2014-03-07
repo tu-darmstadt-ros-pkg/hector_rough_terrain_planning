@@ -32,7 +32,6 @@
 #include <ros/ros.h>
 
 #include <nav_msgs/OccupancyGrid.h>
-#include <flor_state_msgs/LowerBodyState.h>
 
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/point_cloud.h>
@@ -156,7 +155,6 @@ public:
   void setParams(const TerrainClassifierParams &params);
   void getParams(TerrainClassifierParams &params) const { params = this->params; }
 
-  void setLowerBodyState(const flor_state_msgs::LowerBodyStateConstPtr &lower_body_state);
   void addCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &inputcloud, const std::string &frame_id = "/world");
 
   // visulization helper
@@ -318,8 +316,6 @@ protected:
 //  }
 
   TerrainClassifierParams params;
-
-  flor_state_msgs::LowerBodyStateConstPtr lower_body_state;
 
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed;
