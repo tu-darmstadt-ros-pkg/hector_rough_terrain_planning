@@ -1,0 +1,9 @@
+# Retrieves the current state of the requested planning group
+
+# The planning group name
+string group_name
+
+---
+
+# The joint values of the group. Will have 0 elements if lookup failed
+float64[] position

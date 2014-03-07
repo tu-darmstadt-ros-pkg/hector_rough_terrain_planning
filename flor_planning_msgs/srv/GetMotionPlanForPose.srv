@@ -1,0 +1,20 @@
+# Florian motion plan for pose retrieval service
+
+# The plan request
+flor_planning_msgs/PlanRequest plan_request
+---
+uint8       OK                                =  0
+uint8       OCTOMAP_WARNING                   =  1
+uint8       IK_FAILED                         =  2
+uint8       PLANNER_EXCEPTION                 =  4
+uint8       PLANNING_FAILED                   =  8
+uint8       PLANNING_INVALID_REQUEST          = 16
+uint8       PLANNING_INVALID_START            = 32
+uint8       PLANNING_INVALID_GOAL             = 64
+uint8       PLANNING_INVALID_PLAN             =128
+
+trajectory_msgs/JointTrajectory trajectory
+uint8                           status
+
+#Can be different from requested group
+std_msgs/String                 used_planning_group

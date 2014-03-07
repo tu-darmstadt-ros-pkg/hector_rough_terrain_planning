@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="terrain_classifier" pkg="flor_terrain_classifier" type="terrain_classifier_node" output="screen" >
+    <rosparam file="$(find flor_terrain_classifier)/config/terrain_classifier.yaml" command="load" />
+  </node>
+</launch>

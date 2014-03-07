@@ -1,0 +1,23 @@
+<package>
+  <description brief="flor_terrain_classifier">
+
+     flor_terrain_classifier
+
+  </description>
+  <author>Alexander Stumpf</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/flor_terrain_classifier</url>
+  <depend package="roscpp" />
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="nav_msgs" />
+  <depend package="visualization_msgs"/>
+  <depend package="flor_perception_msgs" />
+  <depend package="flor_state_msgs" />
+  <depend package="flor_utilities" />
+  <depend package="pcl_conversions" />
+  <depend package="vigir_worldmodel_main" />
+</package>
+
+
