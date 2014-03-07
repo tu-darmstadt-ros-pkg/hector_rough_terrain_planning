@@ -64,7 +64,6 @@
 #include <humanoid_nav_msgs/ClipFootstep.h>
 
 #include <flor_footstep_planner_msgs/FootstepPlannerParams.h>
-#include <flor_gpr/flor_footstep_planner_gpr.h>
 
 #include <footstep_planner/helper.h>
 #include <footstep_planner/Footstep.h>
@@ -79,7 +78,6 @@
 #include <footstep_planner/step_cost_estimators/dynamics_step_cost_estimator.h>
 #include <footstep_planner/step_cost_estimators/euclidean_step_cost_estimator.h>
 #include <footstep_planner/step_cost_estimators/ground_contact_step_cost_estimator.h>
-#include <footstep_planner/step_cost_estimators/gpr_step_cost_estimator.h>
 #include <footstep_planner/step_cost_estimators/map_step_cost_estimator.h>
 
 

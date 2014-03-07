@@ -197,8 +197,8 @@ void State::setNormal(double x, double y, double z)
 void State::getStep(flor_footstep_planner_msgs::StepTarget &step) const
 {
   step.step_index = 0;
-  step.foot_index = (ivLeg == footstep_planner::LEFT) ? flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT : flor_atlas_msgs::AtlasBehaviorFootData::FOOT_RIGHT;
-  getFootData(step.foot);
+  //step.foot_index = (ivLeg == footstep_planner::LEFT) ? flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT : flor_atlas_msgs::AtlasBehaviorFootData::FOOT_RIGHT;
+  //getFootData(step.foot);
   step.step_duration = ivStepDuration;
   step.sway_duration = ivSwayDuration;
   step.swing_height = ivSwingHeight;
@@ -206,14 +206,14 @@ void State::getStep(flor_footstep_planner_msgs::StepTarget &step) const
   step.knee_nominal = ivKneeNominal;
 }
 
-void State::getFootData(flor_atlas_msgs::AtlasBehaviorFootData& foot_data) const
-{
-  foot_data.position.x = getX();
-  foot_data.position.y = getY();
-  foot_data.position.z = getZ();
-  foot_data.yaw = ivYaw;
-  foot_data.normal = ivNormal;
-}
+//void State::getFootData(flor_atlas_msgs::AtlasBehaviorFootData& foot_data) const
+//{
+//  foot_data.position.x = getX();
+//  foot_data.position.y = getY();
+//  foot_data.position.z = getZ();
+//  foot_data.yaw = ivYaw;
+//  foot_data.normal = ivNormal;
+//}
 
 void State::recomputeNormal()
 {

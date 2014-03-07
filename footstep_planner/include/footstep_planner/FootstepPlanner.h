@@ -72,8 +72,6 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <flor_atlas_msgs/AtlasBehaviorFootData.h>
-#include <flor_atlas_msgs/AtlasBehaviorStepAction.h>
 #include <flor_footstep_planner_msgs/FootstepPlannerParamsService.h>
 #include <flor_footstep_planner_msgs/PlanFootsteps.h>
 #include <flor_footstep_planner_msgs/PlanStepping.h>
@@ -156,13 +154,13 @@ public:
     resp.footstep_plan.header.stamp = ros::Time::now();
 
     // set feet start poses
-    resp.feet_start_poses.header = resp.footstep_plan.header;
+    //resp.feet_start_poses.header = resp.footstep_plan.header;
 
-    resp.feet_start_poses.left.header = resp.footstep_plan.header;
-    ivStartFootLeft.getFootData(resp.feet_start_poses.left);
+    //resp.feet_start_poses.left.header = resp.footstep_plan.header;
+    //ivStartFootLeft.getFootData(resp.feet_start_poses.left);
 
-    resp.feet_start_poses.right.header = resp.footstep_plan.header;
-    ivStartFootRight.getFootData(resp.feet_start_poses.right);
+    //resp.feet_start_poses.right.header = resp.footstep_plan.header;
+    //ivStartFootRight.getFootData(resp.feet_start_poses.right);
 
     // add shift to foot frame
     flor_navigation::addOriginShift(resp.feet_start_poses, ivEnvironmentParams.foot_origin_shift);
@@ -173,7 +171,7 @@ public:
     // add footstep plan
     flor_footstep_planner_msgs::StepTarget step;
     step.header = resp.footstep_plan.header;
-    step.foot.header = resp.footstep_plan.header;
+    //step.foot.header = resp.footstep_plan.header;
 
     State left_foot = ivStartFootLeft;
     State right_foot = ivStartFootRight;
@@ -187,16 +185,16 @@ public:
 
       // convert footstep
       swing_foot.getStep(step);
-      if (swing_foot.getLeg() == LEFT)
-        step.foot_index = flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT;
-      else if (swing_foot.getLeg() == RIGHT)
-        step.foot_index = flor_atlas_msgs::AtlasBehaviorFootData::FOOT_RIGHT;
-      else
-      {
-        ROS_ERROR("Footstep pose at (%f, %f, %f, %f) is set to NOLEG!",
-                  swing_foot.getX(), swing_foot.getY(), swing_foot.getZ(), swing_foot.getYaw());
-        continue;
-      }
+//      if (swing_foot.getLeg() == LEFT)
+//        step.foot_index = flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT;
+//      else if (swing_foot.getLeg() == RIGHT)
+//        step.foot_index = flor_atlas_msgs::AtlasBehaviorFootData::FOOT_RIGHT;
+//      else
+//      {
+//        ROS_ERROR("Footstep pose at (%f, %f, %f, %f) is set to NOLEG!",
+//                  swing_foot.getX(), swing_foot.getY(), swing_foot.getZ(), swing_foot.getYaw());
+//        continue;
+//      }
       step.step_index = step_index++;
 
       // add step specific parameters tweaking it
@@ -212,7 +210,7 @@ public:
       resp.footstep_plan.step_plan.push_back(step);
 
       // some debug outputs and visualization stuff
-      ROS_INFO("[%i] n: %f/%f/%f, z: %f", step.step_index, step.foot.normal.x, step.foot.normal.y, step.foot.normal.z, step.foot.position.z);
+      //ROS_INFO("[%i] n: %f/%f/%f, z: %f", step.step_index, step.foot.normal.x, step.foot.normal.y, step.foot.normal.z, step.foot.position.z);
       ROS_INFO("[%i] step duration: %f, sway_duration: %f", step.step_index, step.step_duration, step.sway_duration);
       ROS_INFO("[%i] lift height: %f, swing height: %f", step.step_index, step.lift_height, step.swing_height);
       ROS_INFO("[%i] TOE-OFF: %i, knee nominal: %f", step.step_index, step.toe_off, step.knee_nominal);
@@ -272,21 +270,21 @@ public:
       }
       case flor_footstep_planner_msgs::PlanFootsteps::Request::FEET:
       {
-        State left_foot(req.feet_goal_poses.left.position,
-                        req.feet_goal_poses.left.normal,
-                        req.feet_goal_poses.left.yaw,
-                        ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
-                        ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
-                        LEFT);
+//        State left_foot(req.feet_goal_poses.left.position,
+//                        req.feet_goal_poses.left.normal,
+//                        req.feet_goal_poses.left.yaw,
+//                        ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
+//                        ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
+//                        LEFT);
 
-        State right_foot(req.feet_goal_poses.right.position,
-                         req.feet_goal_poses.right.normal,
-                         req.feet_goal_poses.right.yaw,
-                         ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
-                         ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
-                         RIGHT);
+//        State right_foot(req.feet_goal_poses.right.position,
+//                         req.feet_goal_poses.right.normal,
+//                         req.feet_goal_poses.right.yaw,
+//                         ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
+//                         ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
+//                         RIGHT);
 
-        if (!setGoal(left_foot, right_foot, ignore_collision))
+//        if (!setGoal(left_foot, right_foot, ignore_collision))
           return false;
         break;
       }
@@ -339,21 +337,21 @@ public:
         // remove shift to foot frame
         flor_navigation::removeOriginShift(feet_poses, ivEnvironmentParams.foot_origin_shift);
 
-        State left_foot(feet_poses.left.position,
-                        feet_poses.left.normal,
-                        feet_poses.left.yaw,
-                        ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
-                        ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
-                        LEFT);
+//        State left_foot(feet_poses.left.position,
+//                        feet_poses.left.normal,
+//                        feet_poses.left.yaw,
+//                        ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
+//                        ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
+//                        LEFT);
 
-        State right_foot(feet_poses.right.position,
-                         feet_poses.right.normal,
-                         feet_poses.right.yaw,
-                         ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
-                         ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
-                         RIGHT);
-
-        if (!setStart(left_foot, right_foot, ignore_collision))
+//        State right_foot(feet_poses.right.position,
+//                         feet_poses.right.normal,
+//                         feet_poses.right.yaw,
+//                         ivEnvironmentParams.swing_height, ivEnvironmentParams.lift_height,
+//                         ivEnvironmentParams.step_duration, ivEnvironmentParams.sway_duration,
+//                         RIGHT);
+//
+//        if (!setStart(left_foot, right_foot, ignore_collision))
           return false;
         break;
       }

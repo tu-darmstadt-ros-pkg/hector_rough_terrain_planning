@@ -50,7 +50,7 @@ public:
 protected:
   void insert(const std::vector<double> &key, const std::pair<double, double> &entry);
 
-  void loadFromFile(const string &filename);
+  void loadFromFile(const std::string &filename);
 
   template <class T> void read(std::ifstream &in, T &value)
   {

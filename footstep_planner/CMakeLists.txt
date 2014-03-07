@@ -45,7 +45,6 @@ set(HEADERS
     include/footstep_planner/step_cost_estimators/dynamics_step_cost_estimator.h
     include/footstep_planner/step_cost_estimators/euclidean_step_cost_estimator.h
     include/footstep_planner/step_cost_estimators/ground_contact_step_cost_estimator.h
-    include/footstep_planner/step_cost_estimators/gpr_step_cost_estimator.h
     include/footstep_planner/step_cost_estimators/map_step_cost_estimator.h
     include/footstep_planner/step_cost_estimators/step_cost_key.h
 )
@@ -69,7 +68,6 @@ set(FOOTSTEP_PLANNER_FILES
     src/step_cost_estimators/dynamics_step_cost_estimator.cpp
     src/step_cost_estimators/euclidean_step_cost_estimator.cpp
     src/step_cost_estimators/ground_contact_step_cost_estimator.cpp
-    src/step_cost_estimators/gpr_step_cost_estimator.cpp
     src/step_cost_estimators/map_step_cost_estimator.cpp
     src/step_cost_estimators/step_cost_key.cpp
 )

@@ -179,8 +179,8 @@ void WalkMonitorVisNode::extractPointVec() const
 //  }
 }
 
-void WalkMonitorVisNode::extractFootstepPlan(std::vector<atlas_msgs::AtlasBehaviorStepData> &footstep_plan) const
-{
+//void WalkMonitorVisNode::extractFootstepPlan(std::vector<atlas_msgs::AtlasBehaviorStepData> &footstep_plan) const
+//{
 //  footstep_plan.clear();
 
 //  if (data_set.data_points.size() == 0)
@@ -198,7 +198,7 @@ void WalkMonitorVisNode::extractFootstepPlan(std::vector<atlas_msgs::AtlasBehavi
 //  }
 //  for (unsigned int i = 0; i < data_set.data_points.size(); i++)
 //    footstep_plan.push_back(data_set.data_points[i].swing_foot);
-}
+//}
 }
 
 int main(int argc, char **argv)

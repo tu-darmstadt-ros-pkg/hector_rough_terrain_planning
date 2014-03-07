@@ -28,7 +28,6 @@
 
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Vector3.h>
-#include <flor_atlas_msgs/AtlasBehaviorFootData.h>
 #include <flor_footstep_planner_msgs/flor_footstep_planner_msgs.h>
 #include <flor_footstep_planner_msgs/StepTarget.h>
 
@@ -101,7 +100,7 @@ public:
   const tf::Pose &getPose() const { return ivPose; }
   tf::Pose &getPose() { return ivPose; }
   void getStep(flor_footstep_planner_msgs::StepTarget &step) const;
-  void getFootData(flor_atlas_msgs::AtlasBehaviorFootData& foot_data) const;
+  //void getFootData(flor_atlas_msgs::AtlasBehaviorFootData& foot_data) const;
 
 private:
   void recomputeNormal();

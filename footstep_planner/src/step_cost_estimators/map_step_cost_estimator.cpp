@@ -81,11 +81,11 @@ void MapStepCostEstimator::insert(const std::vector<double> &key, const std::pai
   cost_map[StepCostKey(key, cell_size, angle_bin_size)] = entry;
 }
 
-void MapStepCostEstimator::loadFromFile(const string &filename)
+void MapStepCostEstimator::loadFromFile(const std::string &filename)
 {
   // open file
   std::ifstream file;
-  file.open(filename.c_str(), ios::in | ios::binary);
+  file.open(filename.c_str(), std::ios::in | std::ios::binary);
 
   if (!file.is_open())
   {

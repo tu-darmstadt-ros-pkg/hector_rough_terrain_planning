@@ -54,6 +54,7 @@ public:
   virtual ~WalkMonitorLogger();
 
   void reset();
+  bool empty() { return true; }
 
   // setters for saving ros messages
   void setFootstepPlan(const flor_footstep_planner_msgs::FootstepPlan &footstep_plan);
@@ -63,6 +64,10 @@ public:
   // getters
   const flor_footstep_planner_msgs::FootstepPlanPtr &getFootstepPlan() const { return footstep_plan; }
   const flor_footstep_planner_msgs::FeetPosesPtr &getFeetStartPoses() const { return feet_start_poses; }
+
+  // typedefs
+  typedef boost::shared_ptr<WalkMonitorLogger> Ptr;
+  typedef boost::shared_ptr<const WalkMonitorLogger> ConstPtr;
 
 protected:
   // current footstep plan

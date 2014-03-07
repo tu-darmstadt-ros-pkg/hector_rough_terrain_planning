@@ -27,10 +27,6 @@
 #include <footstep_planner/helper.h>
 #include <footstep_planner/State.h>
 
-#include <atlas_msgs/AtlasBehaviorStepData.h>
-
-#include <flor_gpr/flor_footstep_planner_gpr.h>
-
 namespace footstep_planner
 {
 /**

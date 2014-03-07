@@ -69,7 +69,7 @@ protected:
     flor_footstep_planner_msgs::FootstepPlan plan;
     plan.header = footstep_plan.header;
     plan.planning_mode = planning_mode;
-    flor_footstep_planner_msgs::convertPlan(footstep_plan.step_plan, plan.step_plan);
+    //flor_footstep_planner_msgs::convertPlan(footstep_plan.step_plan, plan.step_plan);
 
     // give converted plan to logger
     logger->setFootstepPlan(plan);
@@ -82,27 +82,16 @@ protected:
 
   void setFootstepStart(const flor_footstep_planner_msgs::FeetPosesConstPtr &feet_start_poses);
 
-  void setAtlasBehaviorWalkFeedback(const flor_atlas_msgs::AtlasBehaviorWalkFeedbackConstPtr &behavior_walk_feedback);
-  void setAtlasBehaviorStepFeedback(const flor_atlas_msgs::AtlasBehaviorStepFeedbackConstPtr &behavior_step_feedback);
-  void setAtlasSimInterfaceState(const atlas_msgs::AtlasSimInterfaceStateConstPtr &atlas_sim_interface_state);
-
   void saveLogToDB();
   void saveLogToDBAndReset(const ros::TimerEvent &timer_event = ros::TimerEvent());
 
   void checkWalkStatus();
-
-  void publishOCSRobotStatus(const RobotStatusCodes::StatusCode& code, const RobotStatusCodes::StatusLevel& level) const;
 
   // subscribers
   ros::Subscriber footstep_planner_params_sub;
   ros::Subscriber footstep_plan_walk_sub;
   ros::Subscriber footstep_plan_step_sub;
   ros::Subscriber footstep_start_sub;
-  ros::Subscriber atlas_sim_interface_state_sub;
-  ros::Subscriber atlas_walk_feedback_sub;
-  ros::Subscriber atlas_step_feedback_sub;
-  ros::Subscriber controller_mode_sub;
-  ros::Subscriber controller_stability_sub;
   ros::Subscriber transform_pose_sub_; //For subscribing to transform between BDI and world
 
   // publisher
@@ -112,10 +101,7 @@ protected:
   ros::Publisher feet_poses_start_vis_pub;
   ros::Publisher footstep_path_vis_pub;
   ros::Publisher footstep_path_body_vis_pub;
-  ros::Publisher bdi_footsteps_vis_pub;
-  ros::Publisher real_footsteps_vis_pub;
   ros::Publisher walk_performance_pub;
-  ros::Publisher walk_monitor_status_pub;
 
   // timer
   ros::Timer timer;

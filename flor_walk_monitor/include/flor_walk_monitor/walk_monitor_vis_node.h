@@ -32,6 +32,7 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 
+#include <geometry_msgs/Point32.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/Path.h>
 
@@ -65,7 +66,7 @@ public:
   // converter functions
   void point32ToPoint(const geometry_msgs::Point32 &point32, geometry_msgs::Point &point) const;
   void extractPointVec() const;
-  void extractFootstepPlan(/*const flor_gpr::footstep_planner_gpr_data_set &data_set,*/ std::vector<atlas_msgs::AtlasBehaviorStepData> &footstep_plan) const;
+  //void extractFootstepPlan(/*const flor_gpr::footstep_planner_gpr_data_set &data_set,*/ std::vector<atlas_msgs::AtlasBehaviorStepData> &footstep_plan) const;
 
   // publisher
   ros::Publisher footstep_plan_vis_pub;

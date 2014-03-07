@@ -549,27 +549,27 @@ bool FootstepPlanner::setParamsService(flor_footstep_planner_msgs::FootstepPlann
     ivEnvironmentParams.max_step_dist = 0;
 
     // load footstep set
-    bool use_step_cost = true;
-    if (req.params.footstep_set.size() != req.params.footstep_cost.size())
-    {
-      ROS_WARN("No step costs are given or wrong number of step costs are given in array. Use zero step cost for all steps.");
-      use_step_cost = false;
-    }
+//    bool use_step_cost = true;
+//    if (req.params.footstep_set.size() != req.params.footstep_cost.size())
+//    {
+//      ROS_WARN("No step costs are given or wrong number of step costs are given in array. Use zero step cost for all steps.");
+//      use_step_cost = false;
+//    }
 
-    for (unsigned int i = 0; i < req.params.footstep_set.size(); i++)
-    {
-      const flor_atlas_msgs::AtlasBehaviorStepData &step = req.params.footstep_set[i];
-      double step_cost = use_step_cost ? req.params.footstep_cost[i] : 0.0;
+//    for (unsigned int i = 0; i < req.params.footstep_set.size(); i++)
+//    {
+//      const flor_atlas_msgs::AtlasBehaviorStepData &step = req.params.footstep_set[i];
+//      double step_cost = use_step_cost ? req.params.footstep_cost[i] : 0.0;
 
-      Footstep f(step.position.x, step.position.y, step.yaw, step.swing_height, ivEnvironmentParams.lift_height, step.duration, ivEnvironmentParams.sway_duration, step_cost,
-                 ivEnvironmentParams.cell_size, ivEnvironmentParams.num_angle_bins, ivEnvironmentParams.hash_table_size);
-                 ivEnvironmentParams.footstep_set.push_back(f);
+//      Footstep f(step.position.x, step.position.y, step.yaw, step.swing_height, ivEnvironmentParams.lift_height, step.duration, ivEnvironmentParams.sway_duration, step_cost,
+//                 ivEnvironmentParams.cell_size, ivEnvironmentParams.num_angle_bins, ivEnvironmentParams.hash_table_size);
+//                 ivEnvironmentParams.footstep_set.push_back(f);
 
-      double cur_step_width = sqrt(step.position.x*step.position.x + step.position.y*step.position.y);
+//      double cur_step_width = sqrt(step.position.x*step.position.x + step.position.y*step.position.y);
 
-      if (cur_step_width > ivEnvironmentParams.max_step_dist)
-        ivEnvironmentParams.max_step_dist = cur_step_width;
-    }
+//      if (cur_step_width > ivEnvironmentParams.max_step_dist)
+//        ivEnvironmentParams.max_step_dist = cur_step_width;
+//    }
   }
 
   if (req.params.change_mask & flor_footstep_planner_msgs::FootstepPlannerParams::LOAD_GPR_STEP_COST)
@@ -1161,84 +1161,84 @@ bool FootstepPlanner::planSteppingService(flor_footstep_planner_msgs::PlanSteppi
 
 void FootstepPlanner::postProcessStep(const State &left_foot, const State &right_foot, flor_footstep_planner_msgs::StepTarget &swing_foot) const
 {
-  /// set default parameters
-  swing_foot.toe_off = flor_atlas_msgs::AtlasBehaviorStepAction::TOE_OFF_ENABLE;
-  swing_foot.max_body_accel = 0.0;
-  swing_foot.max_foot_vel = 0.0;
-  swing_foot.sway_end_dist = 0.1;
-  swing_foot.step_end_dist = 0.1;
+//  /// set default parameters
+//  swing_foot.toe_off = flor_atlas_msgs::AtlasBehaviorStepAction::TOE_OFF_ENABLE;
+//  swing_foot.max_body_accel = 0.0;
+//  swing_foot.max_foot_vel = 0.0;
+//  swing_foot.sway_end_dist = 0.1;
+//  swing_foot.step_end_dist = 0.1;
 
-  const State &swing_foot_before = swing_foot.foot_index == flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT ? left_foot : right_foot;
-  const State &stand_foot = swing_foot.foot_index == flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT ? right_foot : left_foot;
+//  const State &swing_foot_before = swing_foot.foot_index == flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT ? left_foot : right_foot;
+//  const State &stand_foot = swing_foot.foot_index == flor_atlas_msgs::AtlasBehaviorFootData::FOOT_LEFT ? right_foot : left_foot;
 
-  /// handle lift and swing height
-  double swing_diff_x = swing_foot.foot.position.x - swing_foot_before.getX();
-  double swing_diff_y = swing_foot.foot.position.y - swing_foot_before.getY();
+//  /// handle lift and swing height
+//  double swing_diff_x = swing_foot.foot.position.x - swing_foot_before.getX();
+//  double swing_diff_y = swing_foot.foot.position.y - swing_foot_before.getY();
 
-  const TerrainModel::Ptr &terrain_model = ivPlannerEnvironmentPtr->getTerrainModel();
-  if (terrain_model)
-  {
-    // setup sampling along foot trajectory
-    double swing_dist = std::sqrt(swing_diff_x*swing_diff_x + swing_diff_y*swing_diff_y);
+//  const TerrainModel::Ptr &terrain_model = ivPlannerEnvironmentPtr->getTerrainModel();
+//  if (terrain_model)
+//  {
+//    // setup sampling along foot trajectory
+//    double swing_dist = std::sqrt(swing_diff_x*swing_diff_x + swing_diff_y*swing_diff_y);
 
-    double scale = terrain_model->getResolution()/swing_dist;
+//    double scale = terrain_model->getResolution()/swing_dist;
 
-    unsigned int number_steps = std::floor(1.0/scale);
+//    unsigned int number_steps = std::floor(1.0/scale);
 
-    double x = swing_foot_before.getX();
-    double y = swing_foot_before.getY();
+//    double x = swing_foot_before.getX();
+//    double y = swing_foot_before.getY();
 
-    double step_x = swing_diff_x * scale;
-    double step_y = swing_diff_y * scale;
+//    double step_x = swing_diff_x * scale;
+//    double step_y = swing_diff_y * scale;
 
-    double max_swing_foot_z = std::max(swing_foot.foot.position.z, swing_foot_before.getZ());
-    double min_stance_z = std::min(swing_foot.foot.position.z, stand_foot.getZ());
-    double max_stance_z = std::max(swing_foot.foot.position.z, stand_foot.getZ());
-    double max_z = max_swing_foot_z;
+//    double max_swing_foot_z = std::max(swing_foot.foot.position.z, swing_foot_before.getZ());
+//    double min_stance_z = std::min(swing_foot.foot.position.z, stand_foot.getZ());
+//    double max_stance_z = std::max(swing_foot.foot.position.z, stand_foot.getZ());
+//    double max_z = max_swing_foot_z;
 
-    // TODO: add max lift height as parameter
-    double max_lift_height = std::max(ivEnvironmentParams.lift_height, 0.30 - (max_stance_z-min_stance_z));
+//    // TODO: add max lift height as parameter
+//    double max_lift_height = std::max(ivEnvironmentParams.lift_height, 0.30 - (max_stance_z-min_stance_z));
 
-    // get max terrain height along foot trajectorie
-    for (unsigned int i = 0; i < number_steps; i++, x += step_x, y += step_y)
-    {
-      double height = max_z;
-      if (terrain_model->getHeight(x, y, height))
-        max_z = std::max(max_z, height);
-    }
+//    // get max terrain height along foot trajectorie
+//    for (unsigned int i = 0; i < number_steps; i++, x += step_x, y += step_y)
+//    {
+//      double height = max_z;
+//      if (terrain_model->getHeight(x, y, height))
+//        max_z = std::max(max_z, height);
+//    }
 
-    // determine lift height
-    if (max_z > max_swing_foot_z) // check if we must step over
-      swing_foot.lift_height += max_z-max_swing_foot_z;
+//    // determine lift height
+//    if (max_z > max_swing_foot_z) // check if we must step over
+//      swing_foot.lift_height += max_z-max_swing_foot_z;
 
-    // clamp lift height
-    if (swing_foot.lift_height > max_lift_height)
-    {
-      ROS_WARN("Max lift height exceeded! Got %f; clamp to %f", swing_foot.lift_height, max_lift_height);
-      swing_foot.lift_height = max_lift_height;
-    }
-  }
+//    // clamp lift height
+//    if (swing_foot.lift_height > max_lift_height)
+//    {
+//      ROS_WARN("Max lift height exceeded! Got %f; clamp to %f", swing_foot.lift_height, max_lift_height);
+//      swing_foot.lift_height = max_lift_height;
+//    }
+//  }
 
-  // in walk mode add lift to swing height
-  if (ivPlannerEnvironmentPtr->getPlanningMode() == flor_footstep_planner_msgs::FootstepPlan::MODE_WALK)
-  {
-    swing_foot.swing_height += swing_foot.lift_height;
-    swing_foot.lift_height = 0.0;
-  }
+//  // in walk mode add lift to swing height
+//  if (ivPlannerEnvironmentPtr->getPlanningMode() == flor_footstep_planner_msgs::FootstepPlan::MODE_WALK)
+//  {
+//    swing_foot.swing_height += swing_foot.lift_height;
+//    swing_foot.lift_height = 0.0;
+//  }
 
-  /// handle step and sway duration
-  double swing_rel_stand_foot_dist = std::abs(cos(-stand_foot.getYaw()) * swing_diff_x - sin(-stand_foot.getYaw()) * swing_diff_y);
+//  /// handle step and sway duration
+//  double swing_rel_stand_foot_dist = std::abs(cos(-stand_foot.getYaw()) * swing_diff_x - sin(-stand_foot.getYaw()) * swing_diff_y);
 
-  if (swing_rel_stand_foot_dist > ivEnvironmentParams.post_processing_sw_max_swing_dist && swing_foot.foot.normal.z < ivEnvironmentParams.post_processing_sw_min_normal_z)
-    swing_foot.sway_duration = ivEnvironmentParams.post_processing_sw_adjusted;
+//  if (swing_rel_stand_foot_dist > ivEnvironmentParams.post_processing_sw_max_swing_dist && swing_foot.foot.normal.z < ivEnvironmentParams.post_processing_sw_min_normal_z)
+//    swing_foot.sway_duration = ivEnvironmentParams.post_processing_sw_adjusted;
 
-  /// handle TOE-OFF
-  if (std::abs(angles::shortest_angular_distance(stand_foot.getYaw(), swing_foot.foot.yaw)) > ivEnvironmentParams.post_processing_toe_max_turn_rate)
-    swing_foot.toe_off = flor_atlas_msgs::AtlasBehaviorStepAction::TOE_OFF_DISABLE;
+//  /// handle TOE-OFF
+//  if (std::abs(angles::shortest_angular_distance(stand_foot.getYaw(), swing_foot.foot.yaw)) > ivEnvironmentParams.post_processing_toe_max_turn_rate)
+//    swing_foot.toe_off = flor_atlas_msgs::AtlasBehaviorStepAction::TOE_OFF_DISABLE;
 
-  /// handle knee nominal
-  if (stand_foot.getZ() - swing_foot.foot.position.z > ivEnvironmentParams.post_processing_kn_max_step_down)
-    swing_foot.knee_nominal = ivEnvironmentParams.post_processing_kn_adjusted;
+//  /// handle knee nominal
+//  if (stand_foot.getZ() - swing_foot.foot.position.z > ivEnvironmentParams.post_processing_kn_max_step_down)
+//    swing_foot.knee_nominal = ivEnvironmentParams.post_processing_kn_adjusted;
 }
 
 bool FootstepPlanner::findNearestValidState(State &s) const

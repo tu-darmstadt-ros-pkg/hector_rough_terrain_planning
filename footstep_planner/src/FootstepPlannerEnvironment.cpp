@@ -200,10 +200,6 @@ StepCostEstimator::Ptr FootstepPlannerEnvironment::initStepCostEstimator()
   {
     estimator = euclidean_step_cost_estimator;
   }
-  else if (ivParams.step_cost_estimator_type_name == "GprStepCostEstimator")
-  {
-    estimator.reset(new GprStepCostEstimator(euclidean_step_cost_estimator, ivParams.gpr_filename));
-  }
   else if (ivParams.step_cost_estimator_type_name == "MapStepCostEstimator")
   {
     estimator.reset(new MapStepCostEstimator(const_step_cost_estimator, ivParams.map_step_cost_filename));
