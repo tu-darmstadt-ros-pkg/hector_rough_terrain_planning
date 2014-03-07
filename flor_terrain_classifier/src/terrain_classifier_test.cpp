@@ -56,7 +56,7 @@ void test_normals()
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/new.pcd", *cloud_original);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/traps_ground.pcd", *cloud_original);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/ramp.pcd", *cloud_original);
-  pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/ramp2.pcd", *cloud_original);
+  pcl::io::loadPCDFile("../pointclouds/ramp2.pcd", *cloud_original);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/new.pcd", *cloud_original);
 
   // add filtered point cloud to classifier
