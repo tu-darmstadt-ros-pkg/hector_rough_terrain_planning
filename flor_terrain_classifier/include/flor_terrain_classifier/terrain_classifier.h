@@ -43,7 +43,6 @@
 
 //#include <pcl/surface/mls_omp.h>
 #include <pcl/surface/mls.h>
-
 #include <pcl/surface/gp3.h>
 
 #include <pcl/surface/vtk_smoothing/vtk.h>
@@ -160,7 +159,9 @@ public:
   // visulization helper
   void showNormals(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "normals", int viewport = 0) const;
   void showGradients(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "gradients", int viewport = 0) const;
-  void showEdges(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "gradients", int viewport = 0) const;
+  void showHeightDiff(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "hightDiff", int viewport = 0) const;
+  void showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "positionRating", int viewport = 0) const;
+
 
   // some getters
   const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &getCloudInput() const;
@@ -183,11 +184,11 @@ public:
   // data generation
   bool computeNormals();
   bool computeGradients();
-  bool detectEdges();
+  bool computeHeightRating();
   bool generateGroundLevelGridmap();
   bool generateHeightGridmap();
-
   bool computeSurfaceMesh();
+  bool computePositionRating(Eigen::Vector3f);
 
   // typedefs
   typedef boost::shared_ptr<TerrainClassifier> Ptr;
@@ -328,6 +329,9 @@ protected:
   nav_msgs::OccupancyGrid::Ptr height_grid_map;
 
   pcl::PolygonMesh::Ptr mesh_surface;
+
+  pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
+
 
   std::string frame_id;
 

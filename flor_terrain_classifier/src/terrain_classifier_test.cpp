@@ -68,11 +68,15 @@ void test_normals()
 
   // detect edges
   ROS_INFO("Detect edges...");
-  terrain_classifier->detectEdges();
+  terrain_classifier->computeHeightRating();
 
   // generate grid map
   ROS_INFO("Generate grid map...");
   terrain_classifier->generateGroundLevelGridmap();
+
+  // generate grid map
+  ROS_INFO("Compute Position rating...");
+  terrain_classifier->computePositionRating(Eigen::Vector3f(1,1,1));
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");
@@ -86,20 +90,21 @@ void test_normals()
   int view_port_2(0);
   viewer.createViewPort(0.5, 0.5, 1.0, 1.0, view_port_2);
   viewer.addCoordinateSystem(0.5, view_port_2);
-  //viewer.addPointCloud<pcl::PointXYZ>(cloud_processed, "processed cloud", view_port_2);
-  terrain_classifier->computeSurfaceMesh();
-  viewer.addPolygonMesh(*(terrain_classifier->getMeshSurface()), "surface", view_port_2);
+  terrain_classifier->showNormals(viewer, "normals", view_port_2);
 
   int view_port_3(0);
   viewer.createViewPort(0.0, 0.0, 0.5, 0.5, view_port_3);
   viewer.addCoordinateSystem(0.5, view_port_3);
-  terrain_classifier->showNormals(viewer, "normals", view_port_3);
+  //terrain_classifier->showGradients(viewer, "gradients", view_port_4);
+  terrain_classifier->showHeightDiff(viewer, "heightDiff", view_port_3);
+
 
   int view_port_4(0);
   viewer.createViewPort(0.5, 0.0, 1.0, 0.5, view_port_4);
   viewer.addCoordinateSystem(0.5, view_port_4);
-  //terrain_classifier->showGradients(viewer, "gradients", view_port_4);
-  terrain_classifier->showEdges(viewer, "edges", view_port_4);
+  viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudProcessed(), "processed cloud", view_port_4);
+  terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
+  //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);
 
 
   while (!viewer.wasStopped())

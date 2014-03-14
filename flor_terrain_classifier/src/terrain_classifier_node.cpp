@@ -167,7 +167,7 @@ bool TerrainClassifierNode::generateTerrainModel()
 
   // detect edges
   ROS_INFO("Detect edges...");
-  if (!terrain_classifier->detectEdges())
+  if (!terrain_classifier->computeHeightRating())
     return false;
 
   // generate height grid map

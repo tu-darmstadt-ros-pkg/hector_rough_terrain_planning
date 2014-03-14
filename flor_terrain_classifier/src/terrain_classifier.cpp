@@ -78,7 +78,7 @@ void TerrainClassifier::showGradients(pcl::visualization::PCLVisualizer &viewer,
   viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_gradient"), viewport);
 }
 
-void TerrainClassifier::showEdges(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
+void TerrainClassifier::showHeightDiff(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
 {
   if (!cloud_edges || cloud_edges->empty())
   {
@@ -89,6 +89,18 @@ void TerrainClassifier::showEdges(pcl::visualization::PCLVisualizer &viewer, con
   pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_edges, "intensity");
   viewer.addPointCloud<pcl::PointXYZI>(cloud_edges, intensity_distribution, name + std::string("_cloud"), viewport);
   viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
+
+
+  //draw polygon
+  Eigen::Vector4f coeff = Eigen::Vector4f(-3.0,-3.0,-1.0,1);
+  pcl::PointCloud<pcl::PointXYZ> cloud_supportingPolygon;
+  cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,1.0));
+  cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,1.0));
+  cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,2.0));
+  cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,2.0));
+  const pcl::PlanarPolygon<pcl::PointXYZ> csupportingPolygon  = pcl::PlanarPolygon<pcl::PointXYZ>(cloud_supportingPolygon.points, coeff);
+  viewer.addPolygon( csupportingPolygon, 1.0, 0.0, 0.0,name,viewport);
+
 }
 
 const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &TerrainClassifier::getCloudInput() const
@@ -150,7 +162,7 @@ void TerrainClassifier::getCloudProcessedLowRes(pcl::PointCloud<pcl::PointXYZ>::
       cloud->at(i).z = cloud_points_with_normals->at(i).z - half_low_res; // reduce height so it matches vis with boxes
     }
 
-    filterVoxelGrid<pcl::PointXYZ>(cloud, params.low_res, params.low_res, 0.01);
+    filterVoxelGrid<pcl::PointXYZ>(cloud,0.01,0.01,0.01);// params.low_res, params.low_res, 0.1);
   }
 }
 
@@ -208,7 +220,7 @@ bool TerrainClassifier::computeNormals()
   if (params.filter_mask & FILTER_PASS_THROUGH)           // cut out area of interest
     filterPassThrough<pcl::PointXYZ>(cloud_processed, params.pt_field_name, ground_z + params.pt_min, ground_z + params.pt_max);
   if (params.filter_mask & FILTER_VOXEL_GRID)             // summarize data
-    filterVoxelGrid<pcl::PointXYZ>(cloud_processed, params.vg_lx, params.vg_ly, params.vg_lz);
+    filterVoxelGrid<pcl::PointXYZ>(cloud_processed,0.03,0.03,0.03);// params.vg_lx, params.vg_ly, params.vg_lz);
   if (params.filter_mask & FILTER_MLS_SMOOTH)             // smooth data
     filterMlsSmooth<pcl::PointXYZ>(cloud_processed, params.ms_radius);
 
@@ -317,7 +329,7 @@ bool TerrainClassifier::computeGradients()
   return true;
 }
 
-bool TerrainClassifier::detectEdges()
+bool TerrainClassifier::computeHeightRating()
 {
   // edges are up-to-date -> do nothing
   if (!cloud_edges_outdated && cloud_edges)
@@ -336,30 +348,31 @@ bool TerrainClassifier::detectEdges()
   cloud_edges->resize(cloud_points_with_normals->size());
 
   // project all data to plane
-  pcl::PointCloud<pcl::PointXY>::Ptr points(new pcl::PointCloud<pcl::PointXY>());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
   points->resize(cloud_points_with_normals->size());
   for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
   {
     const pcl::PointNormal &n = cloud_points_with_normals->at(i);
-    pcl::PointXY &p = points->at(i);
+    pcl::PointXYZ &p = points->at(i);
     p.x = n.x;
     p.y = n.y;
+    p.z = n.z;
   }
 
-  pcl::KdTreeFLANN<pcl::PointXY> tree;
+  pcl::KdTreeFLANN<pcl::PointXYZ> tree;
   tree.setInputCloud(points);
 
   std::vector<int> pointIdxRadiusSearch;
   std::vector<float> pointRadiusSquaredDistance;
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_edges(new pcl::PointCloud<pcl::PointXYZI>());
-  tmp_edges->resize(cloud_points_with_normals->size());
+  //pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_edges(new pcl::PointCloud<pcl::PointXYZI>());
+  //tmp_edges->resize(cloud_points_with_normals->size());
 
   // run edge detection
   for (size_t i = 0; i < points->size(); i++)
   {
     const pcl::PointNormal &current = cloud_points_with_normals->at(i);
-    pcl::PointXYZI &result = tmp_edges->at(i);
+    pcl::PointXYZI &result = cloud_edges->at(i);
 
     result.x = current.x;
     result.y = current.y;
@@ -378,78 +391,22 @@ bool TerrainClassifier::detectEdges()
 
         const pcl::PointNormal &neigh = cloud_points_with_normals->at(pointIdxRadiusSearch[j]);
 
-        // determine diff of normals
-        double diff_nx = (neigh.normal_x - current.normal_x);
-        double diff_ny = (neigh.normal_y - current.normal_y);
-        double sq_err_nx = diff_nx*diff_nx;
-        double sq_err_ny = diff_ny*diff_ny;
 
         // determine diff in height
-        double diff_z = (neigh.z - current.z)*5.0; // scale up diff (weight)
-        double sq_err_z = diff_z*diff_z;
+        double diff_z = (neigh.z - current.z)*1000000000.0; // scale up diff (weight)
+        double sq_err_z = abs(diff_z);
 
-        // compute support in direction of normal
-        double neigh_norm = sqrt((current.normal_x*current.normal_x + current.normal_y*current.normal_y) *
-                                 ((neigh.x-current.x)*(neigh.x-current.x) + (neigh.y-current.y)*(neigh.y-current.y)));
-        double dot_scale = std::abs(current.normal_x * std::abs(neigh.x-current.x) + current.normal_y * std::abs(neigh.y-current.y)) / neigh_norm;
 
-        // compute support in distance
-        double dist_scale = (params.ed_radius-sqrt(pointRadiusSquaredDistance[j]))/params.ed_radius;
-
-        sq_sum_e += (sq_err_nx + sq_err_ny + sq_err_z) * dot_scale * dist_scale;
+        sq_sum_e += sq_err_z;
       }
 
       double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
 
       // check for edge
-      if (sq_mean_e > params.ed_max_std*params.ed_max_std)
-        result.intensity = sq_mean_e;
-    }
-  }
-
-  // run non-maximum suppression
-  for (size_t i = 0; i < points->size(); i++)
-  {
-    const pcl::PointNormal &current = cloud_points_with_normals->at(i);
-    const pcl::PointXYZI &edge = tmp_edges->at(i);
-    pcl::PointXYZI &result = cloud_edges->at(i);
-
-    result.x = edge.x;
-    result.y = edge.y;
-    result.z = edge.z;
-    result.intensity = 1.0; // = no edge
-
-    if (edge.intensity == 0.0)
-      continue;
-
-    if (tree.radiusSearch(i, params.ed_non_max_supp_radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-    {
-      bool local_max = true;
-
-      // determine local max
-      for (size_t j = 0; j < pointIdxRadiusSearch.size (); j++)
+      if (sq_mean_e > 0.0)
       {
-        if (pointIdxRadiusSearch[j] == (int)i)
-          continue;
-
-        const pcl::PointXYZI &neigh = tmp_edges->at(pointIdxRadiusSearch[j]);
-
-        /// @TODO: Handle 0/0/1 normals
-        double neigh_norm = sqrt((current.normal_x*current.normal_x + current.normal_y*current.normal_y) *
-                                 ((neigh.x-current.x)*(neigh.x-current.x) + (neigh.y-current.y)*(neigh.y-current.y)));
-        double dot_scale = std::abs(current.normal_x * std::abs(neigh.x-current.x) + current.normal_y * std::abs(neigh.y-current.y)) / neigh_norm;
-
-        // check for local maximum
-        if (edge.intensity < neigh.intensity * dot_scale)
-        {
-          local_max = false;
-          break;
-        }
+        result.intensity = sq_mean_e;
       }
-
-      // check for edge
-      if (local_max)
-        result.intensity = 0.0;
     }
   }
 
@@ -464,7 +421,7 @@ bool TerrainClassifier::generateGroundLevelGridmap()
   if (!ground_level_grid_map_outdated && ground_level_grid_map)
     return true;
 
-  if ((!cloud_gradients || !computeGradients()) && (!cloud_edges || !detectEdges()))
+  if ((!cloud_gradients || !computeGradients()) && (!cloud_edges || !computeHeightRating()))
   {
     ROS_ERROR("Can't generate grid map!");
     return false;
@@ -782,4 +739,109 @@ void TerrainClassifier::getGridMapCoords(const nav_msgs::OccupancyGrid::ConstPtr
   x = (float)map_x * map->info.resolution + map->info.origin.position.x;
   y = (float)map_y * map->info.resolution + map->info.origin.position.y;
 }
+
+
+
+bool TerrainClassifier::computePositionRating(Eigen::Vector3f)
+{
+
+     pcl::PointCloud<pcl::PointXYZ>::Ptr processedCloud = getCloudProcessed();
+
+
+/**
+    // init edge data structure
+    cloud_edges.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    cloud_edges->resize(cloud_points_with_normals->size());
+
+    // project all data to plane
+    pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
+    points->resize(cloud_points_with_normals->size());
+    for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
+    {
+      const pcl::PointNormal &n = cloud_points_with_normals->at(i);
+      pcl::PointXYZ &p = points->at(i);
+      p.x = n.x;
+      p.y = n.y;
+      p.z = n.z;
+    }
+
+    pcl::KdTreeFLANN<pcl::PointXYZ> tree;
+    tree.setInputCloud(points);
+
+    std::vector<int> pointIdxRadiusSearch;
+    std::vector<float> pointRadiusSquaredDistance;
+
+    //pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_edges(new pcl::PointCloud<pcl::PointXYZI>());
+    //tmp_edges->resize(cloud_points_with_normals->size());
+
+    // run edge detection
+    for (size_t i = 0; i < points->size(); i++)
+    {
+      const pcl::PointNormal &current = cloud_points_with_normals->at(i);
+      pcl::PointXYZI &result = cloud_edges->at(i);
+
+      result.x = current.x;
+      result.y = current.y;
+      result.z = current.z;
+      result.intensity = 0.0;
+
+      if (tree.radiusSearch(i, params.ed_radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+      {
+        // determine squared mean error
+        double sq_sum_e = 0.0;
+
+        for (size_t j = 0; j < pointIdxRadiusSearch.size (); j++)
+        {
+          if (pointIdxRadiusSearch[j] == (int)i)
+            continue;
+
+          const pcl::PointNormal &neigh = cloud_points_with_normals->at(pointIdxRadiusSearch[j]);
+
+
+          // determine diff in height
+          double diff_z = (neigh.z - current.z)*1000000000.0; // scale up diff (weight)
+          double sq_err_z = abs(diff_z);
+
+
+          sq_sum_e += sq_err_z;
+        }
+
+        double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
+
+        // check for edge
+        if (sq_mean_e > 0.0)
+        {
+          result.intensity = 0.0;
+        }
+      }
+    }
+**/
+
+
+    return true;
+
+}
+
+void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
+{
+
+
+
+   // pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_edges, "intensity");
+    //viewer.addPointCloud<pcl::PointXYZI>(cloud_edges, intensity_distribution, name + std::string("_cloud"), viewport);
+    //viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
+
+
+    //draw polygon
+    Eigen::Vector4f coeff = Eigen::Vector4f(-3.0,-3.0,-1.0,1);
+    pcl::PointCloud<pcl::PointXYZ> cloud_supportingPolygon;
+    cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,1.0));
+    cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,1.0));
+    cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,2.0));
+    cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,2.0));
+    const pcl::PlanarPolygon<pcl::PointXYZ> csupportingPolygon  = pcl::PlanarPolygon<pcl::PointXYZ>(cloud_supportingPolygon.points, coeff);
+    viewer.addPolygon( csupportingPolygon, 1.0, 0.0, 0.0,name,viewport);
+
+}
+
 }
