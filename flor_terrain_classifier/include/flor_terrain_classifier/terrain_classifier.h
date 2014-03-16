@@ -188,7 +188,10 @@ public:
   bool generateGroundLevelGridmap();
   bool generateHeightGridmap();
   bool computeSurfaceMesh();
-  bool computePositionRating(Eigen::Vector3f);
+
+
+  bool computePositionRating(const pcl::PointXYZ checkPos);
+  pcl::PointXYZ lastRatedPosition;
 
   // typedefs
   typedef boost::shared_ptr<TerrainClassifier> Ptr;
@@ -324,6 +327,8 @@ protected:
   pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_gradients;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_edges;
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating;
 
   nav_msgs::OccupancyGrid::Ptr ground_level_grid_map;
   nav_msgs::OccupancyGrid::Ptr height_grid_map;

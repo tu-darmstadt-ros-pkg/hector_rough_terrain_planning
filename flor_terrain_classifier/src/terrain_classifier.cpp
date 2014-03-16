@@ -91,16 +91,6 @@ void TerrainClassifier::showHeightDiff(pcl::visualization::PCLVisualizer &viewer
   viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 
-  //draw polygon
-  Eigen::Vector4f coeff = Eigen::Vector4f(-3.0,-3.0,-1.0,1);
-  pcl::PointCloud<pcl::PointXYZ> cloud_supportingPolygon;
-  cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,1.0));
-  cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,1.0));
-  cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,2.0));
-  cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,2.0));
-  const pcl::PlanarPolygon<pcl::PointXYZ> csupportingPolygon  = pcl::PlanarPolygon<pcl::PointXYZ>(cloud_supportingPolygon.points, coeff);
-  viewer.addPolygon( csupportingPolygon, 1.0, 0.0, 0.0,name,viewport);
-
 }
 
 const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &TerrainClassifier::getCloudInput() const
@@ -742,11 +732,112 @@ void TerrainClassifier::getGridMapCoords(const nav_msgs::OccupancyGrid::ConstPtr
 
 
 
-bool TerrainClassifier::computePositionRating(Eigen::Vector3f)
+bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
 {
 
+    lastRatedPosition=checkPos;
      pcl::PointCloud<pcl::PointXYZ>::Ptr processedCloud = getCloudProcessed();
+   //  cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_processed));
 
+     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
+     cloud_positionRating->resize(cloud_points_with_normals->size());
+
+     for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
+     {
+       pcl::PointNormal &pn = cloud_points_with_normals->at(i);
+       pcl::PointXYZI &pi = cloud_positionRating->at(i);
+
+       pi.x = pn.x;
+       pi.y = pn.y;
+       pi.z = pn.z;
+       pi.intensity = pi.z;
+     }
+
+
+
+     //cloud_positionRating = new pcl::PointCloud<pcl::PointXYZ>;
+//cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));     cloud_positionRating->resize(cloud_points_with_normals->size());
+
+   //  float width=0.40;
+   //  float length=0.80;
+   //  int subcirclesL=16;
+  //   int subcirclesW=8;
+     float radius = 0.4;//width/subcirclesW;
+
+/**
+     pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
+     points->resize(cloud_points_with_normals->size());
+     for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
+     {
+       const pcl::PointNormal &n = cloud_points_with_normals->at(i);
+       pcl::PointXYZ &p = points->at(i);
+       p.x = n.x;
+       p.y = n.y;
+       p.z=0;
+     }
+
+
+
+     pcl::KdTreeFLANN<pcl::PointXYZ> tree;
+     tree.setInputCloud(points);
+
+
+    //get closest point to robot center
+     std::vector<int> checkPosIdxRadiusSearch;
+     std::vector<float> checkPosRadiusSquaredDistance;
+     const pcl::PointXYZ checkPosc = checkPos;
+     tree.radiusSearch(checkPosc,radius,checkPosIdxRadiusSearch,checkPosRadiusSquaredDistance);
+
+
+
+      std::vector<int> pointIdxRadiusSearch;
+      std::vector<float> pointRadiusSquaredDistance;
+      pcl::PointCloud<pcl::PointXYZI>::Ptr temp_vertices(new pcl::PointCloud<pcl::PointXYZI>());
+      temp_vertices->resize(cloud_points_with_normals->size());
+
+     // run flat detection
+
+     for (int i = 0; i < points->size(); i++)
+     {
+       const pcl::PointNormal &current = cloud_points_with_normals->at(i);
+       pcl::PointXYZI &result = cloud_edges->at(i);
+
+       result.x = current.x;
+       result.y = current.y;
+       result.z = current.z;
+       result.intensity = 0.0;
+
+       if (tree.radiusSearch(i, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+       {
+         // determine squared mean error
+         double sq_sum_e = 0.0;
+
+         /**
+         for (size_t j = 0; j < pointIdxRadiusSearch.size (); j++)
+         {
+           if (pointIdxRadiusSearch[j] == (int)i)
+             continue;
+
+           const pcl::PointNormal &neigh = cloud_points_with_normals->at(pointIdxRadiusSearch[j]);
+
+
+           // determine diff in height
+           double diff_z = (neigh.z - current.z)*1000000000.0; // scale up diff (weight)
+           double sq_err_z = abs(diff_z);
+
+
+           sq_sum_e += sq_err_z;
+         }
+
+         double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
+
+         // check for edge
+
+           result.intensity = current.z;
+
+       }
+
+**/
 
 /**
     // init edge data structure
@@ -754,7 +845,7 @@ bool TerrainClassifier::computePositionRating(Eigen::Vector3f)
     cloud_edges->resize(cloud_points_with_normals->size());
 
     // project all data to plane
-    pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::PointCloud<pcl::PointXYZ>::Ptr points(nesize_tw pcl::PointCloud<pcl::PointXYZ>());
     points->resize(cloud_points_with_normals->size());
     for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
     {
@@ -775,7 +866,7 @@ bool TerrainClassifier::computePositionRating(Eigen::Vector3f)
     //tmp_edges->resize(cloud_points_with_normals->size());
 
     // run edge detection
-    for (size_t i = 0; i < points->size(); i++)
+    for ( i = 0; i < points->size(); i++)
     {
       const pcl::PointNormal &current = cloud_points_with_normals->at(i);
       pcl::PointXYZI &result = cloud_edges->at(i);
@@ -815,6 +906,7 @@ bool TerrainClassifier::computePositionRating(Eigen::Vector3f)
         }
       }
     }
+    }
 **/
 
 
@@ -832,8 +924,12 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
     //viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 
+    //draw
+    viewer.addSphere(lastRatedPosition, 0.03, "lastRatedPositionSphere", viewport);
+
+
     //draw polygon
-    Eigen::Vector4f coeff = Eigen::Vector4f(-3.0,-3.0,-1.0,1);
+    Eigen::Vector4f coeff = Eigen::Vector4f(1.0,1.0,1.0,1);
     pcl::PointCloud<pcl::PointXYZ> cloud_supportingPolygon;
     cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,1.0));
     cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,1.0));
@@ -841,6 +937,11 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
     cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,2.0));
     const pcl::PlanarPolygon<pcl::PointXYZ> csupportingPolygon  = pcl::PlanarPolygon<pcl::PointXYZ>(cloud_supportingPolygon.points, coeff);
     viewer.addPolygon( csupportingPolygon, 1.0, 0.0, 0.0,name,viewport);
+
+    pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
+    viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
+    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
+
 
 }
 
