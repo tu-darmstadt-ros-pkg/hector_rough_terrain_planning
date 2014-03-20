@@ -76,7 +76,7 @@ void test_normals()
 
   // generate grid map
   ROS_INFO("Compute Position rating...");
-  terrain_classifier->computePositionRating(pcl::PointXYZ(1,1,1));
+  terrain_classifier->computePositionRating(pcl::PointXYZ(1.2,-1.05,0));
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");

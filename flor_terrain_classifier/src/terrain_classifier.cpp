@@ -732,51 +732,129 @@ void TerrainClassifier::getGridMapCoords(const nav_msgs::OccupancyGrid::ConstPtr
 
 
 
+float dotProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b)
+{
+    return a.x*b.x+a.y*b.y+a.z*b.z;
+}
+
+pcl::PointXYZ crossProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b)
+{
+    float cx=a.y*b.z-a.z*b.y;
+    float cy=a.z*b.x-a.x*b.z;
+    float cz=a.x*b.y-a.y*b.x;
+    return pcl::PointXYZ(cx,cy,cz);
+}
+float TerrainClassifier::planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p)
+{
+    float d=dotProduct(pcl::PointXYZ(testpoint.x-plane_p.x, testpoint.y-plane_p.y, testpoint.z-plane_p.z),plane_n)/sqrt(plane_n.x*plane_n.x+plane_n.y*plane_n.y+plane_n.z*plane_n.z);
+    return d;
+}
+
+
+
+bool TerrainClassifier::atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p, const float& delta)
+{
+    return (abs(planeDistance(testpoint,plane_n,plane_p))<=delta);
+}
+
+
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
 {
 
     lastRatedPosition=checkPos;
-     pcl::PointCloud<pcl::PointXYZ>::Ptr processedCloud = getCloudProcessed();
-   //  cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_processed));
+     float widthx=0.50;
+     float lengthy=0.80;
 
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
-     cloud_positionRating->resize(cloud_points_with_normals->size());
+     cloud_positionRating->resize(cloud_processed->size());
 
-     for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
+     for (unsigned int i = 0; i < cloud_processed->size(); i++)
      {
-       pcl::PointNormal &pn = cloud_points_with_normals->at(i);
        pcl::PointXYZI &pi = cloud_positionRating->at(i);
+       pcl::PointXYZ &pp= cloud_processed->at(i);
+       bool cx1=(planeDistance(pp,pcl::PointXYZ(1,0,0),pcl::PointXYZ(checkPos.x+widthx*0.5,checkPos.y+lengthy*0.5,0))<0);
+       bool cx2=(planeDistance(pp,pcl::PointXYZ(-1,0,0),pcl::PointXYZ(checkPos.x-widthx*0.5,checkPos.y+lengthy*0.5,0))<0);
+       bool cy1=(planeDistance(pp,pcl::PointXYZ(0,1,0),pcl::PointXYZ(checkPos.x+widthx*0.5,checkPos.y+lengthy*0.5,0))<0);
+       bool cy2=(planeDistance(pp,pcl::PointXYZ(0,-1,0),pcl::PointXYZ(checkPos.x+widthx*0.5,checkPos.y-lengthy*0.5,0))<0);
+       float null_float=0.0;
+       pcl::PointXYZI p= pcl::PointXYZI();
+       p.x=pp.x;
+       p.y=pp.y;
+       p.z=pp.z;
+       p.intensity=0.0;
+       if(cx1&&cx2&&cy1&&cy2)cloud_positionRating->push_back(p);
 
-       pi.x = pn.x;
-       pi.y = pn.y;
-       pi.z = pn.z;
-       pi.intensity = pi.z;
      }
 
-
-
-     //cloud_positionRating = new pcl::PointCloud<pcl::PointXYZ>;
-//cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));     cloud_positionRating->resize(cloud_points_with_normals->size());
-
-   //  float width=0.40;
-   //  float length=0.80;
-   //  int subcirclesL=16;
-  //   int subcirclesW=8;
-     float radius = 0.4;//width/subcirclesW;
+//     filterPassThrough<pcl::PointXYZI>(cloud_positionRating, "x", -1,1);
 
 /**
-     pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
-     points->resize(cloud_points_with_normals->size());
-     for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
+
+     pcl::KdTreeFLANN<pcl::PointXYZI> tree;
+     tree.setInputCloud(cloud_positionRating);
+
+
+    //get closest point to robot center
+     std::vector<int> checkPosIdxRadiusSearch;
+     std::vector<float> checkPosRadiusSquaredDistance;
+
+      pcl::PointXYZI checkPosI = pcl::PointXYZI();
+      checkPosI.x=checkPos.x;
+      checkPosI.y=checkPos.y;
+      checkPosI.z=checkPos.z;
+      checkPosI.intensity=0;
+
+
+     const pcl::PointXYZI checkPosc = checkPosI;
+     tree.radiusSearch(checkPosc,radius,checkPosIdxRadiusSearch,checkPosRadiusSquaredDistance);
+
+     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>);
+     cloud_positionRating->resize(checkPosIdxRadiusSearch.size());
+
+
+
+
+
+     pcl::PointXYZI p_max_z;
+     float min_z;
+     for(int i=0; i<checkPosIdxRadiusSearch.size(); i++)
      {
-       const pcl::PointNormal &n = cloud_points_with_normals->at(i);
-       pcl::PointXYZ &p = points->at(i);
-       p.x = n.x;
-       p.y = n.y;
-       p.z=0;
+
+         pcl::PointNormal &pn = cloud_points_with_normals->at(checkPosIdxRadiusSearch.at(i));
+         pcl::PointXYZI &pi = cloud_positionRating->at(i);
+
+         pi.x = pn.x;
+         pi.y = pn.y;
+         pi.z = pn.z;//pn.z;
+         pi.intensity = 0; //pi.z;
+
+         ROS_INFO("pi.z %f",pi.z);
+
+         if (i==0)
+         {
+             min_z=pi.z;
+             p_max_z=pi;
+         }
+         if (pi.z>p_max_z.z) p_max_z=pi;
+         else if (pi.z<min_z) min_z=pi.z;
+     }
+
+     for(int i=0; i<cloud_positionRating->size(); i++)
+     {
+         pcl::PointXYZI &pi = cloud_positionRating->at(i);
+         pi.intensity= (pi.z-min_z)/p_max_z.z;
+
      }
 
 
+
+
+**/
+
+
+
+
+/**
 
      pcl::KdTreeFLANN<pcl::PointXYZ> tree;
      tree.setInputCloud(points);
@@ -939,7 +1017,11 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
     viewer.addPolygon( csupportingPolygon, 1.0, 0.0, 0.0,name,viewport);
 
     pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
+
+
     viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
+
+    viewer.addPointCloud<pcl::PointXYZ>(cloud_processed, "positionRating_cloud", viewport);
     viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 

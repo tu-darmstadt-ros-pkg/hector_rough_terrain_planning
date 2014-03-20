@@ -285,39 +285,8 @@ protected:
   void getGridMapIndex(const nav_msgs::OccupancyGrid::ConstPtr &map, float x, float y, int &idx) const;
   void getGridMapCoords(const nav_msgs::OccupancyGrid::ConstPtr &map, unsigned int idx, float &x, float &y) const;
 
-//  template <typename PointT> void setupGridMap(const pcl::PointCloud<PointT> &cloud, nav_msgs::OccupancyGrid::Ptr &map, float res) const
-//  {
-//    double min_x, max_x;
-//    double min_y, max_y;
-//    double min_z, max_z;
-
-//    min_x = min_y = min_z = FLT_MAX;
-//    max_x = max_y = max_z = FLT_MIN;
-//    for (size_t i = 0; i < cloud->size(); i++)
-//    {
-//      const pcl::PointNormal &p = cloud->at(i);
-//      min_x = min(min_x, (double)p.x);
-//      min_y = min(min_y, (double)p.y);
-//      min_z = min(min_z, (double)p.z);
-//      max_x = max(max_x, (double)p.x);
-//      max_y = max(max_y, (double)p.y);
-//      max_z = max(max_z, (double)p.z);
-//    }
-
-//    // setting up grid map
-//    map.reset(new nav_msgs::OccupancyGrid());
-
-//    map->info.resolution = params.gg_res;
-//    map->info.width = ceil((max_x-min_x) * 1/res);
-//    map->info.height = ceil((max_y-min_y) * 1/res);
-
-//    map->info.origin.position.x = min_x;
-//    map->info.origin.position.y = min_y;
-//    map->info.origin.position.z = 0.0;
-
-//    map->data.clear();
-//    map->data.resize(map->info.width * map->info.height, -1);
-//  }
+  float planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p);
+  bool atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p, const float& delta);
 
   TerrainClassifierParams params;
 
