@@ -750,12 +750,25 @@ float TerrainClassifier::planeDistance(const pcl::PointXYZ& testpoint, const pcl
     return d;
 }
 
+pcl::PointXYZ TerrainClassifier::planeProjection(const pcl::PointXYZ& projection_p, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p)
+{
+
+
+    Eigen::Vector3f x = Eigen::Vector3f(projection_p.x,projection_p.y,projection_p.z);
+    Eigen::Vector3f n = Eigen::Vector3f(plane_n.x,plane_n.y,plane_n.z);
+    Eigen::Vector3f r = Eigen::Vector3f(plane_p.x,plane_p.y,plane_p.z);
+    Eigen::Vector3f res = x - ((x-r).dot(n)/n.dot(n))*n;
+    pcl::PointXYZ ret = pcl::PointXYZ(res[0],res[1],res[2]);
+    return ret ;
+}
+
 
 
 bool TerrainClassifier::atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p, const float& delta)
 {
     return (abs(planeDistance(testpoint,plane_n,plane_p))<=delta);
 }
+
 
 
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
@@ -766,25 +779,61 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
      float lengthy=0.80;
 
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
-     cloud_positionRating->resize(cloud_processed->size());
+     cloud_positionRating->resize(0);
+     unsigned int highest_Point_idx;
+     unsigned int n=0;
 
+
+     //filter relevant points and find max
      for (unsigned int i = 0; i < cloud_processed->size(); i++)
      {
-       pcl::PointXYZI &pi = cloud_positionRating->at(i);
        pcl::PointXYZ &pp= cloud_processed->at(i);
        bool cx1=(planeDistance(pp,pcl::PointXYZ(1,0,0),pcl::PointXYZ(checkPos.x+widthx*0.5,checkPos.y+lengthy*0.5,0))<0);
        bool cx2=(planeDistance(pp,pcl::PointXYZ(-1,0,0),pcl::PointXYZ(checkPos.x-widthx*0.5,checkPos.y+lengthy*0.5,0))<0);
        bool cy1=(planeDistance(pp,pcl::PointXYZ(0,1,0),pcl::PointXYZ(checkPos.x+widthx*0.5,checkPos.y+lengthy*0.5,0))<0);
        bool cy2=(planeDistance(pp,pcl::PointXYZ(0,-1,0),pcl::PointXYZ(checkPos.x+widthx*0.5,checkPos.y-lengthy*0.5,0))<0);
-       float null_float=0.0;
-       pcl::PointXYZI p= pcl::PointXYZI();
-       p.x=pp.x;
-       p.y=pp.y;
-       p.z=pp.z;
-       p.intensity=0.0;
-       if(cx1&&cx2&&cy1&&cy2)cloud_positionRating->push_back(p);
 
+       if(cx1&&cx2&&cy1&&cy2)
+       {
+           pcl::PointXYZI p= pcl::PointXYZI();
+           p.x=pp.x;
+           p.y=pp.y;
+           p.z=pp.z;
+           p.intensity=0.0;
+           cloud_positionRating->push_back(p);
+           if(n==0) highest_Point_idx=1;
+           else if(p.z>cloud_positionRating->at(highest_Point_idx).z) highest_Point_idx=n;
+           ++n;
+       }
      }
+
+     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);
+     std::vector<int> high_points;
+     int support_point_1_idx;
+
+     float min_dist=-1.0;
+     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
+     {
+         pcl::PointXYZI& p = cloud_positionRating->at(i);
+         if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
+         {
+             float dist=sqrt((p.x-checkPos.x)*(p.x-checkPos.x)+(p.y-checkPos.y)*(p.y-checkPos.y));
+             p.intensity=1.0;
+             high_points.push_back(i);
+             if(min_dist<0.0 || dist<min_dist)
+             {
+                 min_dist=dist;
+                 support_point_1_idx=i;
+                // ROS_INFO("i d : %i %f %f ",i,min_dist, dist);
+             }
+
+         }
+     }
+     cloud_positionRating->at(support_point_1_idx).intensity=0.5;
+
+
+
+
 
 //     filterPassThrough<pcl::PointXYZI>(cloud_positionRating, "x", -1,1);
 
