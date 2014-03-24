@@ -98,7 +98,7 @@ accuracy:
   # - 1 feet
   # - 2 upper body
   # - 4 foot contact support
-  collision_check_type: 0
+  collision_check_type: 3
 
   # footstep collision check accuracy
   # - 0 (just the circumcircle of the foot)

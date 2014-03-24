@@ -1,6 +1,6 @@
 ### upper body settings ########################################################
 upper_body:
-  size: {x: 0.7, y: 1.1}
+  size: {x: 0.5, y: 0.7}
   origin_shift: {x: -0.1, y: 0.00} # transformation from center to shifted frame
 
 ### foot settings ##############################################################
