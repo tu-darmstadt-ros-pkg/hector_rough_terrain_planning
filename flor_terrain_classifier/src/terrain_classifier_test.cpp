@@ -74,9 +74,6 @@ void test_normals()
   ROS_INFO("Generate grid map...");
   terrain_classifier->generateGroundLevelGridmap();
 
-  // generate grid map
-  ROS_INFO("Compute Position rating...");
-  terrain_classifier->computePositionRating(pcl::PointXYZ(1.2,-1.05,0));
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");
@@ -103,6 +100,10 @@ void test_normals()
   viewer.createViewPort(0.5, 0.0, 1.0, 0.5, view_port_4);
   viewer.addCoordinateSystem(0.5, view_port_4);
  // viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudProcessed(), "processed cloud", view_port_4);
+
+  // generate grid map
+  ROS_INFO("Compute Position rating...");
+  terrain_classifier->computePositionRating(pcl::PointXYZ(1.00,-0.85,0),viewer, "computePositionRating", view_port_4);
   terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);
 

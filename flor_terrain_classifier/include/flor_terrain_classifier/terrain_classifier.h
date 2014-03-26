@@ -190,7 +190,8 @@ public:
   bool computeSurfaceMesh();
 
 
-  bool computePositionRating(const pcl::PointXYZ checkPos);
+  bool computePositionRating(const pcl::PointXYZ checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport);
+
   pcl::PointXYZ lastRatedPosition;
 
   // typedefs

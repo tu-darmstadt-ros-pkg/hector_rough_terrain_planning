@@ -759,7 +759,7 @@ pcl::PointXYZ TerrainClassifier::planeProjection(const pcl::PointXYZ& projection
     Eigen::Vector3f r = Eigen::Vector3f(plane_p.x,plane_p.y,plane_p.z);
     Eigen::Vector3f res = x - ((x-r).dot(n)/n.dot(n))*n;
     pcl::PointXYZ ret = pcl::PointXYZ(res[0],res[1],res[2]);
-    return ret ;
+    return ret;
 }
 
 
@@ -771,7 +771,7 @@ bool TerrainClassifier::atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::P
 
 
 
-bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
+bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
 {
 
     lastRatedPosition=checkPos;
@@ -781,7 +781,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
      cloud_positionRating->resize(0);
      unsigned int highest_Point_idx;
-     unsigned int n=0;
+     unsigned int n_counter=0;
 
 
      //filter relevant points and find max
@@ -801,9 +801,9 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
            p.z=pp.z;
            p.intensity=0.0;
            cloud_positionRating->push_back(p);
-           if(n==0) highest_Point_idx=1;
-           else if(p.z>cloud_positionRating->at(highest_Point_idx).z) highest_Point_idx=n;
-           ++n;
+           if(n_counter==0) highest_Point_idx=1;
+           else if(p.z>cloud_positionRating->at(highest_Point_idx).z) highest_Point_idx=n_counter;
+           ++n_counter;
        }
      }
 
@@ -815,7 +815,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
      for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
          pcl::PointXYZI& p = cloud_positionRating->at(i);
-         if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
+         if(((p.z-p_max.z)<0.00003)&&((p.z-p_max.z)>-0.00003))
          {
              float dist=sqrt((p.x-checkPos.x)*(p.x-checkPos.x)+(p.y-checkPos.y)*(p.y-checkPos.y));
              p.intensity=1.0;
@@ -829,7 +829,148 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos)
 
          }
      }
+     const pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
      cloud_positionRating->at(support_point_1_idx).intensity=0.5;
+
+
+     //projection plane
+     const pcl::PointXYZ plane_p = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
+     const pcl::PointXYZ plane_n = crossProduct(pcl::PointXYZ(plane_p.x-checkPos.x,plane_p.y-checkPos.y,plane_p.z-checkPos.z),pcl::PointXYZ(0,0,1));
+
+
+     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
+     cloud_projected.resize(cloud_positionRating->size());
+     for(unsigned int i=0; i<cloud_projected.size();++i)
+     {
+         pcl::PointXYZ &p_pro= cloud_projected.at(i);
+         pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
+
+         p_pro.x=p_pos.x;
+         p_pro.y=p_pos.y;
+         p_pro.z=p_pos.z;
+         const  pcl::PointXYZ &p=p_pro;
+         cloud_projected.at(i)=planeProjection(p,plane_n,plane_p);
+         pcl::PointXYZI pp=pcl::PointXYZI();
+         pp.x=p_pro.x;
+         pp.y=p_pro.y;
+         pp.z=p_pro.z;
+         pp.intensity=p_pos.intensity;
+
+         cloud_positionRating->push_back(pp);
+
+         //p_pos.x=p_pro.x;
+         //p_pos.y=p_pro.y;
+        // p_pos.z=p_pro.z;
+        // ROS_INFO("projected point : %f %f %f ",p_pro.x,p_pro.y,p_pro.z);
+
+     }
+
+
+
+     //find second point
+     float min_angle=5.0;
+     int min_angle_idx;
+     const pcl::PointXYZ v1 = pcl::PointXYZ(checkPos.x-support_point_1.x,checkPos.y-support_point_1.y,0);
+     std::vector<float> angles;
+
+     for(unsigned int i=0; i<cloud_projected.size();++i)
+     {
+         pcl::PointXYZ &p_pro= cloud_projected.at(i);
+         pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
+         const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-support_point_1.x,p_pro.y-support_point_1.y,p_pro.z-support_point_1.z);
+         float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2)));
+         angles.push_back(angle);
+
+         //cloud_positionRating->at(i).intensity=0.15;
+         //cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=0.15;
+         if (angle<min_angle)
+         {
+             min_angle=angle;
+             min_angle_idx=i;
+           //  ROS_INFO("newminangle : %f ",angle);
+
+         }
+/**
+         if(angle<0.15)
+         {
+             cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=angle;
+             cloud_positionRating->at(i).intensity=angle;
+         }**/
+
+          //cloud_positionRating->at(support_point_1_idx+cloud_positionRating->size()/2).intensity=0.15;
+     }
+
+     //Support_point 2 computed
+     int support_point_2_idx =min_angle_idx;
+     const pcl::PointXYZ support_point_2=pcl::PointXYZ(cloud_positionRating->at(min_angle_idx).x,cloud_positionRating->at(min_angle_idx).y,cloud_positionRating->at(min_angle_idx).z);
+
+
+     //find third point
+     //neue ebene
+     const pcl::PointXYZ p21= pcl::PointXYZ (support_point_2.x-support_point_1.x,support_point_2.y-support_point_1.y,support_point_2.z-support_point_1.z);
+     const float e=dotProduct(p21,checkPos);
+     const float e2=dotProduct(p21,support_point_1);
+     const float e3=dotProduct(p21,p21);
+     const float k=(e-e2)/e3;//(p21.x+p21.y+p21.z);
+     const pcl::PointXYZ lotFusPkt=pcl::PointXYZ(support_point_1.x+k*p21.x,support_point_1.y+k*p21.y,support_point_1.z+k*p21.z);
+
+
+     ROS_INFO("sp1 :%f %f %f ",support_point_1.x,support_point_1.y,support_point_1.z);
+     ROS_INFO("sp2 :%f %f %f ",support_point_2.x,support_point_2.y,support_point_2.z);
+     ROS_INFO("p21 :%f %f %f ",p21.x,p21.y,p21.z);
+     ROS_INFO("checkPos :%f %f %f ",checkPos.x,checkPos.y,checkPos.z);
+
+
+     ROS_INFO("fak : %f ",k);
+
+     viewer.addSphere(lotFusPkt, 0.02,0,1,0, "lastRatedPosit2ionSphere", viewport);
+
+     viewer.addSphere(support_point_1, 0.02,1,0,0, "lastRa3tedPositionSphere", viewport);
+     viewer.addSphere(support_point_2, 0.02,0,0,1, "lastRate1dPositionSphere", viewport);
+
+
+
+
+
+
+     /**
+     const pcl::PointXYZ n_temp=crossProduct(v1,pcl::PointXYZ(1,1,0));
+
+     if(n_temp.z<0)   const pcl::PointXYZ n=pcl::PointXYZ (-1*n_temp.x,-1*n_temp.y,-1*n_temp.z);
+     else const pcl::PointXYZ n=n_temp;
+
+     float min_angle2=5.0;
+     int min_angle_idx2;
+     std::vector<float> angles2;
+
+     for(unsigned int i=0; i<cloud_projected.size();++i)
+     {
+         pcl::PointXYZ &p_pro= cloud_projected.at(i);
+         pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
+         //todo anpassens
+         const pcl::PointXYZ v22 = pcl::PointXYZ(p_pro.x-support_point_1.x,p_pro.y-support_point_1.y,p_pro.z-support_point_1.z);
+         float angle2= acos( dotProduct(v21,v22)/sqrt(dotProduct(v21,v21)*dotProduct(v22,v22)));
+         angles2.push_back(angle2);
+
+         //cloud_positionRating->at(i).intensity=0.15;
+         //cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=0.15;
+         if (angle2<min_angle2)
+         {
+             min_angle2=angle2;
+             min_angle_idx2=i;
+             ROS_INFO("newminangle2 : %f ",angle2);
+
+         }
+         if(angle<0.15)
+         {
+             cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=angle;
+             cloud_positionRating->at(i).intensity=angle;
+         }
+
+          //cloud_positionRating->at(support_point_1_idx+cloud_positionRating->size()/2).intensity=0.15;
+     }
+
+**/
 
 
 
@@ -1070,7 +1211,7 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
 
     viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
 
-    viewer.addPointCloud<pcl::PointXYZ>(cloud_processed, "positionRating_cloud", viewport);
+    // viewer.addPointCloud<pcl::PointXYZ>(cloud_processed, "positionRating_cloud2", viewport);
     viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 
