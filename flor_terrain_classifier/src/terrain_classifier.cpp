@@ -833,7 +833,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
      cloud_positionRating->at(support_point_1_idx).intensity=0.5;
 
 
-     //projection plane
+     //projection plane for support point 2
      const pcl::PointXYZ plane_p = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
      const pcl::PointXYZ plane_n = crossProduct(pcl::PointXYZ(plane_p.x-checkPos.x,plane_p.y-checkPos.y,plane_p.z-checkPos.z),pcl::PointXYZ(0,0,1));
 
@@ -911,271 +911,97 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
      const float e=dotProduct(p21,checkPos);
      const float e2=dotProduct(p21,support_point_1);
      const float e3=dotProduct(p21,p21);
-     const float k=(e-e2)/e3;//(p21.x+p21.y+p21.z);
+     const float k=(e-e2)/e3;
      const pcl::PointXYZ lotFusPkt=pcl::PointXYZ(support_point_1.x+k*p21.x,support_point_1.y+k*p21.y,support_point_1.z+k*p21.z);
 
 
-     ROS_INFO("sp1 :%f %f %f ",support_point_1.x,support_point_1.y,support_point_1.z);
-     ROS_INFO("sp2 :%f %f %f ",support_point_2.x,support_point_2.y,support_point_2.z);
-     ROS_INFO("p21 :%f %f %f ",p21.x,p21.y,p21.z);
-     ROS_INFO("checkPos :%f %f %f ",checkPos.x,checkPos.y,checkPos.z);
 
-
-     ROS_INFO("fak : %f ",k);
 
      viewer.addSphere(lotFusPkt, 0.02,0,1,0, "lastRatedPosit2ionSphere", viewport);
-
      viewer.addSphere(support_point_1, 0.02,1,0,0, "lastRa3tedPositionSphere", viewport);
      viewer.addSphere(support_point_2, 0.02,0,0,1, "lastRate1dPositionSphere", viewport);
 
 
 
+     //projection plane for support point 3
+     const pcl::PointXYZ plane2_p = pcl::PointXYZ(lotFusPkt.x,lotFusPkt.y,lotFusPkt.z);
+     const pcl::PointXYZ plane2_n = p21;
+
+     pcl::PointCloud<pcl::PointXYZ> cloud_projected2;
+     cloud_projected2.resize(cloud_positionRating->size()/2);
+     for(unsigned int i=0; i<cloud_projected2.size();++i)
+     {
+         pcl::PointXYZ &p_pro= cloud_projected2.at(i);
+         pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
+
+         p_pro.x=p_pos.x;
+         p_pro.y=p_pos.y;
+         p_pro.z=p_pos.z;
+         const  pcl::PointXYZ &p=p_pro;
+         cloud_projected2.at(i)=planeProjection(p,plane2_n,plane2_p);
+         pcl::PointXYZI pp=pcl::PointXYZI();
+         pp.x=p_pro.x;
+         pp.y=p_pro.y;
+         pp.z=p_pro.z;
+         pp.intensity=p_pos.intensity;
+
+         cloud_positionRating->push_back(pp);
+     }
 
 
-
-     /**
-     const pcl::PointXYZ n_temp=crossProduct(v1,pcl::PointXYZ(1,1,0));
-
-     if(n_temp.z<0)   const pcl::PointXYZ n=pcl::PointXYZ (-1*n_temp.x,-1*n_temp.y,-1*n_temp.z);
-     else const pcl::PointXYZ n=n_temp;
-
+     //find third point
      float min_angle2=5.0;
      int min_angle_idx2;
+     const pcl::PointXYZ v21 = pcl::PointXYZ(checkPos.x-lotFusPkt.x,checkPos.y-lotFusPkt.y,checkPos.z-lotFusPkt.z);
      std::vector<float> angles2;
 
-     for(unsigned int i=0; i<cloud_projected.size();++i)
+     for(unsigned int i=0; i<cloud_projected2.size();++i)
      {
-         pcl::PointXYZ &p_pro= cloud_projected.at(i);
+         pcl::PointXYZ &p_pro= cloud_projected2.at(i);
          pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
-         //todo anpassens
-         const pcl::PointXYZ v22 = pcl::PointXYZ(p_pro.x-support_point_1.x,p_pro.y-support_point_1.y,p_pro.z-support_point_1.z);
-         float angle2= acos( dotProduct(v21,v22)/sqrt(dotProduct(v21,v21)*dotProduct(v22,v22)));
-         angles2.push_back(angle2);
+         const pcl::PointXYZ v22 = pcl::PointXYZ(p_pro.x-lotFusPkt.x,p_pro.y-lotFusPkt.y,p_pro.z-lotFusPkt.z);
+         float angle= acos( dotProduct(v21,v22)/sqrt(dotProduct(v21,v21)*dotProduct(v22,v22)));
+         angles2.push_back(angle);
 
          //cloud_positionRating->at(i).intensity=0.15;
          //cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=0.15;
-         if (angle2<min_angle2)
+         if (angle<min_angle2)
          {
-             min_angle2=angle2;
+             min_angle2=angle;
              min_angle_idx2=i;
-             ROS_INFO("newminangle2 : %f ",angle2);
+           //  ROS_INFO("newminangle : %f ",angle);
 
          }
+
          if(angle<0.15)
          {
-             cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=angle;
+             cloud_positionRating->at(i+cloud_positionRating->size()*2/3).intensity=angle;
              cloud_positionRating->at(i).intensity=angle;
          }
 
           //cloud_positionRating->at(support_point_1_idx+cloud_positionRating->size()/2).intensity=0.15;
      }
 
-**/
+
+     const pcl::PointXYZ support_point_3= pcl::PointXYZ(cloud_positionRating->at(min_angle2).x,cloud_positionRating->at(min_angle2).y,cloud_positionRating->at(min_angle2).z);
+     viewer.addSphere(support_point_3, 0.02,0,1,1, "lasasdtRate1dPositionSphere", viewport);
 
 
+     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
-
-
-//     filterPassThrough<pcl::PointXYZI>(cloud_positionRating, "x", -1,1);
-
-/**
-
-     pcl::KdTreeFLANN<pcl::PointXYZI> tree;
-     tree.setInputCloud(cloud_positionRating);
-
-
-    //get closest point to robot center
-     std::vector<int> checkPosIdxRadiusSearch;
-     std::vector<float> checkPosRadiusSquaredDistance;
-
-      pcl::PointXYZI checkPosI = pcl::PointXYZI();
-      checkPosI.x=checkPos.x;
-      checkPosI.y=checkPos.y;
-      checkPosI.z=checkPos.z;
-      checkPosI.intensity=0;
-
-
-     const pcl::PointXYZI checkPosc = checkPosI;
-     tree.radiusSearch(checkPosc,radius,checkPosIdxRadiusSearch,checkPosRadiusSquaredDistance);
-
-     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>);
-     cloud_positionRating->resize(checkPosIdxRadiusSearch.size());
-
-
-
-
-
-     pcl::PointXYZI p_max_z;
-     float min_z;
-     for(int i=0; i<checkPosIdxRadiusSearch.size(); i++)
+     for (unsigned int i = 0; i < cloud_positionRating->size()/3; i++)
      {
-
-         pcl::PointNormal &pn = cloud_points_with_normals->at(checkPosIdxRadiusSearch.at(i));
-         pcl::PointXYZI &pi = cloud_positionRating->at(i);
-
-         pi.x = pn.x;
-         pi.y = pn.y;
-         pi.z = pn.z;//pn.z;
-         pi.intensity = 0; //pi.z;
-
-         ROS_INFO("pi.z %f",pi.z);
-
-         if (i==0)
+         pcl::PointXYZI& p = cloud_positionRating->at(i);
+         const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
+         if(dist<0.01 && dist>-0.01)
          {
-             min_z=pi.z;
-             p_max_z=pi;
+
+             viewer.addSphere(p, 0.02,0,1,1, "groundcontactArea"+i, viewport);
          }
-         if (pi.z>p_max_z.z) p_max_z=pi;
-         else if (pi.z<min_z) min_z=pi.z;
-     }
-
-     for(int i=0; i<cloud_positionRating->size(); i++)
-     {
-         pcl::PointXYZI &pi = cloud_positionRating->at(i);
-         pi.intensity= (pi.z-min_z)/p_max_z.z;
-
      }
 
 
-
-
-**/
-
-
-
-
-/**
-
-     pcl::KdTreeFLANN<pcl::PointXYZ> tree;
-     tree.setInputCloud(points);
-
-
-    //get closest point to robot center
-     std::vector<int> checkPosIdxRadiusSearch;
-     std::vector<float> checkPosRadiusSquaredDistance;
-     const pcl::PointXYZ checkPosc = checkPos;
-     tree.radiusSearch(checkPosc,radius,checkPosIdxRadiusSearch,checkPosRadiusSquaredDistance);
-
-
-
-      std::vector<int> pointIdxRadiusSearch;
-      std::vector<float> pointRadiusSquaredDistance;
-      pcl::PointCloud<pcl::PointXYZI>::Ptr temp_vertices(new pcl::PointCloud<pcl::PointXYZI>());
-      temp_vertices->resize(cloud_points_with_normals->size());
-
-     // run flat detection
-
-     for (int i = 0; i < points->size(); i++)
-     {
-       const pcl::PointNormal &current = cloud_points_with_normals->at(i);
-       pcl::PointXYZI &result = cloud_edges->at(i);
-
-       result.x = current.x;
-       result.y = current.y;
-       result.z = current.z;
-       result.intensity = 0.0;
-
-       if (tree.radiusSearch(i, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-       {
-         // determine squared mean error
-         double sq_sum_e = 0.0;
-
-         /**
-         for (size_t j = 0; j < pointIdxRadiusSearch.size (); j++)
-         {
-           if (pointIdxRadiusSearch[j] == (int)i)
-             continue;
-
-           const pcl::PointNormal &neigh = cloud_points_with_normals->at(pointIdxRadiusSearch[j]);
-
-
-           // determine diff in height
-           double diff_z = (neigh.z - current.z)*1000000000.0; // scale up diff (weight)
-           double sq_err_z = abs(diff_z);
-
-
-           sq_sum_e += sq_err_z;
-         }
-
-         double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
-
-         // check for edge
-
-           result.intensity = current.z;
-
-       }
-
-**/
-
-/**
-    // init edge data structure
-    cloud_edges.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    cloud_edges->resize(cloud_points_with_normals->size());
-
-    // project all data to plane
-    pcl::PointCloud<pcl::PointXYZ>::Ptr points(nesize_tw pcl::PointCloud<pcl::PointXYZ>());
-    points->resize(cloud_points_with_normals->size());
-    for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
-    {
-      const pcl::PointNormal &n = cloud_points_with_normals->at(i);
-      pcl::PointXYZ &p = points->at(i);
-      p.x = n.x;
-      p.y = n.y;
-      p.z = n.z;
-    }
-
-    pcl::KdTreeFLANN<pcl::PointXYZ> tree;
-    tree.setInputCloud(points);
-
-    std::vector<int> pointIdxRadiusSearch;
-    std::vector<float> pointRadiusSquaredDistance;
-
-    //pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_edges(new pcl::PointCloud<pcl::PointXYZI>());
-    //tmp_edges->resize(cloud_points_with_normals->size());
-
-    // run edge detection
-    for ( i = 0; i < points->size(); i++)
-    {
-      const pcl::PointNormal &current = cloud_points_with_normals->at(i);
-      pcl::PointXYZI &result = cloud_edges->at(i);
-
-      result.x = current.x;
-      result.y = current.y;
-      result.z = current.z;
-      result.intensity = 0.0;
-
-      if (tree.radiusSearch(i, params.ed_radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-      {
-        // determine squared mean error
-        double sq_sum_e = 0.0;
-
-        for (size_t j = 0; j < pointIdxRadiusSearch.size (); j++)
-        {
-          if (pointIdxRadiusSearch[j] == (int)i)
-            continue;
-
-          const pcl::PointNormal &neigh = cloud_points_with_normals->at(pointIdxRadiusSearch[j]);
-
-
-          // determine diff in height
-          double diff_z = (neigh.z - current.z)*1000000000.0; // scale up diff (weight)
-          double sq_err_z = abs(diff_z);
-
-
-          sq_sum_e += sq_err_z;
-        }
-
-        double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
-
-        // check for edge
-        if (sq_mean_e > 0.0)
-        {
-          result.intensity = 0.0;
-        }
-      }
-    }
-    }
-**/
 
 
     return true;
