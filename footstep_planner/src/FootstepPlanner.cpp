@@ -1395,9 +1395,12 @@ void FootstepPlanner::bodyLevelMapCallback(const nav_msgs::OccupancyGridConstPtr
 
 void FootstepPlanner::terrainModelCallback(const flor_terrain_classifier::TerrainModelConstPtr& terrain_model)
 {
-  ivTerrainModelPtr = terrain_model;
-  groundLevelMapCallback(nav_msgs::OccupancyGridConstPtr(new nav_msgs::OccupancyGrid(terrain_model->ground_level_map)));
-  ivPlannerEnvironmentPtr->updateTerrainModel(terrain_model);
+  if (ivEnvironmentParams.use_terrain_model)
+  {
+    ivTerrainModelPtr = terrain_model;
+    groundLevelMapCallback(nav_msgs::OccupancyGridConstPtr(new nav_msgs::OccupancyGrid(terrain_model->ground_level_map)));
+    ivPlannerEnvironmentPtr->updateTerrainModel(terrain_model);
+  }
 }
 
 

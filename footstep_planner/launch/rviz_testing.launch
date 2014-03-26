@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="rviz_footstep_planner" pkg="rviz" type="rviz" args="-d $(find footstep_planner)/rviz/footstep_planner_testing.rviz"/> 
+</launch>
