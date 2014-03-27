@@ -1001,7 +1001,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
 
 
      const pcl::PointXYZ support_point_3= pcl::PointXYZ(cloud_positionRating->at(min_angle_idx2).x,cloud_positionRating->at(min_angle_idx2).y,cloud_positionRating->at(min_angle_idx2).z);
-     viewer.addSphere(support_point_3, 0.02,0,0,1, "supportingpoint3", viewport);
+     viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
 
 
      const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
@@ -1018,9 +1018,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
              viewer.addSphere(p, 0.01,0,1,1, name, viewport);
          }
      }
-
     return true;
-
 }
 
 void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
