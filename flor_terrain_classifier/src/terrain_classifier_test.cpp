@@ -48,16 +48,9 @@ void test_normals()
 
   ROS_INFO("Load point cloud");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/things_on_ground_1_09_25.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/things_on_ground_2_09_25.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/things_on_ground_3.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/things_on_ground_4.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/things_on_ground_5.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/new.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/traps_ground.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/ramp.pcd", *cloud_original);
-  pcl::io::loadPCDFile("../pointclouds/ramp2.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/new.pcd", *cloud_original);
+ // pcl::io::loadPCDFile("../pointclouds/ramp2.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
+ pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
 
   // add filtered point cloud to classifier
   terrain_classifier->addCloud(cloud_original);
@@ -72,7 +65,7 @@ void test_normals()
 
   // generate grid map
   ROS_INFO("Generate grid map...");
-  terrain_classifier->generateGroundLevelGridmap();
+  //terrain_classifier->generateGroundLevelGridmap();
 
 
   // visualization
@@ -103,7 +96,8 @@ void test_normals()
 
   // generate grid map
   ROS_INFO("Compute Position rating...");
-  terrain_classifier->computePositionRating(pcl::PointXYZ(1.00,-0.85,0),viewer, "computePositionRating", view_port_4);
+  terrain_classifier->computePositionRating(pcl::PointXYZ(-1.00,-1.00,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
+  //check 1.50,-1.35,0)
   terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);
 
