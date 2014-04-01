@@ -208,7 +208,7 @@ bool TerrainClassifier::computeNormals()
   // preprocessing of cloud point
   cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
   if (params.filter_mask & FILTER_PASS_THROUGH)           // cut out area of interest
-    filterPassThrough<pcl::PointXYZ>(cloud_processed, params.pt_field_name, ground_z + params.pt_min-0.8, ground_z + params.pt_max+0.8);
+    filterPassThrough<pcl::PointXYZ>(cloud_processed, params.pt_field_name, ground_z + params.pt_min-0.3, ground_z + params.pt_max+0.3);
   if (params.filter_mask & FILTER_VOXEL_GRID)             // summarize data
     filterVoxelGrid<pcl::PointXYZ>(cloud_processed,0.03,0.03,0.03);// params.vg_lx, params.vg_ly, params.vg_lz);
   if (params.filter_mask & FILTER_MLS_SMOOTH)             // smooth data
@@ -775,6 +775,53 @@ float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ&
     return (p2.x - p1.x)*(p3.y - p1.y) - (p2.y - p1.y)*(p3.x - p1.x);
 }
 
+
+//convex hull computation
+//http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
+void convex_hull(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_hull_indices)
+{
+    float x_min=cloud.at(0).x;
+    int point_on_hull=0;
+   // convex_hull_indices.push_back(0);
+    pcl::PointCloud<pcl::PointXYZ> cloud_2d;
+    cloud_2d.resize(0);
+    //find minx
+    for (unsigned int i = 0; i < cloud.size(); i++)
+    {
+        pcl::PointXYZ p = cloud.at(i);
+        cloud_2d.push_back(pcl::PointXYZ(p.x,p.y,0.0));
+        if (p.x<x_min)
+        {
+            x_min=p.x;
+            point_on_hull=i;
+        }
+
+    }
+    //build hull
+    int i=0;
+    int endpoint;
+    while (true)
+    {
+        convex_hull_indices.push_back(point_on_hull);
+        endpoint=0;
+        if((i==0)&&(point_on_hull==0))endpoint=1;
+        pcl::PointXYZ& p = cloud_2d.at(i);
+        for(int j=1; j<cloud_2d.size();++j)
+        {
+            float ccw_f=ccw(cloud_2d.at(convex_hull_indices.at(i)),cloud_2d.at(endpoint),cloud_2d.at(j));
+            bool isleft=(ccw_f >0);
+            if(endpoint==point_on_hull || isleft)
+            {
+                endpoint=j;
+            }
+        }
+
+        i++;
+        point_on_hull=endpoint;
+        if(endpoint==convex_hull_indices.at(0)) break;
+
+    }
+}
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
 {
 
@@ -1011,93 +1058,41 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
      const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                     pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
+
+     std::vector<int> convex_hull_indices;
+     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
      for (unsigned int i = 0; i < cloud_positionRating->size()/3; i++)
      {
          pcl::PointXYZI& p = cloud_positionRating->at(i);
          const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
          if(dist<0.01 && dist>-0.01)
          {
-
              std::string name ="groundContactArea"+boost::lexical_cast<std::string>(i);
              viewer.addSphere(p, 0.01,0,1,1, name, viewport);
+             cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
          }
      }
 
 
-     //convex hull computation
-     //http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
-     std::vector<int> convex_hull_indices;
 
-     //
-     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());;
-     //cloud_positionRating2->resize(0);
-     cloud_positionRating2->push_back(pcl::PointXYZ(1.0,1.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,2.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,1.5,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(3.0,1.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,0.5,0.0));
 
-     cloud_positionRating2->push_back(pcl::PointXYZ(1.0,1.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,2.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,0.5,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(3.0,1.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,1.5,0.0));
+     convex_hull(*cloud_positionRating2, convex_hull_indices);
 
-     cloud_positionRating2->push_back(pcl::PointXYZ(1.0,1.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,2.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,0.5,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(3.0,1.0,0.0));
-     cloud_positionRating2->push_back(pcl::PointXYZ(2.0,1.5,0.0));
-     //
-
-     float x_min=cloud_positionRating2->at(0).x;
-     int point_on_hull=0;
-    // convex_hull_indices.push_back(0);
-     pcl::PointCloud<pcl::PointXYZ> cloud_2d;
-     cloud_2d.resize(0);
-     //find minx
-     for (unsigned int i = 0; i < cloud_positionRating2->size()/3; i++)
-     {
-         pcl::PointXYZ p = cloud_positionRating2->at(i);
-         cloud_2d.push_back(pcl::PointXYZ(p.x,p.y,0.0));
-         if (p.x<x_min)
-         {
-             x_min=p.x;
-             point_on_hull=i;
-         }
-
-     }
-     //build hull
-     int i=0;
-     int endpoint;
-     while (true)
-     {
-         convex_hull_indices.push_back(point_on_hull);
-         endpoint=0;
-         if((i==0)&&(point_on_hull==0))endpoint=1;
-         pcl::PointXYZ& p = cloud_2d.at(i);
-         for(int j=1; j<cloud_2d.size();++j)
-         {
-             float ccw_f=ccw(cloud_2d.at(convex_hull_indices.at(i)),cloud_2d.at(endpoint),cloud_2d.at(j));
-             bool isleft=(ccw_f >0);
-             if(endpoint==point_on_hull || isleft)
-             {
-                 endpoint=j;
-             }
-         }
-
-         i++;
-         point_on_hull=endpoint;
-         if(endpoint==convex_hull_indices.at(0)) break;
-
-     }
 
 
      for(int i=0; i<(convex_hull_indices.size()-1); ++i)
      {
-         const pcl::PointXYZ p1(cloud_positionRating->at(i).x,cloud_positionRating->at(i).y,cloud_positionRating->at(i).z);
-         const pcl::PointXYZ p2(cloud_positionRating->at(i+1).x,cloud_positionRating->at(i+1).y,cloud_positionRating->at(i+1).z);
-         std::string name ="convex_hull"+boost::lexical_cast<std::string>(i);
+         if(i==0)
+         {
+
+             const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
+             const pcl::PointXYZ p20(cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).x,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).y,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).z);
+             std::string name0 ="convex_hull00"+boost::lexical_cast<std::string>(i);
+             viewer.addLine(p10,p20,1.0,1.0,1.0,name0);
+         }
+         const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
+         const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
+         std::string name ="convex_hull"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
          viewer.addLine(p1,p2,1.0,1.0,1.0,name);
      }
 
