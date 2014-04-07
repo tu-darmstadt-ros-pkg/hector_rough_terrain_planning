@@ -48,7 +48,7 @@ void test_normals()
 
   ROS_INFO("Load point cloud");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::io::loadPCDFile("../pointclouds/ramp2.pcd", *cloud_original);
+  pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
  //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
 
@@ -96,17 +96,24 @@ void test_normals()
 
   // generate grid map
   ROS_INFO("Compute Position rating...");
-  terrain_classifier->computePositionRating(pcl::PointXYZ(-1.00,-1.00,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
+  terrain_classifier->computePositionRating(pcl::PointXYZ(-0.35,-1.85,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
   //check 1.50,-1.35,0)
   terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);
 
+  float x=0.0;
 
   while (!viewer.wasStopped())
   {
+   //   viewer.removeAllPointClouds(4);
+     // viewer.removeAllShapes(4);
+      x=x+0.03;
     viewer.spinOnce(100);
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+   // terrain_classifier->computePositionRating(pcl::PointXYZ(-1.00+x,-1.00,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
+
+   // terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   }
 }
 

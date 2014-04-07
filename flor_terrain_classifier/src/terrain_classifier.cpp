@@ -393,9 +393,17 @@ bool TerrainClassifier::computeHeightRating()
       double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
 
       // check for edge
-      if (sq_mean_e > 0.0)
+      if (true)//(sq_mean_e > 0.0)
       {
-        result.intensity = sq_mean_e;
+          if (result.z>0.5)
+              result.intensity=0.5;
+          else if (result.z<-0.1)
+              result.intensity=-0.1;
+          else
+              result.intensity = result.z;
+
+          //ROS_INFO("height %f",result.z);
+
       }
     }
   }
@@ -778,7 +786,7 @@ float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ&
 
 //convex hull computation
 //http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
-void convex_hull(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_hull_indices)
+void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_hull_indices)
 {
     float x_min=cloud.at(0).x;
     int point_on_hull=0;
@@ -808,7 +816,7 @@ void convex_hull(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_
         for(unsigned int j=1; j<cloud_2d.size();++j)
         {
             float ccw_f=ccw(cloud_2d.at(convex_hull_indices.at(i)),cloud_2d.at(endpoint),cloud_2d.at(j));
-            bool isleft=(ccw_f >0);
+            bool isleft=(ccw_f <0);
             if(endpoint==point_on_hull || isleft)
             {
                 endpoint=j;
@@ -821,36 +829,67 @@ void convex_hull(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_
 
     }
 }
-bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
+//Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator Chioniso Dube
+
+std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
 {
+    const Eigen::Vector3f center_of_mass = Eigen::Vector3f(center_of_mass_pcl.x,center_of_mass_pcl.y,center_of_mass_pcl.z);
+    std::vector<Eigen::Vector3f> p;
+    Eigen::Vector3f f_r= Eigen::Vector3f(0.0,0.0,-10.0);
 
-    lastRatedPosition=checkPos;
+    for(int i=0; i<convex_hull_points_pcl.size();++i)
+    {
+         pcl::PointXYZ& pi = convex_hull_points_pcl.at(i);
+         p.push_back(Eigen::Vector3f(pi.x,pi.y,pi.z));
+    }
+    std::vector<float> res;
+    for(int i=0; i<p.size();++i)
+    {
+         Eigen::Vector3f& pi = p.at(i);
+         Eigen::Vector3f ai= p.at(i)-p.at(i);
+         ai.normalize();
+         Eigen::Matrix3f ident_mat =Eigen::Matrix3f::Identity();
+         ident_mat=ident_mat-ai*ai.transpose();
+         Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p.at(i)-p.at(i));
+         Eigen::Vector3f fi=(ident_mat-ai*ai.transpose())*f_r;
+         li.normalize();
+                 fi.normalize();
+         float theta_i=acos(li.dot(fi));
+         res.push_back(theta_i);
+    }
+
+    return res;
+}
+
+bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
+{
+    lastRatedPosition=check_pos;
      float widthx=0.50;
-     float lengthy=0.80;
+     float lengthy=1.20;
      float alpha=3.14/2;
-
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
-     cloud_positionRating->resize(0);
      unsigned int highest_Point_idx;
      unsigned int n_counter=0;
 
-
      //filter relevant points and find max
+     const float x_max=check_pos.x+cos(alpha)*widthx*0.5-sin(alpha)*lengthy*0.5;
+     const float x_min=check_pos.x-cos(alpha)*widthx*0.5+sin(alpha)*lengthy*0.5;
+     const float y_max=check_pos.y+sin(alpha)*widthx*0.5+cos(alpha)*lengthy*0.5;
+     const float y_min=check_pos.y-sin(alpha)*widthx*0.5-cos(alpha)*lengthy*0.5;
+     const pcl::PointXYZ p0=pcl::PointXYZ(x_min,y_min,0);
+     const pcl::PointXYZ p1=pcl::PointXYZ(x_max,y_min,0);
+     const pcl::PointXYZ p2=pcl::PointXYZ(x_max,y_max,0);
+     const pcl::PointXYZ p3=pcl::PointXYZ(x_min,y_max,0);
+
+     bool hull_cpp= (ccw(p0,p1,p2)<0);
      for (unsigned int i = 0; i < cloud_processed->size(); i++)
      {
        const  pcl::PointXYZ &pp= cloud_processed->at(i);
-       float x_max=checkPos.x+cos(alpha)*widthx*0.5-sin(alpha)*lengthy*0.5;
-       float x_min=checkPos.x-cos(alpha)*widthx*0.5+sin(alpha)*lengthy*0.5;
-       float y_max=checkPos.y+sin(alpha)*widthx*0.5+cos(alpha)*lengthy*0.5;
-       float y_min=checkPos.y-sin(alpha)*widthx*0.5-cos(alpha)*lengthy*0.5;
-       const pcl::PointXYZ p0=pcl::PointXYZ(x_min,y_min,0);
-       const pcl::PointXYZ p1=pcl::PointXYZ(x_max,y_min,0);
-       const pcl::PointXYZ p2=pcl::PointXYZ(x_max,y_max,0);
-       const pcl::PointXYZ p3=pcl::PointXYZ(x_min,y_max,0);
-       bool c0=(ccw(p0,p1,pp)<0);
-       bool c1=(ccw(p1,p2,pp)<0);
-       bool c2=(ccw(p2,p3,pp)<0);
-       bool c3=(ccw(p3,p0,pp)<0);
+
+       bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
+       bool c1=hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
+       bool c2=hull_cpp ? (ccw(p2,p3,pp)<0) : (ccw(p2,p3,pp)>0);
+       bool c3=hull_cpp ? (ccw(p3,p0,pp)<0) : (ccw(p3,p0,pp)>0);
 
        if(c0&&c1&&c2&&c3)
        {
@@ -860,29 +899,27 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
            p.z=pp.z;
            p.intensity=0.0;
            cloud_positionRating->push_back(p);
+
            if(n_counter==0) highest_Point_idx=1;
            else if(p.z>cloud_positionRating->at(highest_Point_idx).z) highest_Point_idx=n_counter;
            ++n_counter;
        }
      }
+
      if(cloud_positionRating->size()==0)
      {
          return false;
      }
 
      pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);
-     //std::vector<int> high_points;
      int support_point_1_idx;
-
-     float min_dist=-1.0;
+     float min_dist=-1.0;     
      for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
          pcl::PointXYZI& p = cloud_positionRating->at(i);
          if(((p.z-p_max.z)<0.00003)&&((p.z-p_max.z)>-0.00003))
          {
-             float dist=sqrt((p.x-checkPos.x)*(p.x-checkPos.x)+(p.y-checkPos.y)*(p.y-checkPos.y));
-             //p.intensity=1.0;
-             //high_points.push_back(i);
+             float dist=sqrt((p.x-check_pos.x)*(p.x-check_pos.x)+(p.y-check_pos.y)*(p.y-check_pos.y));
              if(min_dist<0.0 || dist<min_dist)
              {
                  min_dist=dist;
@@ -898,34 +935,18 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
 
      //projection plane for support point 2
      const pcl::PointXYZ plane_p = pcl::PointXYZ(support_point_1.x,support_point_1.y,support_point_1.z);
-     const pcl::PointXYZ plane_n = crossProduct(pcl::PointXYZ(plane_p.x-checkPos.x,plane_p.y-checkPos.y,0),pcl::PointXYZ(0,0,1));
-
-
+     const pcl::PointXYZ plane_n = crossProduct(pcl::PointXYZ(plane_p.x-check_pos.x,plane_p.y-check_pos.y,0),pcl::PointXYZ(0,0,1));
      pcl::PointCloud<pcl::PointXYZ> cloud_projected;
      cloud_projected.resize(cloud_positionRating->size());
      for(unsigned int i=0; i<cloud_projected.size();++i)
      {
          pcl::PointXYZ &p_pro= cloud_projected.at(i);
          pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
-
          p_pro.x=p_pos.x;
          p_pro.y=p_pos.y;
          p_pro.z=p_pos.z;
          const  pcl::PointXYZ &p=p_pro;
          cloud_projected.at(i)=planeProjection(p,plane_n,plane_p);
-         pcl::PointXYZI pp=pcl::PointXYZI();
-         pp.x=p_pro.x;
-         pp.y=p_pro.y;
-         pp.z=p_pro.z;
-         pp.intensity=0;//p_pos.intensity;
-
-         cloud_positionRating->push_back(pp);
-
-         //p_pos.x=p_pro.x;
-         //p_pos.y=p_pro.y;
-        // p_pos.z=p_pro.z;
-        // ROS_INFO("projected point : %f %f %f ",p_pro.x,p_pro.y,p_pro.z);
-
      }
 
 
@@ -933,7 +954,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
      //find second point
      float min_angle=5.0;
      int min_angle_idx;
-     const pcl::PointXYZ v1 = pcl::PointXYZ(checkPos.x-support_point_1.x,checkPos.y-support_point_1.y,0);
+     const pcl::PointXYZ v1 = pcl::PointXYZ(check_pos.x-support_point_1.x,check_pos.y-support_point_1.y,0);
      std::vector<float> angles;
 
      for(unsigned int i=0; i<cloud_projected.size();++i)
@@ -942,9 +963,6 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
          const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-support_point_1.x,p_pro.y-support_point_1.y,p_pro.z-support_point_1.z);
          float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2)));
          angles.push_back(angle);
-
-         //cloud_positionRating->at(i).intensity=0.15;
-         //cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=0.15;
          if (angle<min_angle)
          {
              min_angle=angle;
@@ -952,19 +970,9 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
            //  ROS_INFO("newminangle : %f ",angle);
 
          }
-
-         if(angle<0.15)
-         {
-             cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=0;//angle*100;
-             cloud_positionRating->at(i).intensity=0;//angle*100;
-         }
-
-          //cloud_positionRating->at(support_point_1_idx+cloud_positionRating->size()/2).intensity=0.15;
      }
-
      //Support_point 2 computed
      const pcl::PointXYZ support_point_2=pcl::PointXYZ(cloud_positionRating->at(min_angle_idx).x,cloud_positionRating->at(min_angle_idx).y,cloud_positionRating->at(min_angle_idx).z);
-
 
      viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
      viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
@@ -972,30 +980,22 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
      //find third point
      //neue ebene
      const pcl::PointXYZ p21= pcl::PointXYZ (support_point_2.x-support_point_1.x,support_point_2.y-support_point_1.y,support_point_2.z-support_point_1.z);
-     const float e=dotProduct(p21,checkPos);
+     const float e=dotProduct(p21,check_pos);
      const float e2=dotProduct(p21,support_point_1);
      const float e3=dotProduct(p21,p21);
      const float k=(e-e2)/e3;
      const pcl::PointXYZ lotFusPkt=pcl::PointXYZ(support_point_1.x+k*p21.x,support_point_1.y+k*p21.y,support_point_1.z+k*p21.z);
-
-
-
-
-    // viewer.addSphere(lotFusPkt, 0.02,0,1,0, "lastRatedPosit2ionSphere", viewport);
-
-
 
      //projection plane for support point 3
      const pcl::PointXYZ plane2_p = pcl::PointXYZ(lotFusPkt.x,lotFusPkt.y,lotFusPkt.z);
      const pcl::PointXYZ plane2_n = p21;
 
      pcl::PointCloud<pcl::PointXYZ> cloud_projected2;
-     cloud_projected2.resize(cloud_positionRating->size()/2);
+     cloud_projected2.resize(cloud_positionRating->size());
      for(unsigned int i=0; i<cloud_projected2.size();++i)
      {
          pcl::PointXYZ &p_pro= cloud_projected2.at(i);
          pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
-
          p_pro.x=p_pos.x;
          p_pro.y=p_pos.y;
          p_pro.z=p_pos.z;
@@ -1005,16 +1005,13 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
          pp.x=p_pro.x;
          pp.y=p_pro.y;
          pp.z=p_pro.z;
-         pp.intensity=0;//p_pos.intensity;
-
-         cloud_positionRating->push_back(pp);
+         pp.intensity=0;
      }
-
 
      //find third point
      float min_angle2=5.0;
      int min_angle_idx2;
-     const pcl::PointXYZ v21 = pcl::PointXYZ(checkPos.x-lotFusPkt.x,checkPos.y-lotFusPkt.y,0);//todo check correct
+     const pcl::PointXYZ v21 = pcl::PointXYZ(check_pos.x-lotFusPkt.x,check_pos.y-lotFusPkt.y,0);//todo check correct
      std::vector<float> angles2;
 
        for(unsigned int i=0; i<cloud_projected2.size();++i)
@@ -1024,38 +1021,17 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
          float angle= acos( dotProduct(v21,v22)/sqrt(dotProduct(v21,v21)*dotProduct(v22,v22)));
          angles2.push_back(angle);
 
-        // viewer.addLine(v22,pcl::PointXYZ(),angle,0.4,0.1,"afp"+i);
-        // viewer.addLine(arrowtar,lotFusPkt,1.0,1.0,1.0,"afpo");
-
-         //cloud_positionRating->at(i).intensity=0.15;
-         //cloud_positionRating->at(i+cloud_positionRating->size()/2).intensity=0.15;
          if (angle<min_angle2)
          {
              min_angle2=angle;
              min_angle_idx2=i;
            //  ROS_INFO("newminangle : %f ",angle);
-
-         }
-
-
-         if(angle>3.10)
-         {
-              //ROS_INFO("angle : %f ",angle);
-         }
-
-         if(angle<0.55)
-         {
-             cloud_positionRating->at(i+cloud_positionRating->size()*2/3).intensity=angle;
-             cloud_positionRating->at(i).intensity=angle;
-         }
-
-          //cloud_positionRating->at(support_point_1_idx+cloud_positionRating->size()/2).intensity=0.15;
+         }      
      }
 
 
      const pcl::PointXYZ support_point_3= pcl::PointXYZ(cloud_positionRating->at(min_angle_idx2).x,cloud_positionRating->at(min_angle_idx2).y,cloud_positionRating->at(min_angle_idx2).z);
      viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
-
 
      const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                     pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
@@ -1063,7 +1039,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
 
      std::vector<int> convex_hull_indices;
      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
-     for (unsigned int i = 0; i < cloud_positionRating->size()/3; i++)
+     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
          pcl::PointXYZI& p = cloud_positionRating->at(i);
          const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
@@ -1073,14 +1049,12 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
              viewer.addSphere(p, 0.01,0,1,1, name, viewport);
              cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
          }
+         p.intensity=p.z;
      }
-
-
-
-
-     convex_hull(*cloud_positionRating2, convex_hull_indices);
-
-
+     const pcl::PointXYZ pcs=planeProjection(check_pos,final_normal,support_point_1);
+     viewer.addSphere(pcs,0.04,1,0,1, "cp_pro", viewport);
+     convex_hull_comp(*cloud_positionRating2, convex_hull_indices);
+     std::vector<pcl::PointXYZ> convex_hull_points;
 
      for(int i=0; i<(convex_hull_indices.size()-1); ++i)
      {
@@ -1095,9 +1069,17 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ checkPos, pcl:
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
          const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
          std::string name ="convex_hull"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
-         viewer.addLine(p1,p2,1.0,1.0,1.0,name);
+
+         convex_hull_points.push_back(p1);
+        // float c =rat.at(i);
+         viewer.addLine(p1,p2,1.0-c,c,0,name);
+
      }
 
+     std::vector<float> rat =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
+     for (int i=0; i<rat.size();++oi)
+
+      //ROS_INFO("RATING  %f", rat);
 
     return true;
 }
@@ -1106,32 +1088,10 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
 {
 
 
-
-   // pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_edges, "intensity");
-    //viewer.addPointCloud<pcl::PointXYZI>(cloud_edges, intensity_distribution, name + std::string("_cloud"), viewport);
-    //viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
-
-
     //draw
     viewer.addSphere(lastRatedPosition, 0.03, "lastRatedPositionSphere", viewport);
-
-
-    //draw polygon
-    Eigen::Vector4f coeff = Eigen::Vector4f(1.0,1.0,1.0,1);
-    pcl::PointCloud<pcl::PointXYZ> cloud_supportingPolygon;
-    cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,1.0));
-    cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,1.0));
-    cloud_supportingPolygon.push_back(pcl::PointXYZ(0.0,-1.0,2.0));
-    cloud_supportingPolygon.push_back(pcl::PointXYZ(1.0,-1.0,2.0));
-    const pcl::PlanarPolygon<pcl::PointXYZ> csupportingPolygon  = pcl::PlanarPolygon<pcl::PointXYZ>(cloud_supportingPolygon.points, coeff);
-   // viewer.addPolygon( csupportingPolygon, 1.0, 0.0, 0.0,name,viewport);
-
     pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
-
-
     viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
-
-    // viewer.addPointCloud<pcl::PointXYZ>(cloud_processed, "positionRating_cloud2", viewport);
     viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 

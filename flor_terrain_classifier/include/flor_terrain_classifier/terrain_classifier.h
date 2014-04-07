@@ -49,7 +49,8 @@
 #include <pcl/surface/vtk_smoothing/vtk_mesh_smoothing_laplacian.h>
 #include <pcl/surface/vtk_smoothing/vtk_utils.h>
 
-
+#include <iostream>
+#include <pcl/io/pcd_io.h>
 namespace flor_terrain_classifier
 {
 enum filterMask
@@ -190,7 +191,7 @@ public:
   bool computeSurfaceMesh();
 
 
-  bool computePositionRating(const pcl::PointXYZ checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport);
+  bool computePositionRating(const pcl::PointXYZ& checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport);
 
   pcl::PointXYZ lastRatedPosition;
 
