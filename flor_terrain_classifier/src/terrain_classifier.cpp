@@ -858,8 +858,9 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
          li_norm.normalize();
          fi_norm.normalize();
          Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
-         float theta_i=acos(di.dot(fi));
-         res.push_back(theta_i);
+         float theta_i=acos(li_norm.dot(fi_norm));
+         float beta=theta_i*di.norm()*f_r.norm();
+         res.push_back(beta);
     }
 
     return res;
@@ -1077,6 +1078,15 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
          convex_hull_points.push_back(p1);
 
      }
+     //TESTING
+     /**
+     convex_hull_points.clear();
+     const pcl::PointXYZ p1t=(pcl::PointXYZ(0.0,0.0,0.0));
+     const pcl::PointXYZ p2t=(pcl::PointXYZ(2.0,0.0,0.0));
+     const pcl::PointXYZ check_post=(pcl::PointXYZ(1.0,0.1,5.0));
+     convex_hull_points.push_back(p1t);
+     convex_hull_points.push_back(p2t);
+**/
 
      std::vector<float> rat =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
      for (int i=0; i<rat.size();++i)
