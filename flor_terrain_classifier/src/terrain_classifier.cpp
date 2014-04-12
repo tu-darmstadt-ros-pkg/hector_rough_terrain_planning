@@ -843,18 +843,22 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
          p.push_back(Eigen::Vector3f(pi.x,pi.y,pi.z));
     }
     std::vector<float> res;
-    for(int i=0; i<p.size();++i)
+    for(int i=0; i<(p.size()-1);++i)
     {
-         Eigen::Vector3f& pi = p.at(i);
-         Eigen::Vector3f ai= p.at(i)-p.at(i);
+        Eigen::Vector3f p_i1;
+        if(p.size()==(i+1)) p_i1 = p.at(0);
+        else p_i1 = p.at(i+1);
+         Eigen::Vector3f ai=p_i1-p.at(i);
          ai.normalize();
          Eigen::Matrix3f ident_mat =Eigen::Matrix3f::Identity();
-         ident_mat=ident_mat-ai*ai.transpose();
-         Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p.at(i)-p.at(i));
+         Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p_i1-center_of_mass);
          Eigen::Vector3f fi=(ident_mat-ai*ai.transpose())*f_r;
-         li.normalize();
-                 fi.normalize();
-         float theta_i=acos(li.dot(fi));
+         Eigen::Vector3f li_norm=li;
+         Eigen::Vector3f fi_norm=fi;
+         li_norm.normalize();
+         fi_norm.normalize();
+         Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
+         float theta_i=acos(di.dot(fi));
          res.push_back(theta_i);
     }
 
@@ -1064,22 +1068,28 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
              const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
              const pcl::PointXYZ p20(cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).x,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).y,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).z);
              std::string name0 ="convex_hull00"+boost::lexical_cast<std::string>(i);
-             viewer.addLine(p10,p20,1.0,1.0,1.0,name0);
+            // viewer.addLine(p10,p20,1.0,1.0,1.0,name0);
          }
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
          const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
          std::string name ="convex_hull"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
 
          convex_hull_points.push_back(p1);
-        // float c =rat.at(i);
-         viewer.addLine(p1,p2,1.0-c,c,0,name);
 
      }
 
      std::vector<float> rat =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
-     for (int i=0; i<rat.size();++oi)
+     for (int i=0; i<rat.size();++i)
+     {
 
-      //ROS_INFO("RATING  %f", rat);
+         float c =rat.at(i);
+         std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
+         const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
+         const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
+
+         ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+         viewer.addLine(p1,p2,1.0-c,c,0,name);
+     }
 
     return true;
 }
