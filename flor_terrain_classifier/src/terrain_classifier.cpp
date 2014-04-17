@@ -839,7 +839,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& co
 
     }
 }
-//Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator Chioniso Dube
+//As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube
 
 std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
 {
@@ -929,10 +929,13 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
 
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
 {
-    lastRatedPosition=check_pos;
+     lastRatedPosition=check_pos;
+     pcl::PointXYZ center_of_mass(0.0,0.0,1.0); //center of mass relative to checkpos(x,y,?)
      float widthx=0.50;
      float lengthy=1.20;
      float alpha=3.14/2;
+     center_of_mass.x=cos(alpha)* center_of_mass.x-sin(alpha)* center_of_mass.y;
+     center_of_mass.y=sin(alpha)* center_of_mass.x+cos(alpha)* center_of_mass.y;
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
      unsigned int highest_Point_idx;
      unsigned int n_counter=0;
@@ -1096,21 +1099,8 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
      {
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
          convex_hull_points.push_back(p1);
-         if(i==convex_hull_indices.size())
-         {
-            const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[0]).x,cloud_positionRating2->at(convex_hull_indices[0]).y,cloud_positionRating2->at(convex_hull_indices[0]).z);
-            //convex_hull_points.push_back(p10);
-         }
      }
-     //TESTING
-/**
-     convex_hull_points.clear();
-     const pcl::PointXYZ p1t=(pcl::PointXYZ(0.0,0.0,0.0));
-     const pcl::PointXYZ p2t=(pcl::PointXYZ(2.0,0.0,0.0));
-     const pcl::PointXYZ check_post=(pcl::PointXYZ(1.0,0.1,5.0));
-     convex_hull_points.push_back(p1t);
-     convex_hull_points.push_back(p2t);
-**/
+
 
      std::vector<float> rat =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
      for (int i=0; i<rat.size();++i)
