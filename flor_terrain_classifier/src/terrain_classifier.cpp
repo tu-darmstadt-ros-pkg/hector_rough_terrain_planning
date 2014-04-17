@@ -859,7 +859,10 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
          fi_norm.normalize();
          Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
          float theta_i=acos(li_norm.dot(fi_norm));
-         float beta=theta_i*di.norm()*f_r.norm();
+         float sigma_i=((fi_norm.cross(li_norm)).dot(ai))?1.0:-1.0 ;
+
+
+         float beta=sigma_i*theta_i*di.norm()*f_r.norm();
          res.push_back(beta);
     }
 
@@ -1061,25 +1064,27 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
      convex_hull_comp(*cloud_positionRating2, convex_hull_indices);
      std::vector<pcl::PointXYZ> convex_hull_points;
 
-     for(int i=0; i<(convex_hull_indices.size()-1); ++i)
+     for(int i=0; i<(convex_hull_indices.size()); ++i)
      {
-         if(i==0)
+
+         const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
+        // const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
+      //   std::string name ="convex_hull"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
+
+         if(i==convex_hull_indices.size())
          {
 
-             const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
-             const pcl::PointXYZ p20(cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).x,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).y,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).z);
-             std::string name0 ="convex_hull00"+boost::lexical_cast<std::string>(i);
-            // viewer.addLine(p10,p20,1.0,1.0,1.0,name0);
+             const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[0]).x,cloud_positionRating2->at(convex_hull_indices[0]).y,cloud_positionRating2->at(convex_hull_indices[0]).z);
+            // const pcl::PointXYZ p20(cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).x,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).y,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).z);
+           //  std::string name0 ="convex_hull00"+boost::lexical_cast<std::string>(i);
+            convex_hull_points.push_back(p10);
+             //viewer.addLine(p10,p20,1.0,1.0,1.0,name0);
          }
-         const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
-         const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
-         std::string name ="convex_hull"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
-
          convex_hull_points.push_back(p1);
 
      }
      //TESTING
-     /**
+/**
      convex_hull_points.clear();
      const pcl::PointXYZ p1t=(pcl::PointXYZ(0.0,0.0,0.0));
      const pcl::PointXYZ p2t=(pcl::PointXYZ(2.0,0.0,0.0));
