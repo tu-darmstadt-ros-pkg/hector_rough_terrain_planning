@@ -869,6 +869,54 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
     return res;
 }
 
+
+
+pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
+                                            const pcl::PointXYZ& tip_over_axis_vector,
+                                            const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
+                                            const pcl::PointXYZ& tip_over_direction)
+{
+    // project Cloud on plane with normal = tipoveraxis
+
+    pcl::PointCloud<pcl::PointXYZ> cloud_projected;
+    cloud_projected.resize(pointcloud_robo.size());
+    for(unsigned int i=0; i<cloud_projected.size();++i)
+    {
+        pcl::PointXYZ &p_pro= cloud_projected.at(i);
+        const pcl::PointXYZI &p_pos= pointcloud_robo.at(i);
+        p_pro.x=p_pos.x;
+        p_pro.y=p_pos.y;
+        p_pro.z=p_pos.z;
+        const  pcl::PointXYZ &p=p_pro;
+        cloud_projected.at(i)=planeProjection(p,tip_over_axis_vector,tip_over_axis_point);
+    }
+
+    //find second point
+    float min_angle=5.0;
+    int min_angle_idx;
+    const pcl::PointXYZ v1 = tip_over_direction;
+    std::vector<float> angles;
+
+    for(unsigned int i=0; i<cloud_projected.size();++i)
+    {
+        pcl::PointXYZ &p_pro= cloud_projected.at(i);
+        const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-tip_over_axis_point.x,p_pro.y-tip_over_axis_point.y,p_pro.z-tip_over_axis_point.z);
+        float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2)));
+        angles.push_back(angle);
+        if (angle<min_angle)
+        {
+            min_angle=angle;
+            min_angle_idx=i;
+          //  ROS_INFO("newminangle : %f ",angle);
+
+        }
+    }
+
+    //Support_point 2 computed
+    const pcl::PointXYZ support_point_2=pcl::PointXYZ(pointcloud_robo.at(min_angle_idx).x,pointcloud_robo.at(min_angle_idx).y,pointcloud_robo.at(min_angle_idx).z);
+    return support_point_2;
+}
+
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
 {
     lastRatedPosition=check_pos;
@@ -941,46 +989,16 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
      cloud_positionRating->at(support_point_1_idx).intensity=0.0;
 
 
-     //projection plane for support point 2
-     const pcl::PointXYZ plane_p = pcl::PointXYZ(support_point_1.x,support_point_1.y,support_point_1.z);
-     const pcl::PointXYZ plane_n = crossProduct(pcl::PointXYZ(plane_p.x-check_pos.x,plane_p.y-check_pos.y,0),pcl::PointXYZ(0,0,1));
-     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
-     cloud_projected.resize(cloud_positionRating->size());
-     for(unsigned int i=0; i<cloud_projected.size();++i)
-     {
-         pcl::PointXYZ &p_pro= cloud_projected.at(i);
-         pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
-         p_pro.x=p_pos.x;
-         p_pro.y=p_pos.y;
-         p_pro.z=p_pos.z;
-         const  pcl::PointXYZ &p=p_pro;
-         cloud_projected.at(i)=planeProjection(p,plane_n,plane_p);
-     }
+     //find 2nd point of supp polygon
 
+     const pcl::PointXYZ tip_over_axis_point = support_point_1;
+     const pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
+     const pcl::PointXYZ tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
 
-
-     //find second point
-     float min_angle=5.0;
-     int min_angle_idx;
-     const pcl::PointXYZ v1 = pcl::PointXYZ(check_pos.x-support_point_1.x,check_pos.y-support_point_1.y,0);
-     std::vector<float> angles;
-
-     for(unsigned int i=0; i<cloud_projected.size();++i)
-     {
-         pcl::PointXYZ &p_pro= cloud_projected.at(i);
-         const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-support_point_1.x,p_pro.y-support_point_1.y,p_pro.z-support_point_1.z);
-         float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2)));
-         angles.push_back(angle);
-         if (angle<min_angle)
-         {
-             min_angle=angle;
-             min_angle_idx=i;
-           //  ROS_INFO("newminangle : %f ",angle);
-
-         }
-     }
-     //Support_point 2 computed
-     const pcl::PointXYZ support_point_2=pcl::PointXYZ(cloud_positionRating->at(min_angle_idx).x,cloud_positionRating->at(min_angle_idx).y,cloud_positionRating->at(min_angle_idx).z);
+     const pcl::PointXYZ support_point_2 = eval_point(tip_over_axis_point,
+                                                      tip_over_axis_vector,
+                                                      (*cloud_positionRating),
+                                                      tip_over_direction);
 
      viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
      viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
