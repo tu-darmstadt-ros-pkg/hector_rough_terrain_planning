@@ -785,14 +785,14 @@ float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ&
 
 
 //convex hull computation
-//http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
+//  http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
 void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_hull_indices)
 {
     float x_min=cloud.at(0).x;
     int point_on_hull=0;
-   // convex_hull_indices.push_back(0);
     pcl::PointCloud<pcl::PointXYZ> cloud_2d;
     cloud_2d.resize(0);
+
     //find minx
     for (unsigned int i = 0; i < cloud.size(); i++)
     {
@@ -807,17 +807,23 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& co
     }
     //build hull
     int i=0;
-    int endpoint;
+    unsigned int endpoint;
     while (true)
     {
         convex_hull_indices.push_back(point_on_hull);
         endpoint=0;
-        if((i==0)&&(point_on_hull==0))endpoint=1;
+        if((0==i)&&(0==point_on_hull))endpoint=1;
         for(unsigned int j=1; j<cloud_2d.size();++j)
         {
+            pcl::PointXYZ& p0 =cloud_2d.at(convex_hull_indices.at(i));
+            pcl::PointXYZ& p1 =cloud_2d.at(endpoint);
+            pcl::PointXYZ& p2 =cloud_2d.at(j);
             float ccw_f=ccw(cloud_2d.at(convex_hull_indices.at(i)),cloud_2d.at(endpoint),cloud_2d.at(j));
+            float dist_old=(p0.x-p1.x)*(p0.x-p1.x)+(p0.y-p1.y)*(p0.y-p1.y);
+            float dist_new=(p0.x-p2.x)*(p0.x-p2.x)+(p0.y-p2.y)*(p0.y-p2.y);
             bool isleft=(ccw_f <0);
-            if(endpoint==point_on_hull || isleft)
+            bool isfurther=(ccw_f<=0.000001 && dist_new>dist_old);
+            if(endpoint==point_on_hull || isleft || isfurther)
             {
                 endpoint=j;
             }
@@ -825,7 +831,11 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& co
 
         i++;
         point_on_hull=endpoint;
-        if(endpoint==convex_hull_indices.at(0)) break;
+        if(endpoint==convex_hull_indices.at(0))
+        {
+            convex_hull_indices.push_back(convex_hull_indices.at(0));
+            break;
+        }
 
     }
 }
@@ -1066,22 +1076,13 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
 
      for(int i=0; i<(convex_hull_indices.size()); ++i)
      {
-
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
-        // const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
-      //   std::string name ="convex_hull"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
-
+         convex_hull_points.push_back(p1);
          if(i==convex_hull_indices.size())
          {
-
-             const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[0]).x,cloud_positionRating2->at(convex_hull_indices[0]).y,cloud_positionRating2->at(convex_hull_indices[0]).z);
-            // const pcl::PointXYZ p20(cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).x,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).y,cloud_positionRating2->at(convex_hull_indices[convex_hull_indices.size()-1]).z);
-           //  std::string name0 ="convex_hull00"+boost::lexical_cast<std::string>(i);
-            convex_hull_points.push_back(p10);
-             //viewer.addLine(p10,p20,1.0,1.0,1.0,name0);
+            const pcl::PointXYZ p10(cloud_positionRating2->at(convex_hull_indices[0]).x,cloud_positionRating2->at(convex_hull_indices[0]).y,cloud_positionRating2->at(convex_hull_indices[0]).z);
+            //convex_hull_points.push_back(p10);
          }
-         convex_hull_points.push_back(p1);
-
      }
      //TESTING
 /**
