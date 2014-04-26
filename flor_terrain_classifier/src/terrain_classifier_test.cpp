@@ -58,7 +58,7 @@ void test_normals()
 
   // detect edges
   ROS_INFO("Compute HeightRating...");
-  terrain_classifier->computeHeightRating();
+  terrain_classifier->computeHeight();
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");

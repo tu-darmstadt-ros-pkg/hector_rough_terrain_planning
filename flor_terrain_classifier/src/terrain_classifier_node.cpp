@@ -157,25 +157,7 @@ void TerrainClassifierNode::generateTerrainModel(const TerrainModelRequest &req)
 
 bool TerrainClassifierNode::generateTerrainModel()
 {
-  // generate gradients
-  ROS_INFO("Generate normals and gradients...");
-  if (!terrain_classifier->computeGradients())
-    return false;
 
-  // detect edges
-  ROS_INFO("Detect edges...");
-  if (!terrain_classifier->computeHeightRating())
-    return false;
-
-  // generate height grid map
-  ROS_INFO("Generate height grid map...");
-  if (!terrain_classifier->generateHeightGridmap())
-    return false;
-
-  // generate ground level grid map
-  ROS_INFO("Generate ground level grid map...");
-  if (!terrain_classifier->generateGroundLevelGridmap())
-    return false;
 
   publishResult();
   return true;
