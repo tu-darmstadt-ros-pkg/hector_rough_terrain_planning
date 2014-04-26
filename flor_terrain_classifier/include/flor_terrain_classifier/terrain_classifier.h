@@ -158,9 +158,7 @@ public:
   void addCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &inputcloud, const std::string &frame_id = "/world");
 
   // visulization helper
-  void showNormals(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "normals", int viewport = 0) const;
-  void showGradients(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "gradients", int viewport = 0) const;
-  void showHeightDiff(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "hightDiff", int viewport = 0) const;
+  void showHeight(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "hightDiff", int viewport = 0) const;
   void showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "positionRating", int viewport = 0) const;
 
 
@@ -169,23 +167,16 @@ public:
   const pcl::PointCloud<pcl::PointXYZ>::Ptr &getCloudProcessed() const;
   const pcl::PointCloud<pcl::PointXYZ>::Ptr &getCloudOutfiltered() const;
   const pcl::PointCloud<pcl::PointNormal>::Ptr &getPointsWithsNormals() const;
-  const pcl::PointCloud<pcl::PointXYZI>::Ptr &getGradients() const;
-  const pcl::PointCloud<pcl::PointXYZI>::Ptr &getEdges() const;
 
   void getCloudProcessedLowRes(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud) const;
 
-  const nav_msgs::OccupancyGrid::Ptr &getGroundLevelGridMap() const;
-  const nav_msgs::OccupancyGrid::Ptr &getHeightGridMap(float &height_map_scale) const;
-  const nav_msgs::OccupancyGrid::Ptr &getHeightGridMap() const;
-
-  const pcl::PolygonMesh::Ptr &getMeshSurface() const;
 
   const std::string &getFrameId() const { return frame_id; }
 
   // data generation
   bool computeNormals();
   bool computeGradients();
-  bool computeHeightRating();
+  bool computeHeight();
   bool generateGroundLevelGridmap();
   bool generateHeightGridmap();
   bool computeSurfaceMesh();
@@ -302,15 +293,8 @@ protected:
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_outfiltered;
   pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_gradients;
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_edges;
-
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_height;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating;
-
-  nav_msgs::OccupancyGrid::Ptr ground_level_grid_map;
-  nav_msgs::OccupancyGrid::Ptr height_grid_map;
-
-  pcl::PolygonMesh::Ptr mesh_surface;
 
   pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
 
@@ -321,13 +305,6 @@ protected:
 
   bool cloud_normals_outdated;
   bool cloud_gradients_outdated;
-  bool cloud_edges_outdated;
-
-  bool ground_level_grid_map_outdated;
-  bool height_grid_grid_map_outdated;
-
-  bool mesh_surface_outdated;
-
   bool lock_input_cloud;
 };
 }

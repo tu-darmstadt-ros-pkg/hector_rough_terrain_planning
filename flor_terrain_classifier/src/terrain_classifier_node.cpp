@@ -127,9 +127,6 @@ bool TerrainClassifierNode::terrainModelService(TerrainModelService::Request &re
   if (!generateTerrainModel())
     return false;
 
-  pcl::toROSMsg(*(terrain_classifier->getPointsWithsNormals()), resp.terrain_model.cloud_points_with_normals);
-  resp.terrain_model.ground_level_map = *(terrain_classifier->getGroundLevelGridMap());
-  resp.terrain_model.height_map = *(terrain_classifier->getHeightGridMap(resp.terrain_model.height_map_scale));
 
   return true;
 }
@@ -160,25 +157,7 @@ void TerrainClassifierNode::generateTerrainModel(const TerrainModelRequest &req)
 
 bool TerrainClassifierNode::generateTerrainModel()
 {
-  // generate gradients
-  ROS_INFO("Generate normals and gradients...");
-  if (!terrain_classifier->computeGradients())
-    return false;
 
-  // detect edges
-  ROS_INFO("Detect edges...");
-  if (!terrain_classifier->computeHeightRating())
-    return false;
-
-  // generate height grid map
-  ROS_INFO("Generate height grid map...");
-  if (!terrain_classifier->generateHeightGridmap())
-    return false;
-
-  // generate ground level grid map
-  ROS_INFO("Generate ground level grid map...");
-  if (!terrain_classifier->generateGroundLevelGridmap())
-    return false;
 
   publishResult();
   return true;
@@ -196,13 +175,7 @@ void TerrainClassifierNode::publishResult() const
     cloud_input_pub.publish(cloud_point_msg);
   }
 
-  if (cloud_points_processed_pub.getNumSubscribers() > 0)
-  {
-    pcl::toROSMsg(*(terrain_classifier->getPointsWithsNormals()), cloud_point_msg);
-    cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
-    cloud_points_processed_pub.publish(cloud_point_msg);
-  }
+
 
   if (cloud_points_processed_low_res_pub.getNumSubscribers() > 0)
   {
@@ -222,71 +195,8 @@ void TerrainClassifierNode::publishResult() const
     cloud_points_outfiltered_pub.publish(cloud_point_msg);
   }
 
-  if (cloud_normals_pub.getNumSubscribers() > 0)
-  {
-    // convert normals to PoseArray and publish them
-    const pcl::PointCloud<pcl::PointNormal>::Ptr &cloud_points_with_normals(terrain_classifier->getPointsWithsNormals());
 
-    geometry_msgs::PoseArray pose_array;
-    pose_array.header.stamp = ros::Time::now();
-    pose_array.header.frame_id = terrain_classifier->getFrameId();
 
-    geometry_msgs::Pose pose_msg;
-    for (size_t i = 0; i < cloud_points_with_normals->size(); i++)
-    {
-      const pcl::PointNormal &p_n = cloud_points_with_normals->at(i);
-
-      pose_msg.position.x = p_n.x;
-      pose_msg.position.y = p_n.y;
-      pose_msg.position.z = p_n.z;
-
-      double r = asin(p_n.normal_x);
-      double p = -asin(p_n.normal_y);
-      double y = 0.0;//asin(p_n.normal_z);
-
-      tf::quaternionTFToMsg(tf::createQuaternionFromRPY(r, p, y), pose_msg.orientation);
-
-      pose_array.poses.push_back(pose_msg);
-    }
-
-    cloud_normals_pub.publish(pose_array);
-  }
-
-  if (cloud_gradients_pub.getNumSubscribers() > 0)
-  {
-    pcl::toROSMsg(*(terrain_classifier->getGradients()), cloud_point_msg);
-    cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
-    cloud_gradients_pub.publish(cloud_point_msg);
-  }
-
-  // publish ground level grid map
-  if (ground_level_grid_map_pub.getNumSubscribers() > 0)
-    ground_level_grid_map_pub.publish(terrain_classifier->getGroundLevelGridMap());
-
-  // publish height grid map
-  if (height_grid_map_pub.getNumSubscribers() > 0)
-    height_grid_map_pub.publish(terrain_classifier->getHeightGridMap());
-
-  // publish mesh surface
-  if (mesh_surface_pub.getNumSubscribers() > 0)
-  {
-    pcl_msgs::PolygonMesh mesh_msg;
-    pcl_conversions::fromPCL(*(terrain_classifier->getMeshSurface()), mesh_msg);
-    mesh_msg.header.stamp = ros::Time::now();
-    mesh_msg.header.frame_id = terrain_classifier->getFrameId();
-    mesh_surface_pub.publish(mesh_msg);
-  }
-
-  // publish terrain model
-  if (terrain_model_pub.getNumSubscribers() > 0)
-  {
-    flor_terrain_classifier::TerrainModel model;
-    pcl::toROSMsg(*(terrain_classifier->getPointsWithsNormals()), model.cloud_points_with_normals);
-    model.ground_level_map = *(terrain_classifier->getGroundLevelGridMap());
-    model.height_map = *(terrain_classifier->getHeightGridMap(model.height_map_scale));
-    terrain_model_pub.publish(model);
-  }
 }
 }
 
