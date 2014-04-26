@@ -435,6 +435,7 @@ pcl::PointXYZ addPoints(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
 
 // Point1 - Point2
 pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
+
     return pcl::PointXYZ(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
@@ -473,7 +474,8 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
 
     //find supppoint
     float min_angle=360.0;  // Hier den angle von 5 auf 360 geändert, da der winkel auch generell größer sein kann.
-    int min_angle_idx=0;
+
+    int min_angle_idx = -1;
     const pcl::PointXYZ v1 = tip_over_direction;
     std::vector<float> angles;
 
@@ -518,7 +520,9 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
         }
     }
 
-    ROS_INFO("Ende for -Schleife");
+    // Fehler // keine valide Position
+    //if (min_angle_idx == -1)
+       // return null;
 
     //Support_point computed
 
@@ -629,62 +633,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
                                                       (*cloud_positionRating),
                                                       tip_over_direction_3, viewer);
 
- /*
-     //neue ebene
-     const pcl::PointXYZ p21= pcl::PointXYZ (support_point_2.x-support_point_1.x,support_point_2.y-support_point_1.y,support_point_2.z-support_point_1.z);
-     const float e=dotProduct(p21,check_pos);
-     const float e2=dotProduct(p21,support_point_1);
-     const float e3=dotProduct(p21,p21);
-     const float k=(e-e2)/e3;
-     const pcl::PointXYZ lotFusPkt=pcl::PointXYZ(support_point_1.x+k*p21.x,support_point_1.y+k*p21.y,support_point_1.z+k*p21.z);
 
-     //projection plane for support point 3
-     const pcl::PointXYZ plane2_p = pcl::PointXYZ(lotFusPkt.x,lotFusPkt.y,lotFusPkt.z);
-     const pcl::PointXYZ plane2_n = p21;
-
-     pcl::PointCloud<pcl::PointXYZ> cloud_projected2;
-     cloud_projected2.resize(cloud_positionRating->size());
-     for(unsigned int i=0; i<cloud_projected2.size();++i)
-     {
-         pcl::PointXYZ &p_pro= cloud_projected2.at(i);
-         pcl::PointXYZI &p_pos= cloud_positionRating->at(i);
-         p_pro.x=p_pos.x;
-         p_pro.y=p_pos.y;
-         p_pro.z=p_pos.z;
-         const  pcl::PointXYZ &p=p_pro;
-         cloud_projected2.at(i)=planeProjection(p,plane2_n,plane2_p);
-         pcl::PointXYZI pp=pcl::PointXYZI();
-         pp.x=p_pro.x;
-         pp.y=p_pro.y;
-         pp.z=p_pro.z;
-         pp.intensity=0;
-     }
-
-     //find third point
-     float min_angle2=5.0;
-     int min_angle_idx2;
-     const pcl::PointXYZ v21 = pcl::PointXYZ(check_pos.x-lotFusPkt.x,check_pos.y-lotFusPkt.y,0);//todo check correct
-     std::vector<float> angles2;
-
-       for(unsigned int i=0; i<cloud_projected2.size();++i)
-     {
-         pcl::PointXYZ &p_pro= cloud_projected2.at(i);
-         const pcl::PointXYZ v22 = pcl::PointXYZ(p_pro.x-lotFusPkt.x,p_pro.y-lotFusPkt.y,p_pro.z-lotFusPkt.z);
-         float angle= acos( dotProduct(v21,v22)/sqrt(dotProduct(v21,v21)*dotProduct(v22,v22)));
-         angles2.push_back(angle);
-
-         if (angle<min_angle2)
-         {
-             min_angle2=angle;
-             min_angle_idx2=i;
-           //  ROS_INFO("newminangle : %f ",angle);
-         }      
-     }
-
-
-     const pcl::PointXYZ support_point_3= pcl::PointXYZ(cloud_positionRating->at(min_angle_idx2).x,cloud_positionRating->at(min_angle_idx2).y,cloud_positionRating->at(min_angle_idx2).z);
-
- // */
      viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
 
      const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
