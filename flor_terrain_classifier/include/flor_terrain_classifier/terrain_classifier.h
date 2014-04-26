@@ -187,7 +187,7 @@ public:
                                               const pcl::PointXYZ& tip_over_axis_vector,
                                               const pcl::PointCloud<pcl::PointXYZI> &pointcloud_robo,
                                               const pcl::PointXYZ& tip_over_direction, pcl::visualization::PCLVisualizer &viewer);
-  bool computePositionRating(const pcl::PointXYZ& checkPos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport);
+  bool computePositionRating(const pcl::PointXYZ& checkPos, const float orientation, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport);
 
   pcl::PointXYZ lastRatedPosition;
 

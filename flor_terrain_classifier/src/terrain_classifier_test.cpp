@@ -84,7 +84,9 @@ void test_normals()
   viewer.addCoordinateSystem(0.5, view_port_4);
 
   ROS_INFO("Compute Position rating...");
-  terrain_classifier->computePositionRating(pcl::PointXYZ(-0.35,-1.05,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
+
+  // Position, Orientation (Wie genau?)
+  terrain_classifier->computePositionRating(pcl::PointXYZ(-0.35,-1.05,0.5), 3.14/2,viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
   //check 1.50,-1.35,0)
   terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);

@@ -530,24 +530,23 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
     return support_point;
 }
 
-bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
+bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, const float orientation, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
 {
      lastRatedPosition=check_pos;
      pcl::PointXYZ center_of_mass(0.0,0.0,1.0); //center of mass relative to checkpos(x,y,~)
      float widthx=0.50;
      float lengthy=1.20;
-     float alpha=3.14/2;
-     center_of_mass.x=cos(alpha)* center_of_mass.x-sin(alpha)* center_of_mass.y;
-     center_of_mass.y=sin(alpha)* center_of_mass.x+cos(alpha)* center_of_mass.y;
+     center_of_mass.x=cos(orientation)* center_of_mass.x-sin(orientation)* center_of_mass.y;
+     center_of_mass.y=sin(orientation)* center_of_mass.x+cos(orientation)* center_of_mass.y;
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
      unsigned int highest_Point_idx;
      unsigned int n_counter=0;
 
      //filter relevant points and find max
-     const float x_max=check_pos.x+cos(alpha)*widthx*0.5-sin(alpha)*lengthy*0.5;
-     const float x_min=check_pos.x-cos(alpha)*widthx*0.5+sin(alpha)*lengthy*0.5;
-     const float y_max=check_pos.y+sin(alpha)*widthx*0.5+cos(alpha)*lengthy*0.5;
-     const float y_min=check_pos.y-sin(alpha)*widthx*0.5-cos(alpha)*lengthy*0.5;
+     const float x_max=check_pos.x+cos(orientation)*widthx*0.5-sin(orientation)*lengthy*0.5;
+     const float x_min=check_pos.x-cos(orientation)*widthx*0.5+sin(orientation)*lengthy*0.5;
+     const float y_max=check_pos.y+sin(orientation)*widthx*0.5+cos(orientation)*lengthy*0.5;
+     const float y_min=check_pos.y-sin(orientation)*widthx*0.5-cos(orientation)*lengthy*0.5;
      const pcl::PointXYZ p0=pcl::PointXYZ(x_min,y_min,0);
      const pcl::PointXYZ p1=pcl::PointXYZ(x_max,y_min,0);
      const pcl::PointXYZ p2=pcl::PointXYZ(x_max,y_max,0);
