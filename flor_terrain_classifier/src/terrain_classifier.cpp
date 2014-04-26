@@ -523,7 +523,7 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
     // Fehler // keine valide Position
     //if (min_angle_idx == -1)
        // return null;
-
+//
     //Support_point computed
 
     const pcl::PointXYZ support_point=pcl::PointXYZ(pointcloud_robo.at(min_angle_idx).x,pointcloud_robo.at(min_angle_idx).y,pointcloud_robo.at(min_angle_idx).z);
