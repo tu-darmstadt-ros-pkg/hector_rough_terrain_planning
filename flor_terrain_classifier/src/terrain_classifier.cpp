@@ -429,13 +429,13 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
 }
 
 // Point1 + Point2
-pcl::PointXYZ addPoints(pcl::PointXYZ p1, pcl::PointXYZ p2){
-    return pcl::PointXYZ(p1.x + p2.x, p1.y + p1.y, p1.z + p2.z);
+pcl::PointXYZ addPoints(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
+    return pcl::PointXYZ(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
 }
 
 // Point1 - Point2
-pcl::PointXYZ subtractPoints(pcl::PointXYZ p1, pcl::PointXYZ p2){
-    return pcl::PointXYZ(p1.x - p2.x, p1.y - p1.y, p1.z - p2.z);
+pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
+    return pcl::PointXYZ(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
 // 1 if positive, 0 if zero, -1 if negative
@@ -449,12 +449,12 @@ int sign(float a){
 pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
                                             const pcl::PointXYZ& tip_over_axis_vector,
                                             const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
-                                            const pcl::PointXYZ& tip_over_direction)
+                                            const pcl::PointXYZ& tip_over_direction,
+                                             pcl::visualization::PCLVisualizer &viewer)
 {
     // project Cloud on plane with normal = tipoveraxis
     // tip_over_direction = pcl::PointXYZ(tip_over_direction.x, tip_over_direction.y, 0);
 
-    ROS_INFO("Aufruf eval_point");
 
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
     cloud_projected.resize(pointcloud_robo.size());
@@ -470,11 +470,10 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
         cloud_projected.at(i)=planeProjection(p,tip_over_axis_vector,tip_over_axis_point);
     }
 
-    ROS_INFO("Ende der for Schleife, Groesse PCL: %i ", cloud_projected.size());
 
     //find supppoint
     float min_angle=360.0;  // Hier den angle von 5 auf 360 geändert, da der winkel auch generell größer sein kann.
-    int min_angle_idx;
+    int min_angle_idx=0;
     const pcl::PointXYZ v1 = tip_over_direction;
     std::vector<float> angles;
 
@@ -485,7 +484,6 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
                                         addPoints(tip_over_axis_point, tip_over_axis_vector),
                                         addPoints(tip_over_axis_point, tip_over_direction)));
 
-    ROS_INFO("Finding Point vor for-Schleife // direction cww = %i ",directionccw);
 
     for(unsigned int i=0; i<cloud_projected.size();++i)
     {
@@ -493,16 +491,18 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
         const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-tip_over_axis_point.x,p_pro.y-tip_over_axis_point.y,p_pro.z-tip_over_axis_point.z);
         float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2)));
         // neu
-        ROS_INFO("angle = %f ", angle);
-        ROS_INFO("i = %i", i);
+
         const float pi = 3.14159;
         angle = angle * 360.0/(2.0*pi);
-        // which side to the axis
-        int side = sign(ccw(tip_over_axis_point,
-                            addPoints(tip_over_axis_point, tip_over_axis_vector),
-                            cloud_projected.at(i)));
 
-        ROS_INFO("is side %i ", side);
+        if (angle>90.0) angle=180.0-angle;
+        // which side to the axis
+        pcl::PointXYZ ps=pcl::PointXYZ( pointcloud_robo.at(i).x,pointcloud_robo.at(i).y,pointcloud_robo.at(i).z);
+        const int side = sign(ccw(tip_over_axis_point,
+                              addPoints(tip_over_axis_point, tip_over_axis_vector),
+                              ps));
+
+        ROS_INFO("is side %i %i", side, directionccw);
         if (side == directionccw){
             //ende neu
 
@@ -521,6 +521,7 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
     ROS_INFO("Ende for -Schleife");
 
     //Support_point computed
+
     const pcl::PointXYZ support_point=pcl::PointXYZ(pointcloud_robo.at(min_angle_idx).x,pointcloud_robo.at(min_angle_idx).y,pointcloud_robo.at(min_angle_idx).z);
     return support_point;
 }
@@ -528,7 +529,7 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
 {
      lastRatedPosition=check_pos;
-     pcl::PointXYZ center_of_mass(0.0,0.0,1.0); //center of mass relative to checkpos(x,y,?)
+     pcl::PointXYZ center_of_mass(0.0,0.0,1.0); //center of mass relative to checkpos(x,y,~)
      float widthx=0.50;
      float lengthy=1.20;
      float alpha=3.14/2;
@@ -610,14 +611,14 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
      const pcl::PointXYZ support_point_2 = eval_point(tip_over_axis_point,
                                                       tip_over_axis_vector,
                                                       (*cloud_positionRating),
-                                                      tip_over_direction);
+                                                      tip_over_direction, viewer);
 
      viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
      viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
 
     //find third point
     const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
-    const pcl::PointXYZ tip_over_axis_vector_3 = subtractPoints(support_point_2, support_point_1);
+    const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
 
     // Fehler da auch in die andere Richtung definiert sein kann ich erst machen wenn das mit den richtungen überaupt
     // funktioniert.
@@ -626,7 +627,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
     const pcl::PointXYZ support_point_3 = eval_point(tip_over_axis_point_3,
                                                       tip_over_axis_vector_3,
                                                       (*cloud_positionRating),
-                                                      tip_over_direction_3);
+                                                      tip_over_direction_3, viewer);
 
  /*
      //neue ebene
