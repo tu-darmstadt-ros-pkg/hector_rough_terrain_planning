@@ -115,20 +115,6 @@ const pcl::PointCloud<pcl::PointXYZ>::Ptr &TerrainClassifier::getCloudOutfiltere
 }
 
 
-const pcl::PointCloud<pcl::PointXYZI>::Ptr &TerrainClassifier::getGradients() const
-{
-  if (!cloud_gradients || cloud_gradients->empty())
-    ROS_WARN("getGradient was called before gradients were computed!");
-  return cloud_gradients;
-}
-
-const pcl::PointCloud<pcl::PointXYZI>::Ptr &TerrainClassifier::getEdges() const
-{
-  if (!cloud_height || cloud_height->empty())
-    ROS_WARN("getEdges was called before edges were detected!");
-  return cloud_height;
-}
-
 void TerrainClassifier::getCloudProcessedLowRes(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud) const
 {
   cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
@@ -150,33 +136,7 @@ void TerrainClassifier::getCloudProcessedLowRes(pcl::PointCloud<pcl::PointXYZ>::
   }
 }
 
-const nav_msgs::OccupancyGrid::Ptr &TerrainClassifier::getGroundLevelGridMap() const
-{
-  if (!ground_level_grid_map)
-    ROS_WARN("getGroundLevelGridMap was called before gradients were computed!");
-  return ground_level_grid_map;
-}
 
-const nav_msgs::OccupancyGrid::Ptr &TerrainClassifier::getHeightGridMap(float &height_map_scale) const
-{
-  if (!height_grid_map)
-    ROS_WARN("getHeightGridMap was called before gradients were computed!");
-  height_map_scale = this->height_map_scale;
-  return height_grid_map;
-}
-
-const nav_msgs::OccupancyGrid::Ptr &TerrainClassifier::getHeightGridMap() const
-{
-  float height_map_scale;
-  return getHeightGridMap(height_map_scale);
-}
-
-const pcl::PolygonMesh::Ptr &TerrainClassifier::getMeshSurface() const
-{
-  if (!mesh_surface || mesh_surface->polygons.empty())
-    ROS_WARN("getSurfaceMesh was called before surface is reconstructed!");
-  return mesh_surface;
-}
 
 bool TerrainClassifier::computeNormals()
 {

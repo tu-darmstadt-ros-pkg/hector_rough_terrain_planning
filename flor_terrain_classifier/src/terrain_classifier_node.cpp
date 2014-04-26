@@ -213,21 +213,7 @@ void TerrainClassifierNode::publishResult() const
     cloud_points_outfiltered_pub.publish(cloud_point_msg);
   }
 
-  if (cloud_gradients_pub.getNumSubscribers() > 0)
-  {
-    pcl::toROSMsg(*(terrain_classifier->getGradients()), cloud_point_msg);
-    cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
-    cloud_gradients_pub.publish(cloud_point_msg);
-  }
 
-  // publish ground level grid map
-  if (ground_level_grid_map_pub.getNumSubscribers() > 0)
-    ground_level_grid_map_pub.publish(terrain_classifier->getGroundLevelGridMap());
-
-  // publish height grid map
-  if (height_grid_map_pub.getNumSubscribers() > 0)
-    height_grid_map_pub.publish(terrain_classifier->getHeightGridMap());
 
 }
 }
