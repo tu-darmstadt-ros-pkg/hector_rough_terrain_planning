@@ -52,32 +52,6 @@ void TerrainClassifier::addCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr 
   setDataOutdated();
 }
 
-void TerrainClassifier::showNormals(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
-{
-  if (!cloud_points_with_normals || cloud_points_with_normals->empty())
-  {
-    ROS_WARN("showNormals was called before normals were computed!");
-    return;
-  }
-
-  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointNormal> random_color_handler(cloud_points_with_normals, 0.0, 200.0, 200.0);
-  viewer.addPointCloud(cloud_points_with_normals, random_color_handler, name + std::string("_cloud"), viewport);
-  viewer.addPointCloudNormals<pcl::PointNormal>(cloud_points_with_normals, 30, 0.1, name + std::string("_normals"), viewport);
-}
-
-void TerrainClassifier::showGradients(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
-{
-  if (!cloud_gradients || cloud_gradients->empty())
-  {
-    ROS_WARN("showGradients was called before normals were computed!");
-    return;
-  }
-
-  pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_gradients, "intensity");
-  viewer.addPointCloud<pcl::PointXYZI>(cloud_gradients, intensity_distribution, name + std::string("_cloud"), viewport);
-  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_gradient"), viewport);
-}
-
 void TerrainClassifier::showHeight(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
 {
   if (!cloud_height || cloud_height->empty())
