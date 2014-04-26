@@ -303,7 +303,7 @@ protected:
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_outfiltered;
   pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_gradients;
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_edges;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_height;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating;
 

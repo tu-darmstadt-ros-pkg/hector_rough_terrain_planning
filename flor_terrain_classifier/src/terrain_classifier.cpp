@@ -80,14 +80,14 @@ void TerrainClassifier::showGradients(pcl::visualization::PCLVisualizer &viewer,
 
 void TerrainClassifier::showHeightDiff(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
 {
-  if (!cloud_edges || cloud_edges->empty())
+  if (!cloud_height || cloud_height->empty())
   {
     ROS_WARN("showEdges was called before edges were detected!");
     return;
   }
 
-  pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_edges, "intensity");
-  viewer.addPointCloud<pcl::PointXYZI>(cloud_edges, intensity_distribution, name + std::string("_cloud"), viewport);
+  pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_height, "intensity");
+  viewer.addPointCloud<pcl::PointXYZI>(cloud_height, intensity_distribution, name + std::string("_cloud"), viewport);
   viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 
@@ -130,9 +130,9 @@ const pcl::PointCloud<pcl::PointXYZI>::Ptr &TerrainClassifier::getGradients() co
 
 const pcl::PointCloud<pcl::PointXYZI>::Ptr &TerrainClassifier::getEdges() const
 {
-  if (!cloud_edges || cloud_edges->empty())
+  if (!cloud_height || cloud_height->empty())
     ROS_WARN("getEdges was called before edges were detected!");
-  return cloud_edges;
+  return cloud_height;
 }
 
 void TerrainClassifier::getCloudProcessedLowRes(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud) const
@@ -306,13 +306,6 @@ bool TerrainClassifier::computeGradients()
     pi.intensity = pi.intensity < params.ge_thresh ? 1.0 : 0.0;
   }
 
-// do voxelizing only after gradient estimation?
-//  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
-//  pcl::VoxelGrid<pcl::PointXYZI> vox;
-//  vox.setInputCloud(cloud_gradient);
-//  vox.setLeafSize(0.01f, 0.01f, 10.0f);
-//  vox.filter(*cloud_filtered);
-//  cloud_gradient = cloud_filtered;
 
   cloud_gradients_outdated = false;
   lock_input_cloud = false;
@@ -322,7 +315,7 @@ bool TerrainClassifier::computeGradients()
 bool TerrainClassifier::computeHeightRating()
 {
   // edges are up-to-date -> do nothing
-  if (!cloud_edges_outdated && cloud_edges)
+  if (!cloud_edges_outdated && cloud_height)
     return true;
 
   if (!computeNormals())
@@ -334,78 +327,42 @@ bool TerrainClassifier::computeHeightRating()
   lock_input_cloud = true;
 
   // init edge data structure
-  cloud_edges.reset(new pcl::PointCloud<pcl::PointXYZI>());
-  cloud_edges->resize(cloud_points_with_normals->size());
+  cloud_height.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  cloud_height->resize(cloud_processed->size());
 
   // project all data to plane
   pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
-  points->resize(cloud_points_with_normals->size());
-  for (unsigned int i = 0; i < cloud_points_with_normals->size(); i++)
+  points->resize(cloud_processed->size());
+  for (unsigned int i = 0; i < cloud_processed->size(); i++)
   {
-    const pcl::PointNormal &n = cloud_points_with_normals->at(i);
+    const pcl::PointXYZ &n = cloud_processed->at(i);
     pcl::PointXYZ &p = points->at(i);
     p.x = n.x;
     p.y = n.y;
     p.z = n.z;
   }
 
-  pcl::KdTreeFLANN<pcl::PointXYZ> tree;
-  tree.setInputCloud(points);
 
-  std::vector<int> pointIdxRadiusSearch;
-  std::vector<float> pointRadiusSquaredDistance;
-
-  //pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_edges(new pcl::PointCloud<pcl::PointXYZI>());
-  //tmp_edges->resize(cloud_points_with_normals->size());
-
-  // run edge detection
   for (size_t i = 0; i < points->size(); i++)
   {
-    const pcl::PointNormal &current = cloud_points_with_normals->at(i);
-    pcl::PointXYZI &result = cloud_edges->at(i);
+    const pcl::PointXYZ &current = cloud_processed->at(i);
+    pcl::PointXYZI &result = cloud_height->at(i);
 
     result.x = current.x;
     result.y = current.y;
     result.z = current.z;
     result.intensity = 0.0;
 
-    if (tree.radiusSearch(i, params.ed_radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-    {
-      // determine squared mean error
-      double sq_sum_e = 0.0;
-
-      for (size_t j = 0; j < pointIdxRadiusSearch.size (); j++)
-      {
-        if (pointIdxRadiusSearch[j] == (int)i)
-          continue;
-
-        const pcl::PointNormal &neigh = cloud_points_with_normals->at(pointIdxRadiusSearch[j]);
+      if (result.z>0.5)
+          result.intensity=0.5;
+      else if (result.z<-0.1)
+          result.intensity=-0.1;
+      else
+          result.intensity = result.z;
 
 
-        // determine diff in height
-        double diff_z = (neigh.z - current.z)*1000000000.0; // scale up diff (weight)
-        double sq_err_z = abs(diff_z);
 
 
-        sq_sum_e += sq_err_z;
-      }
-
-      double sq_mean_e = sq_sum_e/pointIdxRadiusSearch.size();
-
-      // check for edge
-      if (true)//(sq_mean_e > 0.0)
-      {
-          if (result.z>0.5)
-              result.intensity=0.5;
-          else if (result.z<-0.1)
-              result.intensity=-0.1;
-          else
-              result.intensity = result.z;
-
-          //ROS_INFO("height %f",result.z);
-
-      }
-    }
   }
 
   cloud_edges_outdated = false;
@@ -419,7 +376,7 @@ bool TerrainClassifier::generateGroundLevelGridmap()
   if (!ground_level_grid_map_outdated && ground_level_grid_map)
     return true;
 
-  if ((!cloud_gradients || !computeGradients()) && (!cloud_edges || !computeHeightRating()))
+  if ((!cloud_gradients || !computeGradients()) && (!cloud_height || !computeHeightRating()))
   {
     ROS_ERROR("Can't generate grid map!");
     return false;
@@ -437,8 +394,8 @@ bool TerrainClassifier::generateGroundLevelGridmap()
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud;
   if (cloud_gradients)
     cloud = cloud_gradients;
-  else if (cloud_edges)
-    cloud = cloud_edges;
+  else if (cloud_height)
+    cloud = cloud_height;
 
   for (size_t i = 0; i < cloud->size(); i++)
   {
@@ -495,14 +452,14 @@ bool TerrainClassifier::generateGroundLevelGridmap()
   }
 
   // add data from edge point cloud
-  if (cloud_edges)
+  if (cloud_height)
   {
     ROS_INFO("...adding edges");
-    ROS_ASSERT(cloud_gradients->size() == cloud_edges->size());
+    ROS_ASSERT(cloud_gradients->size() == cloud_height->size());
 
-    for (size_t i = 0; i < cloud_edges->size(); i++)
+    for (size_t i = 0; i < cloud_height->size(); i++)
     {
-      const pcl::PointXYZI &p = cloud_edges->at(i);
+      const pcl::PointXYZI &p = cloud_height->at(i);
 
 //      if (ignore_near)
 //      {
@@ -786,10 +743,10 @@ float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ&
 
 //convex hull computation
 //  http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
-void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<int>& convex_hull_indices)
+void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned int>& convex_hull_indices)
 {
     float x_min=cloud.at(0).x;
-    int point_on_hull=0;
+    unsigned int point_on_hull=0;
     pcl::PointCloud<pcl::PointXYZ> cloud_2d;
     cloud_2d.resize(0);
 
@@ -847,13 +804,13 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
     std::vector<Eigen::Vector3f> p;
     Eigen::Vector3f f_r= Eigen::Vector3f(0.0,0.0,-10.0);
 
-    for(int i=0; i<convex_hull_points_pcl.size();++i)
+    for(unsigned int i=0; i<convex_hull_points_pcl.size();++i)
     {
          pcl::PointXYZ& pi = convex_hull_points_pcl.at(i);
          p.push_back(Eigen::Vector3f(pi.x,pi.y,pi.z));
     }
     std::vector<float> res;
-    for(int i=0; i<(p.size()-1);++i)
+    for(unsigned int i=0; i<(p.size()-1);++i)
     {
         Eigen::Vector3f p_i1;
         if(p.size()==(i+1)) p_i1 = p.at(0);
@@ -1106,7 +1063,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
                                                     pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
 
-     std::vector<int> convex_hull_indices;
+     std::vector<unsigned int> convex_hull_indices;
      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
      for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
@@ -1133,7 +1090,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, pc
 
 
      std::vector<float> rat =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
-     for (int i=0; i<rat.size();++i)
+     for (unsigned int i=0; i<rat.size();++i)
      {
 
          float c =rat.at(i);
