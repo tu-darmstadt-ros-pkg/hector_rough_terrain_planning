@@ -665,11 +665,11 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
      }
 
 
-     std::vector<float> rat =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
-     for (unsigned int i=0; i<rat.size();++i)
+     std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
+     for (unsigned int i=0; i<rating.size();++i)
      {
 
-         float c =rat.at(i);
+         float c =rating.at(i);
          std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
          const pcl::PointXYZ p2(cloud_positionRating2->at(convex_hull_indices[i+1]).x,cloud_positionRating2->at(convex_hull_indices[i+1]).y,cloud_positionRating2->at(convex_hull_indices[i+1]).z);
