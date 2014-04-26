@@ -76,7 +76,7 @@ void test_normals()
   int view_port_3(0);
   viewer.createViewPort(0.0, 0.0, 0.5, 0.5, view_port_3);
   viewer.addCoordinateSystem(0.5, view_port_3);
-  terrain_classifier->showHeightDiff(viewer, "heightDiff", view_port_3);
+  terrain_classifier->showHeight(viewer, "heightDiff", view_port_3);
 
 
   int view_port_4(0);

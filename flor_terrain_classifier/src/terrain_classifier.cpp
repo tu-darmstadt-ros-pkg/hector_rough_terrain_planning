@@ -78,7 +78,7 @@ void TerrainClassifier::showGradients(pcl::visualization::PCLVisualizer &viewer,
   viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_gradient"), viewport);
 }
 
-void TerrainClassifier::showHeightDiff(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
+void TerrainClassifier::showHeight(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
 {
   if (!cloud_height || cloud_height->empty())
   {
@@ -114,12 +114,6 @@ const pcl::PointCloud<pcl::PointXYZ>::Ptr &TerrainClassifier::getCloudOutfiltere
   return cloud_outfiltered;
 }
 
-const pcl::PointCloud<pcl::PointNormal>::Ptr &TerrainClassifier::getPointsWithsNormals() const
-{
-  if (!cloud_points_with_normals || cloud_points_with_normals->empty())
-    ROS_WARN("getPointsWithsNormals was called before normals were computed!");
-  return cloud_points_with_normals;
-}
 
 const pcl::PointCloud<pcl::PointXYZI>::Ptr &TerrainClassifier::getGradients() const
 {

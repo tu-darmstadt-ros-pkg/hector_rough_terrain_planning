@@ -160,7 +160,7 @@ public:
   // visulization helper
   void showNormals(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "normals", int viewport = 0) const;
   void showGradients(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "gradients", int viewport = 0) const;
-  void showHeightDiff(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "hightDiff", int viewport = 0) const;
+  void showHeight(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "hightDiff", int viewport = 0) const;
   void showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "positionRating", int viewport = 0) const;
 
 
