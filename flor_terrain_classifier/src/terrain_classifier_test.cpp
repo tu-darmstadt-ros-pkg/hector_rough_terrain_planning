@@ -52,6 +52,7 @@ void test_normals()
   //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
   pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
 
+
   // add filtered point cloud to classifier
   terrain_classifier->addCloud(cloud_original);
 
