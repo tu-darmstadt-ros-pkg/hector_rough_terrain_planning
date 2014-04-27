@@ -650,8 +650,14 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
          }
      }
-     const pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
+     pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
 
+
+
+    // is used after while loop, but initiated in it.
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
+    std::vector<unsigned int> convex_hull_indices;
+    std::vector<pcl::PointXYZ> convex_hull_points;
 
     int counter = 0;
     while (true){
@@ -693,18 +699,15 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
        viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
 
+       convex_hull_points = build_convex_hull(cloud_positionRating,
+                                              check_pos,
+                                              support_point_1,
+                                              support_point_2,
+                                              support_point_3,
+                                              viewer, viewport,
+                                              convex_hull_indices,
+                                              cloud_positionRating2);
 
-       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
-       std::vector<unsigned int> convex_hull_indices;
-
-       std::vector<pcl::PointXYZ> convex_hull_points = build_convex_hull(cloud_positionRating,
-                                                                          check_pos,
-                                                                          support_point_1,
-                                                                          support_point_2,
-                                                                          support_point_3,
-                                                                          viewer, viewport,
-                                                                          convex_hull_indices,
-                                                                          cloud_positionRating2);
 
 
 
@@ -727,18 +730,21 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
          // checkpos is not in hull
 
-         // find closest point to checkpos
-         float dist = distanceXY(convex_hull_points.at(0), check_pos);
-         int index_of_closest_point = 0;
-         for (int i = 1; i < convex_hull_points.size(); ++i){
-            float dist_to_check = distanceXY(convex_hull_points.at(i), check_pos);
-            if (dist_to_check < dist){
-                dist = dist_to_check;
-                index_of_closest_point = i;
-            }
-         }
+         if (CenterInHull == false){
+             // find closest point to checkpos
+             float dist = distanceXY(convex_hull_points.at(0), check_pos);
+             int index_of_closest_point = 0;
+             for (unsigned int i = 1; i < convex_hull_points.size(); ++i){
+                float dist_to_check = distanceXY(convex_hull_points.at(i), check_pos);
+                if (dist_to_check < dist){
+                    dist = dist_to_check;
+                    index_of_closest_point = i;
+                }
+             }
 
-         support_point_1 = convex_hull_points.at(index_of_closest_point);
+             support_point_1 = convex_hull_points.at(index_of_closest_point);
+
+         }
 
 
      } // endwhile
