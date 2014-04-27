@@ -187,7 +187,23 @@ public:
                                               const pcl::PointXYZ& tip_over_axis_vector,
                                               const pcl::PointCloud<pcl::PointXYZI> &pointcloud_robo,
                                               const pcl::PointXYZ& tip_over_direction, pcl::visualization::PCLVisualizer &viewer);
-  bool computePositionRating(const pcl::PointXYZ& checkPos, const float orientation, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport);
+
+  std::vector<pcl::PointXYZ> build_convex_hull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
+                                               const pcl::PointXYZ& check_pos,
+                                               const pcl::PointXYZ& support_point_1,
+                                               const pcl::PointXYZ& support_point_2,
+                                               const pcl::PointXYZ& support_point_3,
+                                               pcl::visualization::PCLVisualizer &viewer,
+                                               int viewport,
+                                               std::vector<unsigned int>& convex_hull_indices,
+                                               pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2);
+
+
+  bool computePositionRating(const pcl::PointXYZ& checkPos,
+                             const float orientation,
+                             pcl::visualization::PCLVisualizer &viewer,
+                             const std::string &name,
+                             int viewport);
 
   pcl::PointXYZ lastRatedPosition;
 

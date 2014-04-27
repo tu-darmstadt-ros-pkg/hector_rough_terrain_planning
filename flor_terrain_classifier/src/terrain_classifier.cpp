@@ -492,7 +492,6 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
         pcl::PointXYZ &p_pro= cloud_projected.at(i);
         const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-tip_over_axis_point.x,p_pro.y-tip_over_axis_point.y,p_pro.z-tip_over_axis_point.z);
         float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2)));
-        // neu
 
         const float pi = 3.14159;
         angle = angle * 360.0/(2.0*pi);
@@ -504,11 +503,8 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
                               addPoints(tip_over_axis_point, tip_over_axis_vector),
                               ps));
 
-        ROS_INFO("is side %i %i", side, directionccw);
+       // ROS_INFO("is side %i %i", side, directionccw);
         if (side == directionccw){
-            //ende neu
-
-            ROS_INFO("inside if");
            angles.push_back(angle);
            if (angle<min_angle)
             {
@@ -530,7 +526,55 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
     return support_point;
 }
 
-bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, const float orientation, pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport)
+std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
+                                             const pcl::PointXYZ& check_pos,
+                                             const pcl::PointXYZ& support_point_1,
+                                             const pcl::PointXYZ& support_point_2,
+                                             const pcl::PointXYZ& support_point_3,
+                                             pcl::visualization::PCLVisualizer &viewer,
+                                             int viewport,
+                                             std::vector<unsigned int>& convex_hull_indices,
+                                             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2){
+
+    ROS_INFO("in build_convex_hull");
+
+    const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+                                                   pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+
+
+    //Find ground contact points
+    for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
+    {
+        pcl::PointXYZI& p = cloud_positionRating->at(i);
+        const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
+        if(dist<0.01 && dist>-0.01)
+        {
+            std::string name ="groundContactArea"+boost::lexical_cast<std::string>(i);
+            viewer.addSphere(p, 0.01,0,1,1, name, viewport);
+            cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
+        }
+        p.intensity=p.z;
+    }
+
+
+    //Compute convex hull
+    const pcl::PointXYZ pcs=planeProjection(check_pos,final_normal,support_point_1);
+    viewer.addSphere(pcs,0.04,1,0,1, "cp_pro", viewport);
+    convex_hull_comp(*cloud_positionRating2, convex_hull_indices);
+    std::vector<pcl::PointXYZ> convex_hull_points;
+
+    for(int i=0; i<(convex_hull_indices.size()); ++i)
+    {
+        const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
+        convex_hull_points.push_back(p1);
+    }
+    return convex_hull_points;
+}
+
+bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
+                                              const float orientation,
+                                              pcl::visualization::PCLVisualizer &viewer,
+                                              const std::string &name, int viewport)
 {
      lastRatedPosition=check_pos;
      pcl::PointXYZ center_of_mass(0.0,0.0,1.0); //center of mass relative to checkpos(x,y,~)
@@ -538,6 +582,8 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
      float lengthy=1.20;
      center_of_mass.x=cos(orientation)* center_of_mass.x-sin(orientation)* center_of_mass.y;
      center_of_mass.y=sin(orientation)* center_of_mass.x+cos(orientation)* center_of_mass.y;
+
+     // Points under robot
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
      unsigned int highest_Point_idx;
      unsigned int n_counter=0;
@@ -633,42 +679,24 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
                                                       (*cloud_positionRating),
                                                       tip_over_direction_3, viewer);
 
+    ROS_INFO("supppoint 3 found");
 
      viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
 
-     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
-                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
-
-     //Find ground contact points
      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
-     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
-     {
-         pcl::PointXYZI& p = cloud_positionRating->at(i);
-         const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
-         if(dist<0.01 && dist>-0.01)
-         {
-             std::string name ="groundContactArea"+boost::lexical_cast<std::string>(i);
-             viewer.addSphere(p, 0.01,0,1,1, name, viewport);
-             cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
-         }
-         p.intensity=p.z;
-     }
-
-
-     //Compute convex hull
      std::vector<unsigned int> convex_hull_indices;
-     const pcl::PointXYZ pcs=planeProjection(check_pos,final_normal,support_point_1);
-     viewer.addSphere(pcs,0.04,1,0,1, "cp_pro", viewport);
-     convex_hull_comp(*cloud_positionRating2, convex_hull_indices);
-     std::vector<pcl::PointXYZ> convex_hull_points;
 
-     for(int i=0; i<(convex_hull_indices.size()); ++i)
-     {
-         const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
-         convex_hull_points.push_back(p1);
-     }
+     std::vector<pcl::PointXYZ> convex_hull_points = build_convex_hull(cloud_positionRating,
+                                                                       check_pos,
+                                                                       support_point_1,
+                                                                       support_point_2,
+                                                                       support_point_3,
+                                                                       viewer, viewport,
+                                                                       convex_hull_indices,
+                                                                       cloud_positionRating2);
 
+     ROS_INFO("nach convex_hull_points");
 
      //Compute Force Angle Stability Metric
      std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
