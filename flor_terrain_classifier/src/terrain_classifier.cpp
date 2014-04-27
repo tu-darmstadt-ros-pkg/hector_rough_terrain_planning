@@ -439,10 +439,10 @@ pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
     return pcl::PointXYZ(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
-// distance between 2 points
-//float dist(pcl::PointXYZ p1, const pcl::PointXYZ p2){
-
-//}
+// distance between 2 points (only seen in Z = 0 plane)
+float distanceXY(pcl::PointXYZ p1, const pcl::PointXYZ p2){
+    return sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y));
+}
 
 // 1 if positive, 0 if zero, -1 if negative
 int sign(float a){
@@ -651,55 +651,63 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          }
      }
      const pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
-     cloud_positionRating->at(support_point_1_idx).intensity=0.0;
 
 
-     //find 2nd point of supp polygon
+    int counter = 0;
+    while (true){
+        // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
+        counter++;
+        if (counter > 20){
+            ROS_INFO("ERROR -Supporting polygon after 20 itereations not found // check_pos not in hull- ERROR");
+                    break;
+        }
 
-     const pcl::PointXYZ tip_over_axis_point = support_point_1;
-     const pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
-     const pcl::PointXYZ tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
+        // find supp P 2
+        const pcl::PointXYZ tip_over_axis_point = support_point_1;
+        const pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
+        const pcl::PointXYZ tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
 
-     const pcl::PointXYZ support_point_2 = eval_point(tip_over_axis_point,
-                                                      tip_over_axis_vector,
-                                                      (*cloud_positionRating),
-                                                      tip_over_direction, viewer);
+        const pcl::PointXYZ support_point_2 = eval_point(tip_over_axis_point,
+                                                         tip_over_axis_vector,
+                                                         (*cloud_positionRating),
+                                                         tip_over_direction, viewer);
 
-     viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
-     viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
+        viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
+        viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
 
-    //find third point
-    const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
-    const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
-    pcl::PointXYZ tip_over_direction_3 ;
-    if(ccw(support_point_1,support_point_2,center_of_mass)>0)
-          tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
-    else
-          tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
+       //find third point
+       const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
+       const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
+       pcl::PointXYZ tip_over_direction_3 ;
+       if(ccw(support_point_1,support_point_2,center_of_mass)>0)
+             tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
+       else
+             tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
 
-    const pcl::PointXYZ support_point_3 = eval_point(tip_over_axis_point_3,
-                                                      tip_over_axis_vector_3,
-                                                      (*cloud_positionRating),
-                                                      tip_over_direction_3, viewer);
+       const pcl::PointXYZ support_point_3 = eval_point(tip_over_axis_point_3,
+                                                         tip_over_axis_vector_3,
+                                                         (*cloud_positionRating),
+                                                         tip_over_direction_3, viewer);
 
-    ROS_INFO("supppoint 3 found");
+       ROS_INFO("supppoint 3 found");
 
-     viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
+       viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
 
 
-     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
-     std::vector<unsigned int> convex_hull_indices;
+       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
+       std::vector<unsigned int> convex_hull_indices;
 
-     std::vector<pcl::PointXYZ> convex_hull_points = build_convex_hull(cloud_positionRating,
-                                                                       check_pos,
-                                                                       support_point_1,
-                                                                       support_point_2,
-                                                                       support_point_3,
-                                                                       viewer, viewport,
-                                                                       convex_hull_indices,
-                                                                       cloud_positionRating2);
+       std::vector<pcl::PointXYZ> convex_hull_points = build_convex_hull(cloud_positionRating,
+                                                                          check_pos,
+                                                                          support_point_1,
+                                                                          support_point_2,
+                                                                          support_point_3,
+                                                                          viewer, viewport,
+                                                                          convex_hull_indices,
+                                                                          cloud_positionRating2);
 
-     while(true){
+
+
          // check if Center of Mass is in hull
          bool CenterInHull = true;
          for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
@@ -720,10 +728,17 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          // checkpos is not in hull
 
          // find closest point to checkpos
-       //  float dist = dist(convex_hull_points.at(0), check_pos);
-      //   for (int i = 0; i < convex_hull_points.size(); ++i){
-     //
-     //    }
+         float dist = distanceXY(convex_hull_points.at(0), check_pos);
+         int index_of_closest_point = 0;
+         for (int i = 1; i < convex_hull_points.size(); ++i){
+            float dist_to_check = distanceXY(convex_hull_points.at(i), check_pos);
+            if (dist_to_check < dist){
+                dist = dist_to_check;
+                index_of_closest_point = i;
+            }
+         }
+
+         support_point_1 = convex_hull_points.at(index_of_closest_point);
 
 
      } // endwhile
