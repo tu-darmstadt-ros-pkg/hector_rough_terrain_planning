@@ -663,7 +663,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
          convex_hull_points.push_back(p1);
      }
-
+//
 
      std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
      for (unsigned int i=0; i<rating.size();++i)
