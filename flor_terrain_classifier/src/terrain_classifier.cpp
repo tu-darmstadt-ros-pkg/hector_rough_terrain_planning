@@ -622,10 +622,11 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
     //find third point
     const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
     const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
-
-    // Fehler da auch in die andere Richtung definiert sein kann ich erst machen wenn das mit den richtungen überaupt
-    // funktioniert.
-    const pcl::PointXYZ tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
+    pcl::PointXYZ tip_over_direction_3 ;
+    if(ccw(support_point_1,support_point_2,center_of_mass)>0)
+          tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
+    else
+          tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
 
     const pcl::PointXYZ support_point_3 = eval_point(tip_over_axis_point_3,
                                                       tip_over_axis_vector_3,
@@ -639,7 +640,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
                                                     pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
 
-     std::vector<unsigned int> convex_hull_indices;
+     //Find ground contact points
      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2(new pcl::PointCloud<pcl::PointXYZ>());
      for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
@@ -653,6 +654,10 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
          }
          p.intensity=p.z;
      }
+
+
+     //Compute convex hull
+     std::vector<unsigned int> convex_hull_indices;
      const pcl::PointXYZ pcs=planeProjection(check_pos,final_normal,support_point_1);
      viewer.addSphere(pcs,0.04,1,0,1, "cp_pro", viewport);
      convex_hull_comp(*cloud_positionRating2, convex_hull_indices);
@@ -663,8 +668,9 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos, co
          const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
          convex_hull_points.push_back(p1);
      }
-//
 
+
+     //Compute Force Angle Stability Metric
      std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
      for (unsigned int i=0; i<rating.size();++i)
      {
