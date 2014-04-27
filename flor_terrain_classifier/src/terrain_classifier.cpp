@@ -663,8 +663,8 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
         // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
         counter++;
         ROS_INFO("%i iteration while loop", counter);
-        if (counter > 20){
-            ROS_INFO("ERROR -Supporting polygon after 20 itereations not found // check_pos not in hull- ERROR");
+        if (counter > 6){
+            ROS_INFO("ERROR -Supporting polygon after 6 itereations not found // check_pos not in hull- ERROR");
                     break;
         }
 
@@ -706,19 +706,16 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
 
-         // check if Center of Mass is in hull
+         // check if check_pos is in hull
          bool CenterInHull = true;
 
 
          for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
-             if (i < convex_hull_points.size() - 1){if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i), check_pos)) == 1){
+             if (i < convex_hull_points.size() - 1){
+                 if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == 1){
                      CenterInHull = false;
-                     break;
                  }
              }
-
-             if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(0), check_pos)) == 1)
-                 CenterInHull = false;
          } // end for
 
 
