@@ -186,7 +186,7 @@ public:
   pcl::PointXYZ eval_point(const pcl::PointXYZ& tip_over_axis_point,
                                               const pcl::PointXYZ& tip_over_axis_vector,
                                               const pcl::PointCloud<pcl::PointXYZI> &pointcloud_robo,
-                                              const pcl::PointXYZ& tip_over_direction, pcl::visualization::PCLVisualizer &viewer);
+                                              const pcl::PointXYZ& tip_over_direction);
 
   std::vector<pcl::PointXYZ> build_convex_hull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
                                                const pcl::PointXYZ& check_pos,
