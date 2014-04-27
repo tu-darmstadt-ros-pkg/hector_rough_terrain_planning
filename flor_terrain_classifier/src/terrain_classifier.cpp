@@ -702,7 +702,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
      while(true){
          // check if Center of Mass is in hull
          bool CenterInHull = true;
-         for (int i = 0; i < convex_hull_points.size(); ++i){
+         for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
              if (i < convex_hull_points.size() - 1){
                  if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i), check_pos)) == -1)
                      CenterInHull = false;
