@@ -439,6 +439,11 @@ pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
     return pcl::PointXYZ(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
+// distance between 2 points
+//float dist(pcl::PointXYZ p1, const pcl::PointXYZ p2){
+
+//}
+
 // 1 if positive, 0 if zero, -1 if negative
 int sign(float a){
     if (a == 0) return 0;
@@ -535,8 +540,6 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::Poin
                                              int viewport,
                                              std::vector<unsigned int>& convex_hull_indices,
                                              pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2){
-
-    ROS_INFO("in build_convex_hull");
 
     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
@@ -696,7 +699,34 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
                                                                        convex_hull_indices,
                                                                        cloud_positionRating2);
 
-     ROS_INFO("nach convex_hull_points");
+     while(true){
+         // check if Center of Mass is in hull
+         bool CenterInHull = true;
+         for (int i = 0; i < convex_hull_points.size(); ++i){
+             if (i < convex_hull_points.size() - 1){
+                 if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i), check_pos)) == -1)
+                     CenterInHull = false;
+                     break;
+             }
+
+             if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(0), check_pos)) == -1)
+                 CenterInHull = false;
+         } // end for
+         if (CenterInHull == true){
+             // The checkpos is in the convex hull. nothing needs to be changed
+             break; // endwhile
+         }
+
+         // checkpos is not in hull
+
+         // find closest point to checkpos
+       //  float dist = dist(convex_hull_points.at(0), check_pos);
+      //   for (int i = 0; i < convex_hull_points.size(); ++i){
+     //
+     //    }
+
+
+     } // endwhile
 
      //Compute Force Angle Stability Metric
      std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
