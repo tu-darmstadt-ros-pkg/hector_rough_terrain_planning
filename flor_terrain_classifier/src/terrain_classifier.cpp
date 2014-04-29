@@ -642,13 +642,15 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          return false;
      }
 
-     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);
+
+     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);//highest point
      int support_point_1_idx;
-     float min_dist=-1.0;     
+     float min_dist=-1.0;
+     //choose highest point (+-delta), closest to CoM
      for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
          pcl::PointXYZI& p = cloud_positionRating->at(i);
-         if(((p.z-p_max.z)<0.00003)&&((p.z-p_max.z)>-0.00003))
+         if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
          {
              float dist=sqrt((p.x-check_pos.x)*(p.x-check_pos.x)+(p.y-check_pos.y)*(p.y-check_pos.y));
              if(min_dist<0.0 || dist<min_dist)
@@ -826,11 +828,9 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
          const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
-         ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+         //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
          viewer.addLine(p1,p2,1.0-c,c,0,name);
      }
-
-
 
     return true;
 }
@@ -841,6 +841,10 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
 
     //draw
     viewer.addSphere(lastRatedPosition, 0.03, "lastRatedPositionSphere", viewport);
+    pcl::PointXYZ pr_top(lastRatedPosition.x,lastRatedPosition.y,lastRatedPosition.z+5.0);
+    pcl::PointXYZ pr_bottom(lastRatedPosition.x,lastRatedPosition.y,lastRatedPosition.z-5.0);
+    viewer.addLine(pr_top,pr_bottom,"tb",viewport);
+
     pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
     viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
     viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
