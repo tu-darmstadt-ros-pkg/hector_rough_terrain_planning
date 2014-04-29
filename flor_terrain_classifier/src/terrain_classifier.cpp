@@ -758,8 +758,9 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
      }
 
      //Draw Projected Robot
-     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+     pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                     pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+     if(final_normal.z<0)final_normal=pcl::PointXYZ(-1*final_normal.x,-1*final_normal.y,-1*final_normal.z);
      float z0=(-(x_max-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
      float z1=(-(x_min-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
      float z2=(-(x_max-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
