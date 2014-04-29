@@ -783,6 +783,10 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
 
     //draw
     viewer.addSphere(lastRatedPosition, 0.03, "lastRatedPositionSphere", viewport);
+    pcl::PointXYZ pr_top(lastRatedPosition.x,lastRatedPosition.y,lastRatedPosition.z+5.0);
+    pcl::PointXYZ pr_bottom(lastRatedPosition.x,lastRatedPosition.y,lastRatedPosition.z-5.0);
+    viewer.addLine(pr_top,pr_bottom,"tb",viewport);
+
     pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
     viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
     viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
