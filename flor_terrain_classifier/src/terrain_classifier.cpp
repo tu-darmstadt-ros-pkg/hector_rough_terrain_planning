@@ -619,13 +619,15 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          return false;
      }
 
-     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);
+
+     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);//highest point
      int support_point_1_idx;
-     float min_dist=-1.0;     
+     float min_dist=-1.0;
+     //choose highest point (+-delta), closest to CoM
      for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
      {
          pcl::PointXYZI& p = cloud_positionRating->at(i);
-         if(((p.z-p_max.z)<0.00003)&&((p.z-p_max.z)>-0.00003))
+         if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
          {
              float dist=sqrt((p.x-check_pos.x)*(p.x-check_pos.x)+(p.y-check_pos.y)*(p.y-check_pos.y));
              if(min_dist<0.0 || dist<min_dist)
@@ -706,7 +708,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
          counter++;
          ROS_INFO("%i iteration while loop", counter);
-         if (counter > 0){
+         if (counter > 1){
              ROS_INFO("ERROR -Supporting polygon after 10 itereations not found // check_pos not in hull- ERROR");
                      break;
          }
