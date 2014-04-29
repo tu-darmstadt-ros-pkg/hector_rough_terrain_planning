@@ -198,10 +198,11 @@ public:
                                                std::vector<unsigned int>& convex_hull_indices,
                                                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2);
 
- pcl::PointXYZ compute_center_of_mass(const pcl::PointXYZ& axis_p1,
-                                       const pcl::PointXYZ& axis_p2,
-                                       const pcl::PointXYZ& check_pos,
-                                       const Eigen::Vector3f &offset);
+ pcl::PointXYZ compute_center_of_mass(const pcl::PointXYZ& p1_left,
+                                       const pcl::PointXYZ& p2_left,
+                                       const Eigen::Vector3f &normal,
+                                       const pcl::PointXYZ &mid,
+                                      const Eigen::Vector3f &offset);
 
   bool computePositionRating(const pcl::PointXYZ& checkPos,
                              const float orientation,

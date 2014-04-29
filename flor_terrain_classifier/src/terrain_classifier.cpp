@@ -561,15 +561,23 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::Poin
     return convex_hull_points;
 }
 
-pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &axis_p1,
-                                                        const pcl::PointXYZ &axis_p2,
-                                                        const pcl::PointXYZ &check_pos,
+pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &p1_left,
+                                                        const pcl::PointXYZ &p2_left,
+                                                        const Eigen::Vector3f &normal,
+                                                        const pcl::PointXYZ &mid,
                                                         const Eigen::Vector3f &offset){
 
-    Eigen::Vector3f axis = Eigen::Vector3f(axis_p2.x - axis_p1.x, axis_p2.y - axis_p1.y, axis_p2.z - axis_p1.z);
-    axis.normalize();
-    //compute rotation matrix
-    Eigen::Matrix3f rot;
+    Eigen::Vector3f axis_left = Eigen::Vector3f(p2_left.x - p1_left.x, p2_left.y - p1_left.y, p2_left.z - p1_left.z);
+    axis_left.normalize();
+    Eigen::Vector3f my_normal = normal;
+    my_normal.normalize();
+
+    float CMx = mid.x + (offset.z() * my_normal.x()) + (axis_left.x() * offset.x());
+    float CMy = mid.y + (offset.z() * my_normal.y()) + (axis_left.y() * offset.x());
+    float CMz = mid.z + (offset.z() * my_normal.z()) + (axis_left.z() * offset.x());
+
+    pcl::PointXYZ center_of_mass = pcl::PointXYZ(CMx, CMy, CMz);
+    return center_of_mass;
 }
 
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
@@ -577,8 +585,12 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
                                               pcl::visualization::PCLVisualizer &viewer,
                                               const std::string &name, int viewport)
 {
+
+    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.10,0.0,0.3);
+
      lastRatedPosition=check_pos;
      pcl::PointXYZ center_of_mass(0.0,0.0,1.0); //center of mass relative to checkpos(x,y,~)
+
      float widthx=0.50;
      float lengthy=1.20;
      center_of_mass.x=cos(orientation)* center_of_mass.x-sin(orientation)* center_of_mass.y;
@@ -675,7 +687,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
        const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
        const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
        pcl::PointXYZ tip_over_direction_3 ;
-       if(ccw(support_point_1,support_point_2,center_of_mass)>0)
+       if(ccw(support_point_1,support_point_2,check_pos)>0)
              tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
        else
              tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
@@ -717,7 +729,9 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
          counter++;
          ROS_INFO("%i iteration while loop", counter);
-         if (counter > 0){
+
+
+         if (counter > 1){
              ROS_INFO("ERROR -Supporting polygon after 10 itereations not found // check_pos not in hull- ERROR");
                      break;
          }
@@ -753,8 +767,14 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
     }
 
     //Compute and Draw Projected Robot
-    const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+    pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+    if (final_normal.z < 0){
+        final_normal.x = -final_normal.x;
+        final_normal.y = -final_normal.y;
+        final_normal.z = -final_normal.z;
+    }
+
     float z0=(-(x_max-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
     float z1=(-(x_min-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
     float z2=(-(x_max-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
@@ -762,20 +782,39 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
 
-    const pcl::PointXYZ p_uff(addPoints(final_normal,support_point_1));
+
     const pcl::PointXYZ p_projected_final0(x_max,y_max,z0);
     const pcl::PointXYZ p_projected_final1(x_min,y_max,z1);
     const pcl::PointXYZ p_projected_final2(x_max,y_min,z2);
     const pcl::PointXYZ p_projected_final3(x_min,y_min,z3);
+    viewer.addSphere(p_projected_final0, 0.05,1,0,0, "R1", viewport);
+    viewer.addSphere(p_projected_final1, 0.05,1,0,0, "R2", viewport);
+    viewer.addSphere(p_projected_final2, 0.05,1,0,0, "R3", viewport);
+    viewer.addSphere(p_projected_final3, 0.05,1,0,0, "R4", viewport);
+
+    pcl::PointXYZ p_projected_middle = addPoints(p_projected_final0, addPoints(p_projected_final1, addPoints(p_projected_final2, p_projected_final3)));
+    p_projected_middle.x = p_projected_middle.x / 4.0;
+    p_projected_middle.y = p_projected_middle.y / 4.0;
+    p_projected_middle.y = p_projected_middle.y / 4.0;
+
+    const pcl::PointXYZ p_uff(addPoints(final_normal,p_projected_middle));
     viewer.addLine(p_projected_final0,p_projected_final1,1.0,1.0,1.0,"f0");
     viewer.addLine(p_projected_final1,p_projected_final3,1.0,1.0,1.0,"f1"); // this is my line
     viewer.addLine(p_projected_final3,p_projected_final2,1.0,1.0,1.0,"f2");
     viewer.addLine(p_projected_final2,p_projected_final0,1.0,1.0,1.0,"f3");
 
-    viewer.addLine(support_point_1,p_uff,1.0,1.0,1.0,"fnormal");
+    viewer.addLine(p_projected_middle,p_uff,1.0,1.0,1.0,"fnormal");
 
     // compute center_of_mass
-    center_of_mass;
+
+
+    Eigen::Vector3f normal = Eigen::Vector3f(final_normal.x, final_normal.y, final_normal.z);
+    normal.normalize();
+    pcl::PointXYZ CM = compute_center_of_mass(p1, p2, normal, p_projected_middle, offset_CM);
+
+    viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
+    viewer.addSphere(p_projected_middle, 0.05,0,1,0, "proMid", viewport);
+    viewer.addSphere(CM, 0.05,0,0,1, "CM", viewport);
 
      //Compute Force Angle Stability Metric
      std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
