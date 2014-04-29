@@ -797,7 +797,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
     pcl::PointXYZ p_projected_middle = addPoints(p_projected_final0, addPoints(p_projected_final1, addPoints(p_projected_final2, p_projected_final3)));
     p_projected_middle.x = p_projected_middle.x / 4.0;
     p_projected_middle.y = p_projected_middle.y / 4.0;
-    p_projected_middle.y = p_projected_middle.y / 4.0;
+    p_projected_middle.z = p_projected_middle.z / 4.0;
 
     const pcl::PointXYZ p_uff(addPoints(final_normal,p_projected_middle));
     viewer.addLine(p_projected_final0,p_projected_final1,1.0,1.0,1.0,"f0");
@@ -815,7 +815,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
     pcl::PointXYZ CM = compute_center_of_mass(p1, p2, normal, p_projected_middle, offset_CM);
 
     viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
-    viewer.addSphere(p_projected_middle, 0.05,0,1,0, "proMid", viewport);
+    viewer.addSphere(p_projected_middle, 0.05,0,1,0, "proMidx", viewport);
     viewer.addSphere(CM, 0.05,0,0,1, "CM", viewport);
 
      //Compute Force Angle Stability Metric
