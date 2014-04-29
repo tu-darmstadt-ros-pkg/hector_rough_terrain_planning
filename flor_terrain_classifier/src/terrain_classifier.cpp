@@ -571,6 +571,17 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::Poin
     return convex_hull_points;
 }
 
+pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &axis_p1,
+                                                        const pcl::PointXYZ &axis_p2,
+                                                        const pcl::PointXYZ &check_pos,
+                                                        const Eigen::Vector3f &offset){
+
+    Eigen::Vector3f axis = Eigen::Vector3f(axis_p2.x - axis_p1.x, axis_p2.y - axis_p1.y, axis_p2.z - axis_p1.z);
+    axis.normalize();
+    //compute rotation matrix
+    Eigen::Matrix3f rot;
+}
+
 bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
                                               const float orientation,
                                               pcl::visualization::PCLVisualizer &viewer,
@@ -758,6 +769,31 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
         viewer.addSphere(cloud_positionRating2->at(i), 0.01,0,1,1, name, viewport);
     }
 
+    //Compute and Draw Projected Robot
+    const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+                                                   pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+    float z0=(-(x_max-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
+    float z1=(-(x_min-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
+    float z2=(-(x_max-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
+    float z3=(-(x_min-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
+
+
+
+    const pcl::PointXYZ p_uff(addPoints(final_normal,support_point_1));
+    const pcl::PointXYZ p_projected_final0(x_max,y_max,z0);
+    const pcl::PointXYZ p_projected_final1(x_min,y_max,z1);
+    const pcl::PointXYZ p_projected_final2(x_max,y_min,z2);
+    const pcl::PointXYZ p_projected_final3(x_min,y_min,z3);
+    viewer.addLine(p_projected_final0,p_projected_final1,1.0,1.0,1.0,"f0");
+    viewer.addLine(p_projected_final1,p_projected_final3,1.0,1.0,1.0,"f1"); // this is my line
+    viewer.addLine(p_projected_final3,p_projected_final2,1.0,1.0,1.0,"f2");
+    viewer.addLine(p_projected_final2,p_projected_final0,1.0,1.0,1.0,"f3");
+
+    viewer.addLine(support_point_1,p_uff,1.0,1.0,1.0,"fnormal");
+
+    // compute center_of_mass
+    center_of_mass;
+
      //Compute Force Angle Stability Metric
      std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
      for (unsigned int i=0; i<rating.size();++i)
@@ -772,29 +808,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          viewer.addLine(p1,p2,1.0-c,c,0,name);
      }
 
-     //Draw Projected Robot
-     //
 
-     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
-                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
-     float z0=(-(x_max-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-     float z1=(-(x_min-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-     float z2=(-(x_max-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-     float z3=(-(x_min-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-
-
-
-     const pcl::PointXYZ p_uff(addPoints(final_normal,support_point_1));
-     const pcl::PointXYZ p_projected_final0(x_max,y_max,z0);
-     const pcl::PointXYZ p_projected_final1(x_min,y_max,z1);
-     const pcl::PointXYZ p_projected_final2(x_max,y_min,z2);
-     const pcl::PointXYZ p_projected_final3(x_min,y_min,z3);
-     viewer.addLine(p_projected_final0,p_projected_final1,1.0,1.0,1.0,"f0");
-     viewer.addLine(p_projected_final1,p_projected_final3,1.0,1.0,1.0,"f1");
-     viewer.addLine(p_projected_final3,p_projected_final2,1.0,1.0,1.0,"f2");
-     viewer.addLine(p_projected_final2,p_projected_final0,1.0,1.0,1.0,"f3");
-
-     viewer.addLine(support_point_1,p_uff,1.0,1.0,1.0,"fnormal");
 
     return true;
 }
