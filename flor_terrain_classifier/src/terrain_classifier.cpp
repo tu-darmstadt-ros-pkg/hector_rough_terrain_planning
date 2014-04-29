@@ -819,7 +819,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
     pcl::PointXYZ CM = compute_center_of_mass(p_projected_final0, p_projected_final1, normal, p_projected_middle, offset_CM);
 
     viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
-    viewer.addSphere(p_projected_middle, 0.05,0,1,0, "proMid", viewport);
+    viewer.addSphere(p_projected_middle, 0.05,0,1,0, "proMidx", viewport);
     viewer.addSphere(CM, 0.05,0,0,1, "CM", viewport);
 
      //Compute Force Angle Stability Metric
