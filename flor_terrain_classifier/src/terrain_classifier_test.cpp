@@ -48,9 +48,10 @@ void test_normals()
 
   ROS_INFO("Load point cloud");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
- // pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
-  pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
+  pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
 
 
   // add filtered point cloud to classifier
