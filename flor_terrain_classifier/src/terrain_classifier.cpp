@@ -708,7 +708,7 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
          counter++;
          ROS_INFO("%i iteration while loop", counter);
-         if (counter > 1){
+         if (counter >0){
              ROS_INFO("ERROR -Supporting polygon after 10 itereations not found // check_pos not in hull- ERROR");
                      break;
          }
@@ -753,13 +753,11 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
          const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
-         ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+         //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
          viewer.addLine(p1,p2,1.0-c,c,0,name);
      }
 
      //Draw Projected Robot
-     //
-
      const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                     pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
      float z0=(-(x_max-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
@@ -767,9 +765,6 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
      float z2=(-(x_max-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
      float z3=(-(x_min-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
 
-
-
-     const pcl::PointXYZ p_uff(addPoints(final_normal,support_point_1));
      const pcl::PointXYZ p_projected_final0(x_max,y_max,z0);
      const pcl::PointXYZ p_projected_final1(x_min,y_max,z1);
      const pcl::PointXYZ p_projected_final2(x_max,y_min,z2);
@@ -778,8 +773,6 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
      viewer.addLine(p_projected_final1,p_projected_final3,1.0,1.0,1.0,"f1");
      viewer.addLine(p_projected_final3,p_projected_final2,1.0,1.0,1.0,"f2");
      viewer.addLine(p_projected_final2,p_projected_final0,1.0,1.0,1.0,"f3");
-
-     viewer.addLine(support_point_1,p_uff,1.0,1.0,1.0,"fnormal");
 
     return true;
 }
