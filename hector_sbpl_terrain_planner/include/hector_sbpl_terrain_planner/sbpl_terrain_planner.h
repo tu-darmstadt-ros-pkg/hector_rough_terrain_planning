@@ -20,7 +20,7 @@ using namespace std;
 
 namespace sbpl_terrain_planner{
 
-class SBPLTerrainPlanner : public nav_core::BaseGlobalPlanner{
+class SBPLTerrainPlanner{ //: public nav_core::BaseGlobalPlanner{
 public:
   
   /**
@@ -34,7 +34,7 @@ public:
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
    */
-  SBPLTerrainPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+  SBPLTerrainPlanner(std::string name);
 
 
   /**
@@ -42,8 +42,8 @@ public:
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
    */
-  virtual void initialize(std::string name, 
-                          costmap_2d::Costmap2DROS* costmap_ros);
+  virtual void initialize(std::string name);
+                          //costmap_2d::Costmap2DROS* costmap_ros);
   
   /**
    * @brief Given a goal pose in the world, compute a plan
@@ -86,8 +86,8 @@ private:
   unsigned char sbpl_cost_multiplier_;
 
 
-  costmap_2d::Costmap2DROS* costmap_ros_; /**< manages the cost map for us */
-  costmap_2d::Costmap2D cost_map_;        /**< local copy of the costmap underlying cost_map_ros_ */
+  //costmap_2d::Costmap2DROS* costmap_ros_; /**< manages the cost map for us */
+  //costmap_2d::Costmap2D cost_map_;        /**< local copy of the costmap underlying cost_map_ros_ */
 
   ros::Publisher plan_pub_;
   ros::Publisher stats_publisher_;

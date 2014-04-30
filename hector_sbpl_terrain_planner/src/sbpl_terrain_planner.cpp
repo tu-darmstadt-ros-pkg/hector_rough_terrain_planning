@@ -75,16 +75,16 @@ class LatticeSCQ : public StateChangeQuery{
 };
 
 SBPLTerrainPlanner::SBPLTerrainPlanner()
-  : initialized_(false), costmap_ros_(NULL){
+  : initialized_(false){//, costmap_ros_(NULL){
 }
 
-SBPLTerrainPlanner::SBPLTerrainPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
-  : initialized_(false), costmap_ros_(NULL){
-  initialize(name, costmap_ros);
+SBPLTerrainPlanner::SBPLTerrainPlanner(std::string name)
+  : initialized_(false){//, costmap_ros_(NULL){
+  initialize(name);
 }
 
     
-void SBPLTerrainPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
+void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DROS* costmap_ros){
   if(!initialized_){
     ros::NodeHandle private_nh("~/"+name);
     ros::NodeHandle nh(name);
@@ -364,12 +364,13 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   //create a message for the plan 
   nav_msgs::Path gui_path;
   gui_path.poses.resize(sbpl_path.size());
-  gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
+  //gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
+  gui_path.header.frame_id = "map";
   gui_path.header.stamp = plan_time;
   for(unsigned int i=0; i<sbpl_path.size(); i++){
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = plan_time;
-    pose.header.frame_id = costmap_ros_->getGlobalFrameID();
+    pose.header.frame_id = gui_path.header.frame_id = "map";
 
     /*
     pose.pose.position.x = sbpl_path[i].x + cost_map_.getOriginX();
