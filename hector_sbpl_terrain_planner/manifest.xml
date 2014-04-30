@@ -10,7 +10,7 @@
   <url>http://ros.org/wiki/hector_sbpl_terrain_planner</url>
   
   <depend package="sbpl"/>
-  <depend package="geometry_msgs">
+  <depend package="geometry_msgs"/>
 
 </package>
 
