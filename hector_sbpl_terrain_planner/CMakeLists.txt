@@ -22,7 +22,12 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
-rosbuild_add_library(sbpl_terrain_planner src/discrete_space_information/environment_navxytheta_stability_lat.cpp)
+rosbuild_add_library(sbpl_terrain_planner_environment src/discrete_space_information/environment_navxytheta_stability_lat.cpp)
+
+rosbuild_add_library(sbpl_terrain_planner src/sbpl_terrain_planner.cpp)
+target_link_libraries(sbpl_terrain_planner sbpl_terrain_planner_environment)
+
+
 #target_link_libraries(sbpl_terrain_planner another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
