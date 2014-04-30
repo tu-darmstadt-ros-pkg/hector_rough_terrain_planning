@@ -134,25 +134,42 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
       ROS_ERROR("Failed to set cost_possibly_circumscribed_thresh parameter");
       exit(1);
     }
-    int obst_cost_thresh = costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE);
+    */
+    int obst_cost_thresh = 1;//costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE);
+
     vector<sbpl_2Dpt_t> perimeterptsV;
-    perimeterptsV.reserve(footprint.size());
-    for (size_t ii(0); ii < footprint.size(); ++ii) {
+    perimeterptsV.reserve(4);
+
+    sbpl_2Dpt_t pt;
+    pt.x = 0.1;
+    pt.y = 0.1;
+    perimeterptsV.push_back(pt);
+    pt.x = -0.1;
+    perimeterptsV.push_back(pt);
+    pt.y = -0.1;
+    perimeterptsV.push_back(pt);
+    pt.x = 0.1;
+    perimeterptsV.push_back(pt);
+
+
+    /*
+    for (size_t ii(0); ii < 4; ++ii) {
       sbpl_2Dpt_t pt;
       pt.x = footprint[ii].x;
       pt.y = footprint[ii].y;
       perimeterptsV.push_back(pt);
     }
+    */
 
     bool ret;
     try{
-      ret = env_->InitializeEnv(costmap_ros_->getSizeInCellsX(), // width
-                                costmap_ros_->getSizeInCellsY(), // height
+      ret = env_->InitializeEnv(1024, // width
+                                1024, // height
                                 0, // mapdata
                                 0, 0, 0, // start (x, y, theta, t)
                                 0, 0, 0, // goal (x, y, theta)
                                 0, 0, 0, //goal tolerance
-                                perimeterptsV, costmap_ros_->getResolution(), nominalvel_mpersecs,
+                                perimeterptsV, 0.05, nominalvel_mpersecs,
                                 timetoturn45degsinplace_secs, obst_cost_thresh,
                                 primitive_filename_.c_str());
     }
@@ -164,9 +181,14 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
       ROS_ERROR("SBPL initialization failed!");
       exit(1);
     }
-    for (ssize_t ix(0); ix < costmap_ros_->getSizeInCellsX(); ++ix)
-      for (ssize_t iy(0); iy < costmap_ros_->getSizeInCellsY(); ++iy)
-        env_->UpdateCost(ix, iy, costMapCostToSBPLCost(cost_map_.getCost(ix,iy)));
+
+    for (ssize_t ix(0); ix < 1024; ++ix){
+      for (ssize_t iy(0); iy < 1024; ++iy){
+        //env_->UpdateCost(ix, iy, costMapCostToSBPLCost(cost_map_.getCost(ix,iy)));
+        env_->UpdateCost(ix, iy, 0);
+      }
+    }
+
 
     if ("ARAPlanner" == planner_type_){
       ROS_INFO("Planning with ARA*");
@@ -180,7 +202,7 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
       ROS_ERROR("ARAPlanner and ADPlanner are currently the only supported planners!\n");
       exit(1);
     }
-    */
+
 
     ROS_INFO("[sbpl_lattice_planner] Initialized successfully");
     plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
@@ -247,9 +269,9 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
            start.pose.position.x, start.pose.position.y,goal.pose.position.x, goal.pose.position.y);
   double theta_start = 2 * atan2(start.pose.orientation.z, start.pose.orientation.w);
   double theta_goal = 2 * atan2(goal.pose.orientation.z, goal.pose.orientation.w);
-/*
+
   try{
-    int ret = env_->SetStart(start.pose.position.x - cost_map_.getOriginX(), start.pose.position.y - cost_map_.getOriginY(), theta_start);
+    int ret = env_->SetStart(start.pose.position.x , start.pose.position.y , theta_start);
     if(ret < 0 || planner_->set_start(ret) == 0){
       ROS_ERROR("ERROR: failed to set start state\n");
       return false;
@@ -261,7 +283,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   }
 
   try{
-    int ret = env_->SetGoal(goal.pose.position.x - cost_map_.getOriginX(), goal.pose.position.y - cost_map_.getOriginY(), theta_goal);
+    int ret = env_->SetGoal(goal.pose.position.x , goal.pose.position.y , theta_goal);
     if(ret < 0 || planner_->set_goal(ret) == 0){
       ROS_ERROR("ERROR: failed to set goal state\n");
       return false;
@@ -271,7 +293,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
     ROS_ERROR("SBPL encountered a fatal exception while setting the goal state");
     return false;
   }
-  */
+
   
   int offOnCount = 0;
   int onOffCount = 0;
