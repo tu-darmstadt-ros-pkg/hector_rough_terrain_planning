@@ -271,7 +271,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   double theta_goal = 2 * atan2(goal.pose.orientation.z, goal.pose.orientation.w);
 
   try{
-    int ret = env_->SetStart(start.pose.position.x +5.0 , start.pose.position.y+ 5.0 , theta_start);
+    int ret = env_->SetStart(start.pose.position.x  , start.pose.position.y , theta_start);
     if(ret < 0 || planner_->set_start(ret) == 0){
       ROS_ERROR("ERROR: failed to set start state\n");
       return false;
@@ -283,7 +283,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   }
 
   try{
-    int ret = env_->SetGoal(goal.pose.position.x +5.0 , goal.pose.position.y+5.0 , theta_goal);
+    int ret = env_->SetGoal(goal.pose.position.x , goal.pose.position.y , theta_goal);
     if(ret < 0 || planner_->set_goal(ret) == 0){
       ROS_ERROR("ERROR: failed to set goal state\n");
       return false;
@@ -395,8 +395,8 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
     pose.header.frame_id = gui_path.header.frame_id = "map";
 
 
-    pose.pose.position.x = sbpl_path[i].x + 5.0;
-    pose.pose.position.y = sbpl_path[i].y + 5.0;
+    pose.pose.position.x = sbpl_path[i].x;
+    pose.pose.position.y = sbpl_path[i].y;
 
     pose.pose.position.z = start.pose.position.z;
 

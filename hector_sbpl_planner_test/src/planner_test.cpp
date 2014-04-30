@@ -67,6 +67,8 @@ public:
     //Start always at 0 for now;
     tf::Pose start_pose;
     start_pose.setIdentity();
+    start_pose.getOrigin().setX(1.0);
+    start_pose.getOrigin().setY(1.0);
     robot_pose_tf.setData(start_pose);
 
     geometry_msgs::PoseStamped pose;
