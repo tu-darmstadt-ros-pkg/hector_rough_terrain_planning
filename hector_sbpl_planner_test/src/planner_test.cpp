@@ -46,7 +46,7 @@ public:
     //costmap_2d_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tfl_);
 
     planner_ = new sbpl_terrain_planner::SBPLTerrainPlanner();
-    planner_->initialize("hector_exploration_planner",costmap_2d_ros_);
+    planner_->initialize("hector_sbpl_terrain_planner");
 
 
     exploration_plan_pub_ = nh.advertise<nav_msgs::Path>("exploration_path",2);
@@ -136,7 +136,6 @@ protected:
 
   ros::Publisher exploration_plan_pub_;
   ros::Publisher search_pose_pub_;
-
 
   ros::Subscriber plan_cmd_sub_;
   ros::Subscriber goal_pose_sub_;
