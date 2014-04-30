@@ -18,27 +18,27 @@ using namespace std;
 //global representation
 #include <nav_core/base_global_planner.h>
 
-namespace sbpl_lattice_planner{
+namespace sbpl_terrain_planner{
 
-class SBPLLatticePlanner : public nav_core::BaseGlobalPlanner{
+class SBPLTerrainPlanner : public nav_core::BaseGlobalPlanner{
 public:
   
   /**
    * @brief  Default constructor for the NavFnROS object
    */
-  SBPLLatticePlanner();
+  SBPLTerrainPlanner();
 
   
   /**
-   * @brief  Constructor for the SBPLLatticePlanner object
+   * @brief  Constructor for the SBPLTerrainPlanner object
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
    */
-  SBPLLatticePlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+  SBPLTerrainPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
 
   /**
-   * @brief  Initialization function for the SBPLLatticePlanner object
+   * @brief  Initialization function for the SBPLTerrainPlanner object
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
    */
@@ -56,7 +56,7 @@ public:
                         const geometry_msgs::PoseStamped& goal, 
                         std::vector<geometry_msgs::PoseStamped>& plan);
 
-  virtual ~SBPLLatticePlanner(){};
+  virtual ~SBPLTerrainPlanner(){};
 
 private:
   unsigned char costMapCostToSBPLCost(unsigned char newcost);

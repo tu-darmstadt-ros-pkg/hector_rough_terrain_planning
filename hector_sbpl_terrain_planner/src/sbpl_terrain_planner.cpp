@@ -38,15 +38,15 @@
 #include <hector_sbpl_terrain_planner/sbpl_terrain_planner.h>
 //#include <pluginlib/class_list_macros.h>
 #include <nav_msgs/Path.h>
-//#include <sbpl_lattice_planner/SBPLLatticePlannerStats.h>
+//#include <sbpl_lattice_planner/SBPLTerrainPlannerStats.h>
 
 using namespace std;
 using namespace ros;
 
 
-//PLUGINLIB_DECLARE_CLASS(sbpl_latice_planner, SBPLLatticePlanner, sbpl_lattice_planner::SBPLLatticePlanner, nav_core::BaseGlobalPlanner);
+//PLUGINLIB_DECLARE_CLASS(sbpl_latice_planner, SBPLTerrainPlanner, sbpl_lattice_planner::SBPLTerrainPlanner, nav_core::BaseGlobalPlanner);
 
-namespace sbpl_lattice_planner{
+namespace sbpl_terrain_planner{
 
 class LatticeSCQ : public StateChangeQuery{
   public:
@@ -74,17 +74,17 @@ class LatticeSCQ : public StateChangeQuery{
     mutable std::vector<int> succsOfChangedCells_;
 };
 
-SBPLLatticePlanner::SBPLLatticePlanner()
+SBPLTerrainPlanner::SBPLTerrainPlanner()
   : initialized_(false), costmap_ros_(NULL){
 }
 
-SBPLLatticePlanner::SBPLLatticePlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) 
+SBPLTerrainPlanner::SBPLTerrainPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
   : initialized_(false), costmap_ros_(NULL){
   initialize(name, costmap_ros);
 }
 
     
-void SBPLLatticePlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
+void SBPLTerrainPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
   if(!initialized_){
     ros::NodeHandle private_nh("~/"+name);
     ros::NodeHandle nh(name);
@@ -184,7 +184,7 @@ void SBPLLatticePlanner::initialize(std::string name, costmap_2d::Costmap2DROS* 
 
     ROS_INFO("[sbpl_lattice_planner] Initialized successfully");
     plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
-    //stats_publisher_ = private_nh.advertise<sbpl_lattice_planner::SBPLLatticePlannerStats>("sbpl_lattice_planner_stats", 1);
+    //stats_publisher_ = private_nh.advertise<sbpl_lattice_planner::SBPLTerrainPlannerStats>("sbpl_lattice_planner_stats", 1);
     
     initialized_ = true;
   }
@@ -192,7 +192,7 @@ void SBPLLatticePlanner::initialize(std::string name, costmap_2d::Costmap2DROS* 
   
 //Taken from Sachin's sbpl_cart_planner
 //This rescales the costmap according to a rosparam which sets the obstacle cost
-unsigned char SBPLLatticePlanner::costMapCostToSBPLCost(unsigned char newcost){
+unsigned char SBPLTerrainPlanner::costMapCostToSBPLCost(unsigned char newcost){
   if(newcost == costmap_2d::LETHAL_OBSTACLE)
     return lethal_obstacle_;
   else if(newcost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
@@ -203,12 +203,12 @@ unsigned char SBPLLatticePlanner::costMapCostToSBPLCost(unsigned char newcost){
     return (unsigned char) (newcost/sbpl_cost_multiplier_ + 0.5);
 }
 
-void SBPLLatticePlanner::publishStats(int solution_cost, int solution_size, 
+void SBPLTerrainPlanner::publishStats(int solution_cost, int solution_size,
                                       const geometry_msgs::PoseStamped& start, 
                                       const geometry_msgs::PoseStamped& goal){
   // Fill up statistics and publish
   /*
-  sbpl_lattice_planner::SBPLLatticePlannerStats stats;
+  sbpl_lattice_planner::SBPLTerrainPlannerStats stats;
   stats.initial_epsilon = initial_epsilon_;
   stats.plan_to_first_solution = false;
   stats.final_number_of_expands = planner_->get_n_expands();
@@ -227,7 +227,7 @@ void SBPLLatticePlanner::publishStats(int solution_cost, int solution_size,
   */
 }
 
-bool SBPLLatticePlanner::makePlan(const geometry_msgs::PoseStamped& start,
+bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
                                  const geometry_msgs::PoseStamped& goal,
                                  std::vector<geometry_msgs::PoseStamped>& plan){
   if(!initialized_){
@@ -371,8 +371,10 @@ bool SBPLLatticePlanner::makePlan(const geometry_msgs::PoseStamped& start,
     pose.header.stamp = plan_time;
     pose.header.frame_id = costmap_ros_->getGlobalFrameID();
 
+    /*
     pose.pose.position.x = sbpl_path[i].x + cost_map_.getOriginX();
     pose.pose.position.y = sbpl_path[i].y + cost_map_.getOriginY();
+    */
     pose.pose.position.z = start.pose.position.z;
 
     tf::Quaternion temp;
