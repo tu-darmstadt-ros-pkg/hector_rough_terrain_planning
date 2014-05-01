@@ -389,7 +389,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
     }
 }
 //As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube
-
+// a low number is not stable. a high number is stable.
 std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
 {
     const Eigen::Vector3f center_of_mass = Eigen::Vector3f(center_of_mass_pcl.x,center_of_mass_pcl.y,center_of_mass_pcl.z);
@@ -433,6 +433,11 @@ pcl::PointXYZ addPoints(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
     return pcl::PointXYZ(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
 }
 
+pcl::PointXYZ addPoints(const pcl::PointXYZ& p1,const  Eigen::Vector3f& vector){
+    return pcl::PointXYZ(p1.x + vector.x(), p1.y + vector.y(), p1.z + vector.z());
+}
+
+
 // Point1 - Point2
 pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
 
@@ -452,6 +457,7 @@ int sign(float a){
 }
 
 // evaluates the second or third point of the supporting plane
+// if tip_over_axis_point is returned, there could not be a point found.
 pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
                                             const pcl::PointXYZ& tip_over_axis_vector,
                                             const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
@@ -516,6 +522,11 @@ pcl::PointXYZ TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_p
         }
     }
 
+    // IF NO POINT COULD BE FOUND
+    if (min_angle_idx == -1){
+        return tip_over_axis_point;
+    }
+
     const pcl::PointXYZ support_point=pcl::PointXYZ(pointcloud_robo.at(min_angle_idx).x,pointcloud_robo.at(min_angle_idx).y,pointcloud_robo.at(min_angle_idx).z);
     return support_point;
 }
@@ -561,6 +572,57 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::Poin
     return convex_hull_points;
 }
 
+void TerrainClassifier::compute_robot_positions(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
+                                                const float x_max, const float x_min, const float y_max, const float y_min,
+                                                const Eigen::Vector3f& offset_CM,
+                                                pcl::PointXYZ& normal,
+                                                pcl::PointXYZ& robot_point_0, pcl::PointXYZ& robot_point_1, pcl::PointXYZ& robot_point_2, pcl::PointXYZ& robot_point_3,
+                                                pcl::PointXYZ& robot_point_mid, pcl::PointXYZ& robot_center_of_mass){
+
+    normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+                                                   pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+    if (normal.z < 0){
+        normal.x = -normal.x;
+        normal.y = -normal.y;
+        normal.z = -normal.z;
+    }
+
+    float z0=(-(x_max-support_point_2.x)*normal.x-(y_max-support_point_2.y)*normal.y)/normal.z +support_point_2.z;
+    float z1=(-(x_min-support_point_2.x)*normal.x-(y_max-support_point_2.y)*normal.y)/normal.z +support_point_2.z;
+    float z2=(-(x_max-support_point_2.x)*normal.x-(y_min-support_point_2.y)*normal.y)/normal.z +support_point_2.z;
+    float z3=(-(x_min-support_point_2.x)*normal.x-(y_min-support_point_2.y)*normal.y)/normal.z +support_point_2.z;
+
+
+    robot_point_0 = pcl::PointXYZ(x_max,y_max,z0);
+    robot_point_1 = pcl::PointXYZ(x_min,y_max,z1);
+    robot_point_2 = pcl::PointXYZ(x_max,y_min,z2);
+    robot_point_3 = pcl::PointXYZ(x_min,y_min,z3);
+
+    robot_point_mid = addPoints(robot_point_0, addPoints(robot_point_1, addPoints(robot_point_2, robot_point_3)));
+    robot_point_mid.x = robot_point_mid.x / 4.0;
+    robot_point_mid.y = robot_point_mid.y / 4.0;
+    robot_point_mid.z = robot_point_mid.z / 4.0;
+
+
+
+    // compute center_of_mass
+
+
+    Eigen::Vector3f normal_vector = Eigen::Vector3f(normal.x, normal.y, normal.z);
+    normal_vector.normalize();
+    normal.x = normal_vector.x();
+    normal.y = normal_vector.y();
+    normal.z = normal_vector.z();
+
+    // ACHTUNG EVENTUELL FLASCH RUM, DA ICH NICHT WEISS WIE RUM DER ROBOTER STEHT
+    // --------------------------------------------------------------------------------------------
+    // bezg p_pro 1 / 0
+    robot_center_of_mass = compute_center_of_mass(robot_point_0, robot_point_1, normal_vector, robot_point_mid, offset_CM);
+
+
+
+}
+
 pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &p1_left,
                                                         const pcl::PointXYZ &p2_left,
                                                         const Eigen::Vector3f &normal,
@@ -580,7 +642,7 @@ pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &p1_
     return center_of_mass;
 }
 
-bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
+float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
                                               const float orientation,
                                               pcl::visualization::PCLVisualizer &viewer,
                                               const std::string &name, int viewport)
@@ -759,84 +821,175 @@ bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
      } // endwhile
 
-     // render points
-    viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
-    viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
-    viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
-    for (unsigned int i = 0; i < cloud_positionRating2->size(); ++i){
-        std::string name ="groundContactArea"+boost::lexical_cast<std::string>(i);
-        viewer.addSphere(cloud_positionRating2->at(i), 0.01,0,1,1, name, viewport);
-    }
+
 
     //Compute and Draw Projected Robot
-    pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
-                                                   pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
-    if (final_normal.z < 0){
-        final_normal.x = -final_normal.x;
-        final_normal.y = -final_normal.y;
-        final_normal.z = -final_normal.z;
-    }
 
-    float z0=(-(x_max-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-    float z1=(-(x_min-support_point_2.x)*final_normal.x-(y_max-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-    float z2=(-(x_max-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
-    float z3=(-(x_min-support_point_2.x)*final_normal.x-(y_min-support_point_2.y)*final_normal.y)/final_normal.z +support_point_2.z;
+    //Compute points and normal of robot
+    pcl::PointXYZ normal;
+    pcl::PointXYZ robot_point_0;
+    pcl::PointXYZ robot_point_1;
+    pcl::PointXYZ robot_point_2;
+    pcl::PointXYZ robot_point_3;
+    pcl::PointXYZ robot_point_mid;
+    pcl::PointXYZ center_of_mass_iterative;
+
+    compute_robot_positions(support_point_1, support_point_2, support_point_3, x_max, x_min, y_max, y_min,
+                            offset_CM,
+                            normal,
+                            robot_point_0, robot_point_1, robot_point_2, robot_point_3,
+                            robot_point_mid, center_of_mass_iterative);
+
+    // render points
+ /*  viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
+   viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
+   viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
+   for (unsigned int i = 0; i < cloud_positionRating2->size(); ++i){
+       std::string name ="groundContactArea"+boost::lexical_cast<std::string>(i);
+       viewer.addSphere(cloud_positionRating2->at(i), 0.01,0,1,1, name, viewport);
+   }
+    // draw robot points
+   /* viewer.addSphere(robot_point_0, 0.05,1,0,0, "R1", viewport);
+    viewer.addSphere(robot_point_1, 0.05,1,0,0, "R2", viewport);
+    viewer.addSphere(robot_point_2, 0.05,1,0,0, "R3", viewport);
+    viewer.addSphere(robot_point_3, 0.05,1,0,0, "R4", viewport);
+    // draw robot lines
+    viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0");
+    viewer.addLine(robot_point_1,robot_point_3,1.0,1.0,1.0,"f1");
+    viewer.addLine(robot_point_3,robot_point_2,1.0,1.0,1.0,"f2");
+    viewer.addLine(robot_point_2,robot_point_0,1.0,1.0,1.0,"f3");
+    // draw center
+    viewer.addSphere(check_pos, 0.03,1,0,0, "checkPosition", viewport);
+    viewer.addSphere(robot_point_mid, 0.03,0,1,0, "proMidx", viewport);
+    viewer.addSphere(robot_center_of_mass, 0.03,0,0,1, "CM", viewport);
+    // draw normal
+    const pcl::PointXYZ p_uff(addPoints(robot_point_mid, normal));
+    viewer.addLine(robot_point_mid,p_uff,1.0,1.0,1.0,"fnormal");
+    */
 
 
-
-
-    const pcl::PointXYZ p_projected_final0(x_max,y_max,z0);
-    const pcl::PointXYZ p_projected_final1(x_min,y_max,z1);
-    const pcl::PointXYZ p_projected_final2(x_max,y_min,z2);
-    const pcl::PointXYZ p_projected_final3(x_min,y_min,z3);
-    viewer.addSphere(p_projected_final0, 0.05,1,0,0, "R1", viewport);
-    viewer.addSphere(p_projected_final1, 0.05,1,0,0, "R2", viewport);
-    viewer.addSphere(p_projected_final2, 0.05,1,0,0, "R3", viewport);
-    viewer.addSphere(p_projected_final3, 0.05,1,0,0, "R4", viewport);
-
-    pcl::PointXYZ p_projected_middle = addPoints(p_projected_final0, addPoints(p_projected_final1, addPoints(p_projected_final2, p_projected_final3)));
-    p_projected_middle.x = p_projected_middle.x / 4.0;
-    p_projected_middle.y = p_projected_middle.y / 4.0;
-    p_projected_middle.z = p_projected_middle.z / 4.0;
-
-    const pcl::PointXYZ p_uff(addPoints(final_normal,p_projected_middle));
-    viewer.addLine(p_projected_final0,p_projected_final1,1.0,1.0,1.0,"f0");
-    viewer.addLine(p_projected_final1,p_projected_final3,1.0,1.0,1.0,"f1");
-    viewer.addLine(p_projected_final3,p_projected_final2,1.0,1.0,1.0,"f2");
-    viewer.addLine(p_projected_final2,p_projected_final0,1.0,1.0,1.0,"f3");
-
-    viewer.addLine(p_projected_middle,p_uff,1.0,1.0,1.0,"fnormal");
-
-    // compute center_of_mass
-
-
-    Eigen::Vector3f normal = Eigen::Vector3f(final_normal.x, final_normal.y, final_normal.z);
-    normal.normalize();
-
-    // ACHTUNG EVENTUELL FLASCH RUM, DA ICH NICHT WEISS WIE RUM DER ROBOTER STEHT
-    // --------------------------------------------------------------------------------------------
-    // bezg p_pro 1 / 0
-    pcl::PointXYZ CM = compute_center_of_mass(p_projected_final0, p_projected_final1, normal, p_projected_middle, offset_CM);
-
-    viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
-    viewer.addSphere(p_projected_middle, 0.05,0,1,0, "proMidx", viewport);
-    viewer.addSphere(CM, 0.05,0,0,1, "CM", viewport);
 
      //Compute Force Angle Stability Metric
-     std::vector<float> rating =computeForceAngleStabilityMetric(check_pos,convex_hull_points);
+     std::vector<float> rating =computeForceAngleStabilityMetric(center_of_mass,convex_hull_points);
      for (unsigned int i=0; i<rating.size();++i)
      {
 
+         // rating between convex_hull_point (i and i+1)
          float c =rating.at(i);
          std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
          const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
          const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
          //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+         ROS_INFO("Rating %f", rating.at(i));
          viewer.addLine(p1,p2,1.0-c,c,0,name);
      }
 
-    return true;
+
+
+     const float invalid_rating = 1.0;
+
+     // iterative checking if still fine after flipping over invalid axis
+     for (unsigned int i = 0; i < rating.size(); i++){
+         if (rating.at(i) < invalid_rating){ // instabil
+             ROS_INFO("Roboter kippt über Kante mit rating 5f", rating.at(i));
+             support_point_1 = convex_hull_points.at(i);
+             support_point_2 = convex_hull_points.at(i+1);
+
+             const pcl::PointXYZ tip_over_axis_vector= subtractPoints(support_point_2, support_point_1);
+             pcl::PointXYZ tip_over_direction = crossProduct(tip_over_axis_vector, pcl::PointXYZ(0,0,1));
+
+
+             support_point_3 = eval_point(support_point_1,
+                                          tip_over_axis_vector,
+                                          (*cloud_positionRating),
+                                          tip_over_direction);
+
+             if (support_point_1.x == support_point_3.x &&
+                     support_point_1.y == support_point_3.y &&
+                     support_point_1.z == support_point_3.z){
+                 break; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
+             }
+
+
+
+             std::vector<unsigned int> convex_hull_indices_iterative;
+             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating_iterative(new pcl::PointCloud<pcl::PointXYZ>());
+
+             std::vector<pcl::PointXYZ> convex_hull_points_iterative = build_convex_hull(cloud_positionRating,
+                                                    check_pos,
+                                                    support_point_1,
+                                                    support_point_2,
+                                                    support_point_3,
+                                                    viewer, viewport,
+                                                    convex_hull_indices_iterative,
+                                                    cloud_positionRating_iterative);
+
+             // render points
+            viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1it", viewport);
+            viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2it", viewport);
+            viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3it", viewport);
+            for (unsigned int i = 0; i < cloud_positionRating_iterative->size(); ++i){
+                std::string name ="groundContactAreait"+boost::lexical_cast<std::string>(i);
+                viewer.addSphere(cloud_positionRating_iterative->at(i), 0.01,0,1,1, name, viewport);
+            }
+             // draw robot points
+      /*       viewer.addSphere(robot_point_0, 0.03,1,0,0, "R1it", viewport);
+             viewer.addSphere(robot_point_1, 0.03,1,0,0, "R2it", viewport);
+             viewer.addSphere(robot_point_2, 0.03,1,0,0, "R3it", viewport);
+             viewer.addSphere(robot_point_3, 0.03,1,0,0, "R4it", viewport); */
+             // draw robot lines
+             viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0it");
+             viewer.addLine(robot_point_1,robot_point_3,1.0,1.0,1.0,"f1it");
+             viewer.addLine(robot_point_3,robot_point_2,1.0,1.0,1.0,"f2it");
+             viewer.addLine(robot_point_2,robot_point_0,1.0,1.0,1.0,"f3it");
+             // draw center
+             viewer.addSphere(check_pos, 0.05,1,0,0, "checkPositionit", viewport);
+             viewer.addSphere(robot_point_mid, 0.05,0,1,0, "proMidxit", viewport);
+             viewer.addSphere(center_of_mass_iterative, 0.05,0,0,1, "CMit", viewport);
+             // draw normal
+             const pcl::PointXYZ p_uff(addPoints(robot_point_mid, normal));
+             viewer.addLine(robot_point_mid,p_uff,1.0,1.0,1.0,"fnormalit");
+
+             //Compute Force Angle Stability Metric
+             std::vector<float> rating_iterative =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points_iterative);
+             for (unsigned int i=0; i<rating_iterative.size();++i)
+             {
+
+                 // rating between convex_hull_point (i and i+1)
+                 float c =rating_iterative.at(i);
+                 std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices_iterative[i]);
+                 const pcl::PointXYZ p1(convex_hull_points_iterative[i].x,convex_hull_points_iterative[i].y,convex_hull_points_iterative[i].z);
+                 const pcl::PointXYZ p2(convex_hull_points_iterative[i+1].x,convex_hull_points_iterative[i+1].y,convex_hull_points_iterative[i+1].z);
+
+                 //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+                 ROS_INFO("Rating %f", rating_iterative.at(i));
+                 viewer.addLine(p1,p2,1.0-c,c,0,name);
+             }
+
+             // find min rating
+             float min_value_rating_iterative = rating_iterative.at(0);
+             for (unsigned int k = 1; k < rating_iterative.size(); k++){
+                 if (rating_iterative.at(k) < min_value_rating_iterative)
+                     min_value_rating_iterative = rating_iterative.at(k);
+             }
+
+             if (min_value_rating_iterative > rating.at(i)){
+                 rating.at(i) = min_value_rating_iterative;
+             }
+
+         }
+     }
+
+     // find min rating
+     float min_value_rating = rating.at(0);
+     for (unsigned int i = 1; i < rating.size(); i++){
+         if (rating.at(i) < min_value_rating)
+             min_value_rating = rating.at(i);
+     }
+     ROS_INFO("min_value_rating = %f", min_value_rating);
+
+    return min_value_rating;
 }
 
 void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
@@ -855,5 +1008,6 @@ void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &vi
 
 
 }
+
 
 }

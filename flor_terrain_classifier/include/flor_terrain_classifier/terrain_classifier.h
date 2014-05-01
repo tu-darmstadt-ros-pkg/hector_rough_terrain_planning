@@ -198,13 +198,20 @@ public:
                                                std::vector<unsigned int>& convex_hull_indices,
                                                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2);
 
+  void compute_robot_positions(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
+                                                  const float x_max, const float x_min, const float y_max, const float y_min,
+                                                  const Eigen::Vector3f& offset_CM,
+                                                  pcl::PointXYZ& normal,
+                                                  pcl::PointXYZ& robot_point_0, pcl::PointXYZ& robot_point_1, pcl::PointXYZ& robot_point_2, pcl::PointXYZ& robot_point_3,
+                                                  pcl::PointXYZ& robot_point_mid, pcl::PointXYZ& robot_center_of_mass);
+
  pcl::PointXYZ compute_center_of_mass(const pcl::PointXYZ& p1_left,
                                        const pcl::PointXYZ& p2_left,
                                        const Eigen::Vector3f &normal,
                                        const pcl::PointXYZ &mid,
                                       const Eigen::Vector3f &offset);
 
-  bool computePositionRating(const pcl::PointXYZ& checkPos,
+  float computePositionRating(const pcl::PointXYZ& checkPos,
                              const float orientation,
                              pcl::visualization::PCLVisualizer &viewer,
                              const std::string &name,
