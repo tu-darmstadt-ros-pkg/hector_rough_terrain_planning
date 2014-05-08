@@ -103,8 +103,7 @@ void test_normals()
     viewer.spinOnce(100);
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
-   // terrain_classifier->computePositionRating(pcl::PointXYZ(-1.00+x,-1.00,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
-
+    // terrain_classifier->computePositionRating(pcl::PointXYZ(-1.00+x,-1.00,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
    // terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   }
 }

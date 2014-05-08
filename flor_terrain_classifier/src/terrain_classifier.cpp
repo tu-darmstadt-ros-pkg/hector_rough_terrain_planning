@@ -405,7 +405,7 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
     for(unsigned int i=0; i<(p.size()-1);++i)
     {
         Eigen::Vector3f p_i1;
-        if(p.size()==(i+1)) p_i1 = p.at(0);
+        if(p.size()==1) p_i1 = p.at(0);
         else p_i1 = p.at(i+1);
          Eigen::Vector3f ai=p_i1-p.at(i);
          ai.normalize();
@@ -655,8 +655,9 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
      float widthx=0.50;
      float lengthy=1.20;
-     center_of_mass.x=cos(orientation)* center_of_mass.x-sin(orientation)* center_of_mass.y;
-     center_of_mass.y=sin(orientation)* center_of_mass.x+cos(orientation)* center_of_mass.y;
+     //center_of_mass.x=cos(orientation)* center_of_mass.x-sin(orientation)* center_of_mass.y;
+     //center_of_mass.y=sin(orientation)* center_of_mass.x+cos(orientation)* center_of_mass.y;
+
 
      // Points under robot
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -870,11 +871,16 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
      //Compute Force Angle Stability Metric
-     std::vector<float> rating =computeForceAngleStabilityMetric(center_of_mass,convex_hull_points);
+
+     std::vector<float> rating =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points);
+   //  std::iterator max_it =std::max_element(rating.begin(),rating.end());
+
+
      for (unsigned int i=0; i<rating.size();++i)
      {
 
          // rating between convex_hull_point (i and i+1)
+
          float c =rating.at(i);
          std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
          const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
@@ -882,12 +888,16 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
          //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
          ROS_INFO("Rating %f", rating.at(i));
-         viewer.addLine(p1,p2,1.0-c,c,0,name);
+         if(c<invalid_rating)
+             viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
+         else
+             viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
+
+         std::string namech ="convexhullstart"+boost::lexical_cast<std::string>(i);
+         viewer.addSphere(convex_hull_points[i], 0.01,0,1,0, namech,viewport);
      }
+     viewer.addSphere(convex_hull_points[0], 0.02,1,0,0, "convexhullstart",viewport);
 
-
-
-     const float invalid_rating = 1.0;
 
      // iterative checking if still fine after flipping over invalid axis
      for (unsigned int i = 0; i < rating.size(); i++){
@@ -951,6 +961,7 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
              const pcl::PointXYZ p_uff(addPoints(robot_point_mid, normal));
              viewer.addLine(robot_point_mid,p_uff,1.0,1.0,1.0,"fnormalit");
 
+
              //Compute Force Angle Stability Metric
              std::vector<float> rating_iterative =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points_iterative);
              for (unsigned int i=0; i<rating_iterative.size();++i)
@@ -967,12 +978,7 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
                  viewer.addLine(p1,p2,1.0-c,c,0,name);
              }
 
-             // find min rating
-             float min_value_rating_iterative = rating_iterative.at(0);
-             for (unsigned int k = 1; k < rating_iterative.size(); k++){
-                 if (rating_iterative.at(k) < min_value_rating_iterative)
-                     min_value_rating_iterative = rating_iterative.at(k);
-             }
+             float min_value_rating_iterative =*std::min_element(rating_iterative.begin(),rating_iterative.end());
 
              if (min_value_rating_iterative > rating.at(i)){
                  rating.at(i) = min_value_rating_iterative;
@@ -981,12 +987,7 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          }
      }
 
-     // find min rating
-     float min_value_rating = rating.at(0);
-     for (unsigned int i = 1; i < rating.size(); i++){
-         if (rating.at(i) < min_value_rating)
-             min_value_rating = rating.at(i);
-     }
+     float min_value_rating=*std::min_element(rating.begin(),rating.end());
      ROS_INFO("min_value_rating = %f", min_value_rating);
 
     return min_value_rating;

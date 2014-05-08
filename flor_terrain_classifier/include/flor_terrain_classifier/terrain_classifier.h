@@ -83,6 +83,7 @@ struct TerrainClassifierParams
     nh.param("pass_through/field_name", pt_field_name, std::string("z"));
     nh.param("pass_through/min", pt_min, -0.2);
     nh.param("pass_through/max", pt_max, 0.5);
+    const float invalid_rating = 1.0;
 
     nh.param("voxel_grid/lx", vg_lx, 0.01);
     nh.param("voxel_grid/ly", vg_ly, 0.01);
@@ -334,6 +335,7 @@ protected:
   bool cloud_normals_outdated;
   bool cloud_gradients_outdated;
   bool lock_input_cloud;
+  static const float invalid_rating = 1.0;
 };
 }
 
