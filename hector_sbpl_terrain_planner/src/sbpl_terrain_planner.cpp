@@ -39,6 +39,8 @@
 //#include <pluginlib/class_list_macros.h>
 #include <nav_msgs/Path.h>
 //#include <sbpl_lattice_planner/SBPLTerrainPlannerStats.h>
+//#include <hector_sbpl_terrain_planner/discrete_space_information/environment_navxytheta_stability_lat.h>
+
 
 using namespace std;
 using namespace ros;
@@ -87,14 +89,14 @@ SBPLTerrainPlanner::SBPLTerrainPlanner(std::string name)
 void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DROS* costmap_ros){
   if(!initialized_){
     ros::NodeHandle private_nh("~/"+name);
-    ros::NodeHandle nh(name);
+    ros::NodeHandle nh("~/");
     
     ROS_INFO("Name is %s", name.c_str());
 
     private_nh.param("planner_type", planner_type_, string("ARAPlanner"));
     private_nh.param("allocated_time", allocated_time_, 10.0);
     private_nh.param("initial_epsilon",initial_epsilon_,3.0);
-    private_nh.param("environment_type", environment_type_, string("XYThetaLattice"));
+    nh.param("environment_type", environment_type_, string("testXYThetaLattice"));
     private_nh.param("forward_search", forward_search_, bool(false));
     private_nh.param("primitive_filename",primitive_filename_,string(""));
     private_nh.param("force_scratch_limit",force_scratch_limit_,500);
@@ -121,7 +123,8 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
       env_ = new EnvironmentNAVXYTHETALAT();
     }
     else{
-      ROS_ERROR("XYThetaLattice is currently the only supported environment!\n");
+        ROS_ERROR("XYThetaLattice is currently the only supported environment! Type is:\n");
+        ROS_ERROR("%s",environment_type_.c_str());
       exit(1);
     }
 
