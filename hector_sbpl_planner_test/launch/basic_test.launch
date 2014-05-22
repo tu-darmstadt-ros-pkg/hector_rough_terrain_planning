@@ -2,9 +2,11 @@
 
 <launch>
   
-  <node pkg="hector_sbpl_planner_test" type="planner_test" respawn="false" name="planner_test" output="screen" >
-    <param name="hector_sbpl_terrain_planner/primitive_filename" value="$(find hector_move_base)/mprim/crab_higher_cost_only_back.mprim" />    
+  <node pkg="hector_sbpl_planner_test" type="planner_test" respawn="false" name="planner_test" output="screen" >	
+    <rosparam file="$(find hector_sbpl_terrain_planner)/config/basic_test_params.yaml" command="load" />   
+    <param name="hector_sbpl_terrain_planner/primitive_filename" value="$(find hector_move_base)/mprim/crab_higher_cost_only_back.mprim" /> 
   </node>
+
 </launch>
 
 
