@@ -39,7 +39,7 @@
 //#include <pluginlib/class_list_macros.h>
 #include <nav_msgs/Path.h>
 //#include <sbpl_lattice_planner/SBPLTerrainPlannerStats.h>
-//#include <hector_sbpl_terrain_planner/discrete_space_information/environment_navxytheta_stability_lat.h>
+#include <hector_sbpl_terrain_planner/discrete_space_information/environment_navxytheta_stability_lat.h>
 
 
 using namespace std;
@@ -122,6 +122,12 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
       ROS_DEBUG("Using a 3D costmap for theta lattice\n");
       env_ = new EnvironmentNAVXYTHETALAT();
     }
+    else if ("XYThetaStability" == environment_type_){
+        ROS_DEBUG("Using a 3D costmap for theta stab\n");
+
+        env_ = new EnvironmentNAVXYTHETALAT();
+        EnvironmentNAVXYTHETASTAB* env = new EnvironmentNAVXYTHETASTAB();
+      }
     else{
         ROS_ERROR("XYThetaLattice is currently the only supported environment! Type is:\n");
         ROS_ERROR("%s",environment_type_.c_str());
