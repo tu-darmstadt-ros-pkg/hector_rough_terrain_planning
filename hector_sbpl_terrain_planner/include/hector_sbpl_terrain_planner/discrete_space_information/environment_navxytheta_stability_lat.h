@@ -8,6 +8,7 @@
 #include <vector>
 #include <sbpl/discrete_space_information/environment.h>
 #include <sbpl/discrete_space_information/environment_navxythetalat.h>
+
 #define XXX_MAXACTIONSWIDTH 9
 
 class CMDPACTION;
@@ -56,7 +57,9 @@ typedef struct
 /** \brief this is just an example of environment and can be used (copy and
 * paste) for creating a more complex environment
 */
+
 class   EnvironmentNAVXYTHETASTAB : public EnvironmentNAVXYTHETALAT
+
 {
 public:
     /**
@@ -123,8 +126,10 @@ public:
 
 protected:
     //member variables
+
     EnvNAVXYTHETASTABConfig_t EnvNAVXYTHETASTABCfg;
     EnvironmentNAVXYTHETASTAB_t EnvNAVXYTHETASTAB;
+
 
     virtual void ReadConfiguration(FILE* fCfg);
 

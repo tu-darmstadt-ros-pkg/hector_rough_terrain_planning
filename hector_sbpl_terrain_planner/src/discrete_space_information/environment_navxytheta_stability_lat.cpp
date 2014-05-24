@@ -38,12 +38,15 @@ static unsigned int inthash(unsigned int key)
 unsigned int EnvironmentNAVXYTHETASTAB::GETHASHBIN(unsigned int X1, unsigned int X2, unsigned int X3, unsigned int X4)
 {
     return inthash((inthash(X1) + (inthash(X2) << 1) + (inthash(X3) << 2) + (inthash(X4) << 3))) &
+
            (EnvNAVXYTHETASTAB.HashTableSize - 1);
+
 }
 
 void EnvironmentNAVXYTHETASTAB::PrintHashTableHist()
 {
     int s0 = 0, s1 = 0, s50 = 0, s100 = 0, s200 = 0, s300 = 0, slarge = 0;
+
 
     for (int j = 0; j < (int)EnvNAVXYTHETASTAB.HashTableSize; j++) {
         if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() == 0)
@@ -57,6 +60,7 @@ void EnvironmentNAVXYTHETASTAB::PrintHashTableHist()
         else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 300)
             s200++;
         else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 400)
+
             s300++;
         else
             slarge++;
@@ -87,11 +91,13 @@ EnvNAVXYTHETASTABHashEntry_t* EnvironmentNAVXYTHETASTAB::GetHashEntry(unsigned i
         SBPL_PRINTF("WARNING: Hash table has a bin %d (X1=%d X2=%d X3=%d X4=%d) of size %d\n",
                     binid, X1, X2, X3, X4, (int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid].size());
 
+
         PrintHashTableHist();
     }
 #endif
 
     //iterate over the states in the bin and select the perfect match
+
     for (int ind = 0; ind < (int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid].size(); ind++) {
         if (EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind]->X1 == X1 &&
             EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind]->X2 == X2 &&
@@ -100,6 +106,7 @@ EnvNAVXYTHETASTABHashEntry_t* EnvironmentNAVXYTHETASTAB::GetHashEntry(unsigned i
         {
             //time_gethash += clock()-currenttime;
             return EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind];
+
         }
     }
 
@@ -122,16 +129,20 @@ EnvNAVXYTHETASTABHashEntry_t* EnvironmentNAVXYTHETASTAB::CreateNewHashEntry(unsi
     HashEntry->X3 = X3;
     HashEntry->X4 = X4;
 
+
     HashEntry->stateID = EnvNAVXYTHETASTAB.StateID2CoordTable.size();
 
     //insert into the tables
     EnvNAVXYTHETASTAB.StateID2CoordTable.push_back(HashEntry);
 
+
     //get the hash table bin
     i = GETHASHBIN(HashEntry->X1, HashEntry->X2, HashEntry->X3, HashEntry->X4);
 
     //insert the entry into the bin
+
     EnvNAVXYTHETASTAB.Coord2StateIDHashTable[i].push_back(HashEntry);
+
 
     //insert into and initialize the mappings
     int* entry = new int[NUMOFINDICES_STATEID2IND];
@@ -160,23 +171,29 @@ void EnvironmentNAVXYTHETASTAB::CreateStartandGoalStates()
     unsigned int X3 = 0;
     unsigned int X4 = 0;
     HashEntry = CreateNewHashEntry(X1, X2, X3, X4);
+
     EnvNAVXYTHETASTAB.startstateid = HashEntry->stateID;
+
 
     //create goal state
     X1 = X2 = X3 = X4 = 1;
     HashEntry = CreateNewHashEntry(X1, X2, X3, X4);
+
     EnvNAVXYTHETASTAB.goalstateid = HashEntry->stateID;
+
 }
 
 void EnvironmentNAVXYTHETASTAB::InitializeEnvironment()
 {
 
     //initialize the map from Coord to StateID
+
     EnvNAVXYTHETASTAB.HashTableSize = 32 * 1024; //should be power of two
     EnvNAVXYTHETASTAB.Coord2StateIDHashTable = new vector<EnvNAVXYTHETASTABHashEntry_t*> [EnvNAVXYTHETASTAB.HashTableSize];
 
     //initialize the map from StateID to Coord
     EnvNAVXYTHETASTAB.StateID2CoordTable.clear();
+
 
     //create start and goal states
     CreateStartandGoalStates();
@@ -208,7 +225,9 @@ void EnvironmentNAVXYTHETASTAB::AddAllOutcomes(unsigned int SourceX1, unsigned i
     } //while
 
     if (CumProb != 1.0) {
+
         SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: prob. of all action outcomes=%f\n", CumProb);
+
         throw new SBPL_Exception();
     }
 }
@@ -252,8 +271,10 @@ bool EnvironmentNAVXYTHETASTAB::InitializeEnv(const char* sEnvFile)
 bool EnvironmentNAVXYTHETASTAB::InitializeMDPCfg(MDPConfig *MDPCfg)
 {
     //initialize MDPCfg with the start and goal ids
+
     MDPCfg->goalstateid = EnvNAVXYTHETASTAB.goalstateid;
     MDPCfg->startstateid = EnvNAVXYTHETASTAB.startstateid;
+
 
     return true;
 }
@@ -269,13 +290,16 @@ int EnvironmentNAVXYTHETASTAB::GetFromToHeuristic(int FromStateID, int ToStateID
        ToStateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size())
     {
         SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
+
         throw new SBPL_Exception();
     }
 #endif
 
     //define this function if it is used in the planner
 
+
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB.. function: FromToHeuristic is undefined\n");
+
     throw new SBPL_Exception();
 
     return 0;
@@ -290,13 +314,16 @@ int EnvironmentNAVXYTHETASTAB::GetGoalHeuristic(int stateID)
 #if DEBUG
     if (stateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size()) {
         SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
+
         throw new SBPL_Exception();
     }
 #endif
 
     //define this function if it used in the planner (heuristic forward search would use it)
 
+
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB..function: GetGoalHeuristic is undefined\n");
+
     throw new SBPL_Exception();
 }
 
@@ -309,6 +336,7 @@ int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
 #if DEBUG
     if (stateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size()) {
         SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
+
         throw new SBPL_Exception();
     }
 #endif
@@ -316,6 +344,7 @@ int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
     //define this function if it used in the planner (heuristic backward search would use it)
 
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB.. function: GetStartHeuristic is undefined\n");
+
     throw new SBPL_Exception();
 
     return 0;
@@ -327,6 +356,7 @@ void EnvironmentNAVXYTHETASTAB::SetAllActionsandAllOutcomes(CMDPSTATE* state)
 #if DEBUG
     if (state->StateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size()) {
         SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
+
         throw new SBPL_Exception();
     }
 
@@ -337,10 +367,12 @@ void EnvironmentNAVXYTHETASTAB::SetAllActionsandAllOutcomes(CMDPSTATE* state)
 #endif
 
     //if it is goal then no successors
+
     if (state->StateID == EnvNAVXYTHETASTAB.goalstateid) return;
 
     //get values for the state
     EnvNAVXYTHETASTABHashEntry_t* HashEntry = EnvNAVXYTHETASTAB.StateID2CoordTable[state->StateID];
+
 
     //iterate through the actions for the state
     for (int aind = 0; aind < XXX_MAXACTIONSWIDTH; aind++) {
@@ -363,42 +395,54 @@ void EnvironmentNAVXYTHETASTAB::SetAllPreds(CMDPSTATE* state)
 {
     //implement this if the planner needs access to predecessors
 
+
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: SetAllPreds is undefined\n");
+
     throw new SBPL_Exception();
 }
 
 void EnvironmentNAVXYTHETASTAB::GetSuccs(int SourceStateID, vector<int>* SuccIDV, vector<int>* CostV)
 {
+
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: GetSuccs is undefined\n");
+
     throw new SBPL_Exception();
 }
 
 void EnvironmentNAVXYTHETASTAB::GetPreds(int TargetStateID, vector<int>* PredIDV, vector<int>* CostV)
 {
+
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: GetPreds is undefined\n");
+
     throw new SBPL_Exception();
 }
 
 int EnvironmentNAVXYTHETASTAB::SizeofCreatedEnv()
 {
+
     return (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size();
+
 }
 
 void EnvironmentNAVXYTHETASTAB::PrintState(int stateID, bool bVerbose, FILE* fOut /*=NULL*/)
 {
 #if DEBUG
+
     if(stateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size())
     {
         SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal (2)\n");
+
         throw new SBPL_Exception();
     }
 #endif
 
     if (fOut == NULL) fOut = stdout;
 
+
     EnvNAVXYTHETASTABHashEntry_t* HashEntry = EnvNAVXYTHETASTAB.StateID2CoordTable[stateID];
 
     if (stateID == EnvNAVXYTHETASTAB.goalstateid) {
+
         SBPL_FPRINTF(fOut, "the state is a goal state\n");
     }
 
@@ -407,9 +451,11 @@ void EnvironmentNAVXYTHETASTAB::PrintState(int stateID, bool bVerbose, FILE* fOu
 
 void EnvironmentNAVXYTHETASTAB::PrintEnv_Config(FILE* fOut)
 {
+
     //implement this if the planner needs to print out EnvNAVXYTHETASTAB. configuration
 
     SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: PrintEnv_Config is undefined\n");
+
     throw new SBPL_Exception();
 }
 

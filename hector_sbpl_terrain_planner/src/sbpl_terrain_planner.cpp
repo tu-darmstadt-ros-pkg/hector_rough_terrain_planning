@@ -85,12 +85,12 @@ SBPLTerrainPlanner::SBPLTerrainPlanner(std::string name)
   initialize(name);
 }
 
-    
+
 void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DROS* costmap_ros){
   if(!initialized_){
     ros::NodeHandle private_nh("~/"+name);
     ros::NodeHandle nh("~/");
-    
+
     ROS_INFO("Name is %s", name.c_str());
 
     private_nh.param("planner_type", planner_type_, string("ARAPlanner"));
@@ -111,7 +111,7 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     inscribed_inflated_obstacle_ = lethal_obstacle_-1;
     sbpl_cost_multiplier_ = (unsigned char) (costmap_2d::INSCRIBED_INFLATED_OBSTACLE/inscribed_inflated_obstacle_ + 1);
     ROS_DEBUG("SBPL: lethal: %uz, inscribed inflated: %uz, multiplier: %uz",lethal_obstacle,inscribed_inflated_obstacle_,sbpl_cost_multiplier_);
-    
+
     //costmap_ros_ = costmap_ros;
     //costmap_ros_->clearRobotFootprint();
     //costmap_ros_->getCostmapCopy(cost_map_);
@@ -214,11 +214,11 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     ROS_INFO("[sbpl_lattice_planner] Initialized successfully");
     plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
     //stats_publisher_ = private_nh.advertise<sbpl_lattice_planner::SBPLTerrainPlannerStats>("sbpl_lattice_planner_stats", 1);
-    
+
     initialized_ = true;
   }
 }
-  
+
 //Taken from Sachin's sbpl_cart_planner
 //This rescales the costmap according to a rosparam which sets the obstacle cost
 unsigned char SBPLTerrainPlanner::costMapCostToSBPLCost(unsigned char newcost){
@@ -233,7 +233,7 @@ unsigned char SBPLTerrainPlanner::costMapCostToSBPLCost(unsigned char newcost){
 }
 
 void SBPLTerrainPlanner::publishStats(int solution_cost, int solution_size,
-                                      const geometry_msgs::PoseStamped& start, 
+                                      const geometry_msgs::PoseStamped& start,
                                       const geometry_msgs::PoseStamped& goal){
   // Fill up statistics and publish
   /*
@@ -301,7 +301,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
     return false;
   }
 
-  
+
   int offOnCount = 0;
   int onOffCount = 0;
   int allCount = 0;
@@ -390,7 +390,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   ROS_INFO("Plan has %d points.\n", (int)sbpl_path.size());
   ros::Time plan_time = ros::Time::now();
 
-  //create a message for the plan 
+  //create a message for the plan
   nav_msgs::Path gui_path;
   gui_path.poses.resize(sbpl_path.size());
   //gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
