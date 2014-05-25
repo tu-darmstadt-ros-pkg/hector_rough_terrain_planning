@@ -4,154 +4,166 @@
 #define __ENVIRONMENT_NAVXYTHETA_STABILITY_LAT_H_
 
 
-#include <cstdio>
 #include <vector>
-#include <sbpl/discrete_space_information/environment.h>
 #include <sbpl/discrete_space_information/environment_navxythetalat.h>
+#include <sbpl/sbpl_exception.h>
+#include <sbpl/utils/utils.h>
 
-#define XXX_MAXACTIONSWIDTH 9
-
-class CMDPACTION;
-class CMDPSTATE;
-class MDPConfig;
-
-typedef struct ENV_NAVXYTHETASTAB_CONFIG
-{
-    //parameters that are read from the configuration file
-    unsigned int StartX1;
-    unsigned int StartX2;
-    unsigned int StartX3;
-    unsigned int StartX4;
-    unsigned int GoalX1;
-    unsigned int GoalX2;
-    unsigned int GoalX3;
-    unsigned int GoalX4;
-
-    //derived and initialized elsewhere parameters
-} EnvNAVXYTHETASTABConfig_t;
-
-typedef struct ENVNAVXYTHETASTABHASHENTRY
-{
-    int stateID;
-    unsigned int X1;
-    unsigned int X2;
-    unsigned int X3;
-    unsigned int X4;
-} EnvNAVXYTHETASTABHashEntry_t;
-
+// these structures contain footprints for the additional levels
+// each of these structures corresponds to one of the EnvNAVXYTHETALATAction_t structures
 typedef struct
 {
-    int startstateid;
-    int goalstateid;
+    char starttheta; // should be equal to the corresponding EnvNAVXYTHETALATAction_t structure
+    char dX; // should be equal to the corresponding EnvNAVXYTHETALATAction_t structure
+    char dY; // should be equal to the corresponding EnvNAVXYTHETALATAction_t structure
+    char endtheta; // should be equal to the corresponding EnvNAVXYTHETALATAction_t structure
+    std::vector<sbpl_2Dcell_t>* intersectingcellsV; // one footprint per additional level
+} EnvNAVXYTHETASTABAddInfoAction_t;
 
-    //hash table of size x_size*y_size. Maps from coords to stateId
-    int HashTableSize;
-    std::vector<EnvNAVXYTHETASTABHashEntry_t*>* Coord2StateIDHashTable;
-
-    //vector that maps from stateID to coords
-    std::vector<EnvNAVXYTHETASTABHashEntry_t*> StateID2CoordTable;
-
-    //any additional variables
-} EnvironmentNAVXYTHETASTAB_t;
-
-/** \brief this is just an example of environment and can be used (copy and
-* paste) for creating a more complex environment
+/**
+* \brief This is x,y,theta lattice planning but with multiple levels in z.
+* In other words, it is for doing collision checking in 3D (x,y,z). The z
+* level is split into numofzlevs levels. If numofzlevs = 1, then it
+* defaults to the original x,y,theta lattice planning defined in
+* EnvironmentNAVXYTHETALAT. Otherwise, it uses numofzlevs footprints of the
+* robot and corresponding costmaps. It assumes that they correspond to each
+* other and are projections of the robot and corresponding z regions of the
+* 3D map.
 */
-
-class   EnvironmentNAVXYTHETASTAB : public EnvironmentNAVXYTHETALAT
-
+class EnvironmentNAVXYTHETASTAB : public EnvironmentNAVXYTHETALAT
 {
 public:
     /**
-* \brief see comments on the same function in the parent class
+* \brief initialization of additional levels. 0 is the original one. All additional ones will start with index 1
+* For each level, it also takes cost thresholds for cells lying
+* within inner radius of the robot (inscribed) and outside of the
+* inner circle but within outer radius (possibly_circumscribed).
+* See environment_navxythetalat.h for the explanation of these
+* parameters.
 */
-    virtual bool InitializeEnv(const char* sEnvFile);
+    bool InitializeAdditionalLevels(int numofadditionalzlevs, const std::vector<sbpl_2Dpt_t>* perimeterptsV,
+                                    unsigned char* cost_inscribed_thresh,
+                                    unsigned char* cost_possibly_circumscribed_thresh);
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief setting 2D map for the additional level at levind index
+* (indices are zero-based and are only used to index the additional levels)
+* you can not use this function to set 2D map for the base level
+* transform from linear array mapdata to the 2D matrix used internally: Grid2D[x][y] = mapdata[x+y*width]
 */
-    virtual bool InitializeMDPCfg(MDPConfig *MDPCfg);
+    bool Set2DMapforAddLev(const unsigned char* mapdata, int levind);
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief set 2D map for the additional level levind
+* The version of Set2DMapforAddLev that takes newmap as 2D array instead of one linear array
 */
-    virtual int GetFromToHeuristic(int FromStateID, int ToStateID);
+    bool Set2DMapforAddLev(const unsigned char** NewGrid2D, int levind);
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief update the traversability of a cell<x,y> in level zlev
 */
-    virtual int GetGoalHeuristic(int stateID);
+    bool UpdateCostinAddLev(int x, int y, unsigned char newcost, int zlev);
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief incremental planning not supported
 */
-    virtual int GetStartHeuristic(int stateID);
+    virtual void GetPredsofChangedEdges(std::vector<nav2dcell_t> const * changedcellsV,
+                                        std::vector<int> *preds_of_changededgesIDV)
+    {
+        SBPL_ERROR("ERROR: GetPredsofChangedEdges function not supported\n");
+        throw new SBPL_Exception();
+    }
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief incremental planning not supported
 */
-    virtual void SetAllActionsandAllOutcomes(CMDPSTATE* state);
+    virtual void GetSuccsofChangedEdges(std::vector<nav2dcell_t> const * changedcellsV,
+                                        std::vector<int> *succs_of_changededgesIDV)
+    {
+        SBPL_ERROR("ERROR: GetSuccsofChangedEdges function not supported\n");
+        throw new SBPL_Exception();
+    }
 
     /**
-* \brief see comments on the same function in the parent class
+* returns true if cell is traversable and within map limits - it checks against all levels including the base one
 */
-    virtual void SetAllPreds(CMDPSTATE* state);
+    bool IsValidCell(int X, int Y);
 
     /**
-* \brief see comments on the same function in the parent class
+* returns true if cell is traversable and within map limits for a particular level
 */
-    virtual void GetSuccs(int SourceStateID, std::vector<int>* SuccIDV, std::vector<int>* CostV);
+    bool IsValidCell(int X, int Y, int levind);
 
     /**
-* \brief see comments on the same function in the parent class
+* returns true if cell is untraversable at any level
 */
-    virtual void GetPreds(int TargetStateID, std::vector<int>* PredIDV, std::vector<int>* CostV);
+    bool IsObstacle(int x, int y);
 
     /**
-* \brief see comments on the same function in the parent class
+* returns true if cell is untraversable at level levelnum.
 */
-    virtual int SizeofCreatedEnv();
+    bool IsObstacle(int x, int y, int levind);
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief returns false if robot intersects obstacles or lies outside of the map.
+* Note this is pretty expensive operation since it computes the footprint
+* of the robot based on its x,y,theta
 */
-    virtual void PrintState(int stateID, bool bVerbose, FILE* fOut = NULL);
+    bool IsValidConfiguration(int X, int Y, int Theta);
 
     /**
-* \brief see comments on the same function in the parent class
+* \brief returns the maximum over all levels of the cost corresponding to the cell <x,y>
 */
-    virtual void PrintEnv_Config(FILE* fOut);
+    unsigned char GetMapCost(int X, int Y);
 
-    ~  EnvironmentNAVXYTHETASTAB() { }
+    /**
+* \brief returns the cost corresponding to the cell <x,y> at level levind
+*/
+    unsigned char GetMapCost(int X, int Y, int levind);
+
+    EnvironmentNAVXYTHETASTAB();
+    ~EnvironmentNAVXYTHETASTAB();
 
 protected:
-    //member variables
+    /**
+* \brief number of additional levels. If it is 0, then there is only one level - base level
+*/
+    int numofadditionalzlevs;
 
-    EnvNAVXYTHETASTABConfig_t EnvNAVXYTHETASTABCfg;
-    EnvironmentNAVXYTHETASTAB_t EnvNAVXYTHETASTAB;
+    /**
+* \brief footprints for the additional levels
+*/
+    std::vector<sbpl_2Dpt_t>* AddLevelFootprintPolygonV;
 
+    /**
+* \brief array of additional info in actions,
+* AdditionalInfoinActionsV[i][j] - jth action for sourcetheta = i
+* basically, each Additional info structure will contain numofadditionalzlevs additional intersecting
+* cells vector<sbpl_2Dcell_t> intersectingcellsV
+*/
+    EnvNAVXYTHETASTABAddInfoAction_t** AdditionalInfoinActionsV;
 
-    virtual void ReadConfiguration(FILE* fCfg);
+    /**
+* \brief 2D maps for additional levels.
+* AddLevelGrid2D[lind][x][y] refers to <x,y> cell on the additional level lind
+*/
+    unsigned char*** AddLevelGrid2D;
 
-    virtual void InitializeEnvConfig();
+    /**
+* \brief inscribed cost thresholds for additional levels
+* see environment_navxythetalat.h file for the explanation of this threshold
+*/
+    unsigned char* AddLevel_cost_inscribed_thresh;
+    /**
+* \brief possibly_circumscribed cost thresholds for additional levels
+* see environment_navxythetalat.h file for the explanation of this threshold
+*/
+    unsigned char* AddLevel_cost_possibly_circumscribed_thresh;
 
-    virtual unsigned int GETHASHBIN(unsigned int X1, unsigned int X2, unsigned int X3, unsigned int X4);
+    virtual int GetActionCost(int SourceX, int SourceY, int SourceTheta, EnvNAVXYTHETALATAction_t* action);
 
-    virtual void PrintHashTableHist();
+    virtual int GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
+                                             EnvNAVXYTHETALATAction_t* action);
 
-    virtual EnvNAVXYTHETASTABHashEntry_t* GetHashEntry(unsigned int X1, unsigned int X2, unsigned int X3, unsigned int X4);
-
-    virtual EnvNAVXYTHETASTABHashEntry_t* CreateNewHashEntry(unsigned int X1, unsigned int X2, unsigned int X3, unsigned int X4);
-
-    virtual void CreateStartandGoalStates();
-
-    virtual void InitializeEnvironment();
-
-    virtual void AddAllOutcomes(unsigned int SourceX1, unsigned int SourceX2, unsigned int SourceX3,
-                                unsigned int SourceX4, CMDPACTION* action, int cost);
-
-    virtual void ComputeHeuristicValues();
 };
-
-
 #endif

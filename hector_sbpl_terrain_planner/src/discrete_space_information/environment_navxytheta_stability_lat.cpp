@@ -1,462 +1,377 @@
 //Implementation for new environment, analogous to https://github.com/sbpl/sbpl/tree/master/src/discrete_space_information
 
 #include <hector_sbpl_terrain_planner/discrete_space_information/environment_navxytheta_stability_lat.h>
-
-
-
-//#include <sbpl/discrete_space_information/environment_XXX.h>
-#include <sbpl/planners/planner.h>
-#include <sbpl/utils/mdp.h>
-#include <sbpl/utils/mdpconfig.h>
+#include <cstdio>
+#include <ctime>
+#include <sbpl/utils/key.h>
+#include <ros/ros.h>
 
 using namespace std;
 
-//extern clock_t time3_addallout;
-//extern clock_t time_gethash;
-//extern clock_t time_createhash;
+#if TIME_DEBUG
+static clock_t time3_addallout = 0;
+static clock_t time_gethash = 0;
+static clock_t time_createhash = 0;
+static clock_t time_getsuccs = 0;
+#endif
 
-//function prototypes
+static long int checks = 0;
+
+//-----------------constructors/destructors-------------------------------
+
+EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
+{
+    numofadditionalzlevs = 0; //by default there is only base level, no additional levels
+    AddLevelFootprintPolygonV = NULL;
+    AdditionalInfoinActionsV = NULL;
+    AddLevelGrid2D = NULL;
+    AddLevel_cost_possibly_circumscribed_thresh = NULL;
+    AddLevel_cost_inscribed_thresh = NULL;
+}
+
+EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
+{
+    if (AddLevelFootprintPolygonV != NULL) {
+        delete[] AddLevelFootprintPolygonV;
+        AddLevelFootprintPolygonV = NULL;
+    }
+
+    if (AdditionalInfoinActionsV != NULL) {
+        for (int tind = 0; tind < EnvNAVXYTHETALATCfg.NumThetaDirs; tind++) {
+            for (int aind = 0; aind < EnvNAVXYTHETALATCfg.actionwidth; aind++) {
+                delete[] AdditionalInfoinActionsV[tind][aind].intersectingcellsV;
+            }
+            delete[] AdditionalInfoinActionsV[tind];
+        }
+        delete[] AdditionalInfoinActionsV;
+        AdditionalInfoinActionsV = NULL;
+    }
+
+    if (AddLevelGrid2D != NULL) {
+        for (int levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+            for (int xind = 0; xind < EnvNAVXYTHETALATCfg.EnvWidth_c; xind++) {
+                delete[] AddLevelGrid2D[levelind][xind];
+            }
+            delete[] AddLevelGrid2D[levelind];
+        }
+        delete[] AddLevelGrid2D;
+        AddLevelGrid2D = NULL;
+    }
+
+    if (AddLevel_cost_possibly_circumscribed_thresh != NULL) {
+        delete[] AddLevel_cost_possibly_circumscribed_thresh;
+        AddLevel_cost_possibly_circumscribed_thresh = NULL;
+    }
+
+    if (AddLevel_cost_inscribed_thresh != NULL) {
+        delete[] AddLevel_cost_inscribed_thresh;
+        AddLevel_cost_inscribed_thresh = NULL;
+    }
+
+    //reset the number of additional levels
+    numofadditionalzlevs = 0;
+}
+
+//---------------------------------------------------------------------
 
 //-------------------problem specific and local functions---------------------
 
-static unsigned int inthash(unsigned int key)
+//returns true if cell is traversable and within map limits - it checks against all levels including the base one
+bool EnvironmentNAVXYTHETASTAB::IsValidCell(int X, int Y)
 {
-    key += (key << 12);
-    key ^= (key >> 22);
-    key += (key << 4);
-    key ^= (key >> 9);
-    key += (key << 10);
-    key ^= (key >> 2);
-    key += (key << 7);
-    key ^= (key >> 12);
-    return key;
-}
+    int levelind;
 
-//examples of hash functions: map state coordinates onto a hash value
-//#define GETHASHBIN(X, Y) (Y*WIDTH_Y+X)
-//here we have state coord: <X1, X2, X3, X4>
-unsigned int EnvironmentNAVXYTHETASTAB::GETHASHBIN(unsigned int X1, unsigned int X2, unsigned int X3, unsigned int X4)
-{
-    return inthash((inthash(X1) + (inthash(X2) << 1) + (inthash(X3) << 2) + (inthash(X4) << 3))) &
+    if (!EnvironmentNAVXYTHETALAT::IsValidCell(X, Y)) return false;
 
-           (EnvNAVXYTHETASTAB.HashTableSize - 1);
-
-}
-
-void EnvironmentNAVXYTHETASTAB::PrintHashTableHist()
-{
-    int s0 = 0, s1 = 0, s50 = 0, s100 = 0, s200 = 0, s300 = 0, slarge = 0;
-
-
-    for (int j = 0; j < (int)EnvNAVXYTHETASTAB.HashTableSize; j++) {
-        if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() == 0)
-            s0++;
-        else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 50)
-            s1++;
-        else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 100)
-            s50++;
-        else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 200)
-            s100++;
-        else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 300)
-            s200++;
-        else if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[j].size() < 400)
-
-            s300++;
-        else
-            slarge++;
+    //iterate through the additional levels
+    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+        if (AddLevelGrid2D[levelind][X][Y] >= EnvNAVXYTHETALATCfg.obsthresh) return false;
     }
-    SBPL_PRINTF("hash table histogram: 0:%d, <50:%d, <100:%d, <200:%d, <300:%d, <400:%d >400:%d\n", s0, s1, s50, s100,
-                s200, s300, slarge);
+    //otherwise the cell is valid at all levels
+    return true;
 }
 
-void EnvironmentNAVXYTHETASTAB::ReadConfiguration(FILE* fCfg)
+// returns true if cell is traversable and within map limits for a particular level
+bool EnvironmentNAVXYTHETASTAB::IsValidCell(int X, int Y, int levind)
 {
-    //read in the configuration of environment and initialize EnvCfg structure
+    return (X >= 0 && X < EnvNAVXYTHETALATCfg.EnvWidth_c && Y >= 0 && Y < EnvNAVXYTHETALATCfg.EnvHeight_c && levind <
+            numofadditionalzlevs && AddLevelGrid2D[levind][X][Y] < EnvNAVXYTHETALATCfg.obsthresh);
 }
 
-void EnvironmentNAVXYTHETASTAB::InitializeEnvConfig()
+//returns true if cell is untraversable at all levels
+bool EnvironmentNAVXYTHETASTAB::IsObstacle(int X, int Y)
 {
-    //aditional to configuration file initialization of EnvCfg if necessary
+    int levelind;
+
+    if (EnvironmentNAVXYTHETALAT::IsObstacle(X, Y)) return true;
+
+    //iterate through the additional levels
+    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+        if (AddLevelGrid2D[levelind][X][Y] >= EnvNAVXYTHETALATCfg.obsthresh) return true;
+    }
+    //otherwise the cell is obstacle-free at all cells
+    return false;
 }
 
-EnvNAVXYTHETASTABHashEntry_t* EnvironmentNAVXYTHETASTAB::GetHashEntry(unsigned int X1, unsigned int X2, unsigned int X3, unsigned int X4)
+//returns true if cell is untraversable in level # levelnum. If levelnum = -1, then it checks all levels
+bool EnvironmentNAVXYTHETASTAB::IsObstacle(int X, int Y, int levind)
 {
-    //clock_t currenttime = clock();
-
-    int binid = GETHASHBIN(X1, X2, X3, X4);
-
 #if DEBUG
-    if ((int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid].size() > 500)
+    if(levind >= numofadditionalzlevs)
     {
-        SBPL_PRINTF("WARNING: Hash table has a bin %d (X1=%d X2=%d X3=%d X4=%d) of size %d\n",
-                    binid, X1, X2, X3, X4, (int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid].size());
-
-
-        PrintHashTableHist();
+        SBPL_ERROR("ERROR: IsObstacle invoked at level %d\n", levind);
+        SBPL_FPRINTF(fDeb, "ERROR: IsObstacle invoked at level %d\n", levind);
+        return false;
     }
 #endif
 
-    //iterate over the states in the bin and select the perfect match
+    return (AddLevelGrid2D[levind][X][Y] >= EnvNAVXYTHETALATCfg.obsthresh);
+}
 
-    for (int ind = 0; ind < (int)EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid].size(); ind++) {
-        if (EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind]->X1 == X1 &&
-            EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind]->X2 == X2 &&
-            EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind]->X3 == X3 &&
-            EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind]->X4 == X4)
-        {
-            //time_gethash += clock()-currenttime;
-            return EnvNAVXYTHETASTAB.Coord2StateIDHashTable[binid][ind];
+// returns the maximum over all levels of the cost corresponding to the cell <x,y>
+unsigned char EnvironmentNAVXYTHETASTAB::GetMapCost(int X, int Y)
+{
+    unsigned char mapcost = EnvNAVXYTHETALATCfg.Grid2D[X][Y];
 
+    for (int levind = 0; levind < numofadditionalzlevs; levind++) {
+        mapcost = __max(mapcost, AddLevelGrid2D[levind][X][Y]);
+    }
+
+    return mapcost;
+}
+
+// returns the cost corresponding to the cell <x,y> at level levind
+unsigned char EnvironmentNAVXYTHETASTAB::GetMapCost(int X, int Y, int levind)
+{
+#if DEBUG
+    if(levind >= numofadditionalzlevs)
+    {
+        SBPL_ERROR("ERROR: GetMapCost invoked at level %d\n", levind);
+        SBPL_FPRINTF(fDeb, "ERROR: GetMapCost invoked at level %d\n", levind);
+        return false;
+    }
+#endif
+
+    return AddLevelGrid2D[levind][X][Y];
+}
+
+//returns false if robot intersects obstacles or lies outside of the map.
+bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
+{
+    //check the base footprint first
+    if (!EnvironmentNAVXYTHETALAT::IsValidConfiguration(X, Y, Theta)) return false;
+
+    //check the remaining levels now
+    vector<sbpl_2Dcell_t> footprint;
+    sbpl_xy_theta_pt_t pose;
+
+    //compute continuous pose
+    pose.x = DISCXY2CONT(X, EnvNAVXYTHETALATCfg.cellsize_m);
+    pose.y = DISCXY2CONT(Y, EnvNAVXYTHETALATCfg.cellsize_m);
+    pose.theta = DiscTheta2Cont(Theta, EnvNAVXYTHETALATCfg.NumThetaDirs);
+
+    //iterate over additional levels
+    for (int levind = 0; levind < numofadditionalzlevs; levind++) {
+
+        //compute footprint cells
+        footprint.clear();
+        get_2d_footprint_cells(AddLevelFootprintPolygonV[levind], &footprint, pose, EnvNAVXYTHETALATCfg.cellsize_m);
+
+        //iterate over all footprint cells
+        for (int find = 0; find < (int)footprint.size(); find++) {
+            int x = footprint.at(find).x;
+            int y = footprint.at(find).y;
+
+            if (x < 0 || x >= EnvNAVXYTHETALATCfg.EnvWidth_c || y < 0 || y >= EnvNAVXYTHETALATCfg.EnvHeight_c
+                || AddLevelGrid2D[levind][x][y] >= EnvNAVXYTHETALATCfg.obsthresh) {
+                return false;
+            }
         }
     }
 
-    //time_gethash += clock()-currenttime;
-
-    return NULL;
+    return true;
 }
 
-EnvNAVXYTHETASTABHashEntry_t* EnvironmentNAVXYTHETASTAB::CreateNewHashEntry(unsigned int X1, unsigned int X2, unsigned int X3,
-                                                      unsigned int X4)
+int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
+                                                EnvNAVXYTHETALATAction_t* action)
 {
-    int i;
+    int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
-    //clock_t currenttime = clock();
+    if (basecost >= INFINITECOST) return INFINITECOST;
 
-    EnvNAVXYTHETASTABHashEntry_t* HashEntry = new EnvNAVXYTHETASTABHashEntry_t;
+    int addcost = basecost+GetActionCostacrossAddLevels(SourceX, SourceY, SourceTheta, action);
 
-    HashEntry->X1 = X1;
-    HashEntry->X2 = X2;
-    HashEntry->X3 = X3;
-    HashEntry->X4 = X4;
+    //ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
-
-    HashEntry->stateID = EnvNAVXYTHETASTAB.StateID2CoordTable.size();
-
-    //insert into the tables
-    EnvNAVXYTHETASTAB.StateID2CoordTable.push_back(HashEntry);
-
-
-    //get the hash table bin
-    i = GETHASHBIN(HashEntry->X1, HashEntry->X2, HashEntry->X3, HashEntry->X4);
-
-    //insert the entry into the bin
-
-    EnvNAVXYTHETASTAB.Coord2StateIDHashTable[i].push_back(HashEntry);
-
-
-    //insert into and initialize the mappings
-    int* entry = new int[NUMOFINDICES_STATEID2IND];
-    StateID2IndexMapping.push_back(entry);
-    for (i = 0; i < NUMOFINDICES_STATEID2IND; i++) {
-        StateID2IndexMapping[HashEntry->stateID][i] = -1;
-    }
-
-    if (HashEntry->stateID != (int)StateID2IndexMapping.size() - 1) {
-        SBPL_ERROR("ERROR in Env... function: last state has incorrect stateID\n");
-        throw new SBPL_Exception();
-    }
-
-    //time_createhash += clock()-currenttime;
-
-    return HashEntry;
+    return __max(basecost, addcost);
 }
 
-void EnvironmentNAVXYTHETASTAB::CreateStartandGoalStates()
+int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
+                                                               EnvNAVXYTHETALATAction_t* action)
 {
-    EnvNAVXYTHETASTABHashEntry_t* HashEntry;
+    sbpl_2Dcell_t cell;
+    sbpl_xy_theta_cell_t interm3Dcell;
+    int i, levelind = -1;
 
-    //create start state
-    unsigned int X1 = 0;
-    unsigned int X2 = 0;
-    unsigned int X3 = 0;
-    unsigned int X4 = 0;
-    HashEntry = CreateNewHashEntry(X1, X2, X3, X4);
+    if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
+    if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
+    return 0;//abs(SourceY + action->dY)*500;
 
-    EnvNAVXYTHETASTAB.startstateid = HashEntry->stateID;
-
-
-    //create goal state
-    X1 = X2 = X3 = X4 = 1;
-    HashEntry = CreateNewHashEntry(X1, X2, X3, X4);
-
-    EnvNAVXYTHETASTAB.goalstateid = HashEntry->stateID;
 
 }
 
-void EnvironmentNAVXYTHETASTAB::InitializeEnvironment()
-{
+//---------------------------------------------------------------------
 
-    //initialize the map from Coord to StateID
+//------------debugging functions---------------------------------------------
 
-    EnvNAVXYTHETASTAB.HashTableSize = 32 * 1024; //should be power of two
-    EnvNAVXYTHETASTAB.Coord2StateIDHashTable = new vector<EnvNAVXYTHETASTABHashEntry_t*> [EnvNAVXYTHETASTAB.HashTableSize];
-
-    //initialize the map from StateID to Coord
-    EnvNAVXYTHETASTAB.StateID2CoordTable.clear();
-
-
-    //create start and goal states
-    CreateStartandGoalStates();
-}
-
-void EnvironmentNAVXYTHETASTAB::AddAllOutcomes(unsigned int SourceX1, unsigned int SourceX2, unsigned int SourceX3,
-                                    unsigned int SourceX4, CMDPACTION* action, int cost)
-{
-    EnvNAVXYTHETASTABHashEntry_t* OutHashEntry;
-    int i;
-    float CumProb = 0.0;
-
-    //iterate over outcomes
-    for (i = 0; i < 2; i++) {
-        unsigned int newX1 = SourceX1 + i;
-        unsigned int newX2 = SourceX2 + i;
-        unsigned int newX3 = SourceX3 + i;
-        unsigned int newX4 = SourceX4 + i;
-
-        //add the outcome
-        if ((OutHashEntry = GetHashEntry(newX1, newX2, newX3, newX4)) == NULL) {
-            //have to create a new entry
-            OutHashEntry = CreateNewHashEntry(newX1, newX2, newX3, newX4);
-        }
-        float Prob = 0.5; //probability of the outcome
-        action->AddOutcome(OutHashEntry->stateID, cost, Prob);
-        CumProb += Prob;
-
-    } //while
-
-    if (CumProb != 1.0) {
-
-        SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: prob. of all action outcomes=%f\n", CumProb);
-
-        throw new SBPL_Exception();
-    }
-}
-
-//------------------------------------------------------------------------------
-
-//------------------------------Heuristic computation--------------------------
-
-void EnvironmentNAVXYTHETASTAB::ComputeHeuristicValues()
-{
-    //whatever necessary pre-computation of heuristic values is done here
-    SBPL_PRINTF("Precomputing heuristics\n");
-
-    SBPL_PRINTF("done\n");
-}
+//-----------------------------------------------------------------------------
 
 //-----------interface with outside functions-----------------------------------
 
-bool EnvironmentNAVXYTHETASTAB::InitializeEnv(const char* sEnvFile)
+/*
+initialization of additional levels. 0 is the original one. All additional ones will start with index 1
+*/
+bool EnvironmentNAVXYTHETASTAB::InitializeAdditionalLevels(int numofadditionalzlevs_in,
+                                                              const vector<sbpl_2Dpt_t>* perimeterptsV,
+                                                              unsigned char* cost_inscribed_thresh_in,
+                                                              unsigned char* cost_possibly_circumscribed_thresh_in)
 {
-    FILE* fCfg = fopen(sEnvFile, "r");
-    if (fCfg == NULL) {
-        SBPL_ERROR("ERROR: unable to open %s\n", sEnvFile);
-        throw new SBPL_Exception();
+    int levelind = -1, xind = -1, yind = -1;
+    sbpl_xy_theta_pt_t temppose;
+    temppose.x = 0.0;
+    temppose.y = 0.0;
+    temppose.theta = 0.0;
+    vector<sbpl_2Dcell_t> footprint;
+
+    numofadditionalzlevs = numofadditionalzlevs_in;
+    SBPL_PRINTF("Planning with additional z levels. Number of additional z levels = %d\n", numofadditionalzlevs);
+
+    //allocate memory and set FootprintPolygons for additional levels
+    AddLevelFootprintPolygonV = new vector<sbpl_2Dpt_t> [numofadditionalzlevs];
+    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+        AddLevelFootprintPolygonV[levelind] = perimeterptsV[levelind];
     }
-    ReadConfiguration(fCfg);
-    fclose(fCfg);
 
-    //Initialize other parameters of the environment
-    InitializeEnvConfig();
+    //print out the size of a footprint for each additional level
+    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+        footprint.clear();
+        get_2d_footprint_cells(AddLevelFootprintPolygonV[levelind], &footprint, temppose,
+                               EnvNAVXYTHETALATCfg.cellsize_m);
+        SBPL_PRINTF("number of cells in footprint for additional level %d = %d\n", levelind,
+                    (unsigned int)footprint.size());
+    }
 
-    //initialize Environment
-    InitializeEnvironment();
+    //compute additional levels action info
+    SBPL_PRINTF("pre-computing action data for additional levels:\n");
+    AdditionalInfoinActionsV = new EnvNAVXYTHETASTABAddInfoAction_t*[EnvNAVXYTHETALATCfg.NumThetaDirs];
+    for (int tind = 0; tind < EnvNAVXYTHETALATCfg.NumThetaDirs; tind++) {
+        SBPL_PRINTF("pre-computing for angle %d out of %d angles\n", tind, EnvNAVXYTHETALATCfg.NumThetaDirs);
 
-    //pre-compute heuristics
-    ComputeHeuristicValues();
+        //compute sourcepose
+        sbpl_xy_theta_pt_t sourcepose;
+        sourcepose.x = DISCXY2CONT(0, EnvNAVXYTHETALATCfg.cellsize_m);
+        sourcepose.y = DISCXY2CONT(0, EnvNAVXYTHETALATCfg.cellsize_m);
+        sourcepose.theta = DiscTheta2Cont(tind, EnvNAVXYTHETALATCfg.NumThetaDirs);
+
+        AdditionalInfoinActionsV[tind] = new EnvNAVXYTHETASTABAddInfoAction_t[EnvNAVXYTHETALATCfg.actionwidth];
+
+        //iterate over actions for each angle
+        for (int aind = 0; aind < EnvNAVXYTHETALATCfg.actionwidth; aind++) {
+            EnvNAVXYTHETALATAction_t* nav3daction = &EnvNAVXYTHETALATCfg.ActionsV[tind][aind];
+
+            //initialize delta variables
+            AdditionalInfoinActionsV[tind][aind].dX = nav3daction->dX;
+            AdditionalInfoinActionsV[tind][aind].dY = nav3daction->dY;
+            AdditionalInfoinActionsV[tind][aind].starttheta = tind;
+            AdditionalInfoinActionsV[tind][aind].endtheta = nav3daction->endtheta;
+
+            //finally, create the footprint for the action for each level
+            AdditionalInfoinActionsV[tind][aind].intersectingcellsV = new vector<sbpl_2Dcell_t> [numofadditionalzlevs];
+            for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+                get_2d_motion_cells(AddLevelFootprintPolygonV[levelind],
+                                    EnvNAVXYTHETALATCfg.ActionsV[tind][aind].intermptV,
+                                    &AdditionalInfoinActionsV[tind][aind].intersectingcellsV[levelind],
+                                    EnvNAVXYTHETALATCfg.cellsize_m);
+            }
+        }
+    }
+
+    //create maps for additional levels and initialize to zeros (freespace)
+    AddLevelGrid2D = new unsigned char**[numofadditionalzlevs];
+    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+        AddLevelGrid2D[levelind] = new unsigned char*[EnvNAVXYTHETALATCfg.EnvWidth_c];
+        for (xind = 0; xind < EnvNAVXYTHETALATCfg.EnvWidth_c; xind++) {
+            AddLevelGrid2D[levelind][xind] = new unsigned char[EnvNAVXYTHETALATCfg.EnvHeight_c];
+            for (yind = 0; yind < EnvNAVXYTHETALATCfg.EnvHeight_c; yind++) {
+                AddLevelGrid2D[levelind][xind][yind] = 0;
+            }
+        }
+    }
+
+    //create inscribed and circumscribed cost thresholds
+    AddLevel_cost_possibly_circumscribed_thresh = new unsigned char[numofadditionalzlevs];
+    AddLevel_cost_inscribed_thresh = new unsigned char[numofadditionalzlevs];
+    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
+        AddLevel_cost_possibly_circumscribed_thresh[levelind] = cost_possibly_circumscribed_thresh_in[levelind];
+        AddLevel_cost_inscribed_thresh[levelind] = cost_inscribed_thresh_in[levelind];
+    }
 
     return true;
 }
 
-bool EnvironmentNAVXYTHETASTAB::InitializeMDPCfg(MDPConfig *MDPCfg)
+//set 2D map for the additional level levind
+bool EnvironmentNAVXYTHETASTAB::Set2DMapforAddLev(const unsigned char* mapdata, int levind)
 {
-    //initialize MDPCfg with the start and goal ids
+    int xind = -1, yind = -1;
 
-    MDPCfg->goalstateid = EnvNAVXYTHETASTAB.goalstateid;
-    MDPCfg->startstateid = EnvNAVXYTHETASTAB.startstateid;
+    if (AddLevelGrid2D == NULL) {
+        SBPL_ERROR("ERROR: failed to set2Dmap because the map was not allocated previously\n");
+        return false;
+    }
 
+    for (xind = 0; xind < EnvNAVXYTHETALATCfg.EnvWidth_c; xind++) {
+        for (yind = 0; yind < EnvNAVXYTHETALATCfg.EnvHeight_c; yind++) {
+            AddLevelGrid2D[levind][xind][yind] = mapdata[xind + yind * EnvNAVXYTHETALATCfg.EnvWidth_c];
+        }
+    }
 
     return true;
 }
 
-int EnvironmentNAVXYTHETASTAB::GetFromToHeuristic(int FromStateID, int ToStateID)
+//set 2D map for the additional level levind
+//the version of Set2DMapforAddLev that takes newmap as 2D array instead of one linear array
+bool EnvironmentNAVXYTHETASTAB::Set2DMapforAddLev(const unsigned char** NewGrid2D, int levind)
 {
-#if USE_HEUR==0
-    return 0;
-#endif
+    int xind = -1, yind = -1;
 
-#if DEBUG
-    if(FromStateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size() ||
-       ToStateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size())
-    {
-        SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
-
-        throw new SBPL_Exception();
-    }
-#endif
-
-    //define this function if it is used in the planner
-
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB.. function: FromToHeuristic is undefined\n");
-
-    throw new SBPL_Exception();
-
-    return 0;
-}
-
-int EnvironmentNAVXYTHETASTAB::GetGoalHeuristic(int stateID)
-{
-#if USE_HEUR==0
-    return 0;
-#endif
-
-#if DEBUG
-    if (stateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size()) {
-        SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
-
-        throw new SBPL_Exception();
-    }
-#endif
-
-    //define this function if it used in the planner (heuristic forward search would use it)
-
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB..function: GetGoalHeuristic is undefined\n");
-
-    throw new SBPL_Exception();
-}
-
-int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
-{
-#if USE_HEUR==0
-    return 0;
-#endif
-
-#if DEBUG
-    if (stateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size()) {
-        SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
-
-        throw new SBPL_Exception();
-    }
-#endif
-
-    //define this function if it used in the planner (heuristic backward search would use it)
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB.. function: GetStartHeuristic is undefined\n");
-
-    throw new SBPL_Exception();
-
-    return 0;
-}
-
-void EnvironmentNAVXYTHETASTAB::SetAllActionsandAllOutcomes(CMDPSTATE* state)
-{
-
-#if DEBUG
-    if (state->StateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size()) {
-        SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal\n");
-
-        throw new SBPL_Exception();
+    if (AddLevelGrid2D == NULL) {
+        SBPL_ERROR("ERROR: failed to set2Dmap because the map was not allocated previously\n");
+        return false;
     }
 
-    if ((int)state->Actions.size() != 0) {
-        SBPL_ERROR("ERROR in Env_setAllActionsandAllOutcomes: actions already exist for the state\n");
-        throw new SBPL_Exception();
+    for (xind = 0; xind < EnvNAVXYTHETALATCfg.EnvWidth_c; xind++) {
+        for (yind = 0; yind < EnvNAVXYTHETALATCfg.EnvHeight_c; yind++) {
+            AddLevelGrid2D[levind][xind][yind] = NewGrid2D[xind][yind];
+        }
     }
-#endif
 
-    //if it is goal then no successors
-
-    if (state->StateID == EnvNAVXYTHETASTAB.goalstateid) return;
-
-    //get values for the state
-    EnvNAVXYTHETASTABHashEntry_t* HashEntry = EnvNAVXYTHETASTAB.StateID2CoordTable[state->StateID];
-
-
-    //iterate through the actions for the state
-    for (int aind = 0; aind < XXX_MAXACTIONSWIDTH; aind++) {
-        int cost = 1;
-
-        //Add Action
-        CMDPACTION* action = state->AddAction(aind);
-
-        //clock_t currenttime = clock();
-        //add all the outcomes to the action
-        AddAllOutcomes(HashEntry->X1, HashEntry->X2, HashEntry->X3, HashEntry->X4, action, cost);
-
-        //you can break if the number of actual actions is smaller than the maximum possible
-
-        //time3_addallout += clock()-currenttime;
-    }
+    return true;
 }
 
-void EnvironmentNAVXYTHETASTAB::SetAllPreds(CMDPSTATE* state)
-{
-    //implement this if the planner needs access to predecessors
-
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: SetAllPreds is undefined\n");
-
-    throw new SBPL_Exception();
-}
-
-void EnvironmentNAVXYTHETASTAB::GetSuccs(int SourceStateID, vector<int>* SuccIDV, vector<int>* CostV)
-{
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: GetSuccs is undefined\n");
-
-    throw new SBPL_Exception();
-}
-
-void EnvironmentNAVXYTHETASTAB::GetPreds(int TargetStateID, vector<int>* PredIDV, vector<int>* CostV)
-{
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: GetPreds is undefined\n");
-
-    throw new SBPL_Exception();
-}
-
-int EnvironmentNAVXYTHETASTAB::SizeofCreatedEnv()
-{
-
-    return (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size();
-
-}
-
-void EnvironmentNAVXYTHETASTAB::PrintState(int stateID, bool bVerbose, FILE* fOut /*=NULL*/)
+/*
+update the traversability of a cell<x,y> in addtional level zlev (this is not to update basic level)
+*/
+bool EnvironmentNAVXYTHETASTAB::UpdateCostinAddLev(int x, int y, unsigned char newcost, int zlev)
 {
 #if DEBUG
-
-    if(stateID >= (int)EnvNAVXYTHETASTAB.StateID2CoordTable.size())
-    {
-        SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: stateID illegal (2)\n");
-
-        throw new SBPL_Exception();
-    }
+    //SBPL_FPRINTF(fDeb, "Cost updated for cell %d %d at level %d from old cost=%d to new cost=%d\n", x, y, zlev, AddLevelGrid2D[zlev][x][y], newcost);
 #endif
 
-    if (fOut == NULL) fOut = stdout;
+    AddLevelGrid2D[zlev][x][y] = newcost;
 
+    //no need to update heuristics because at this point it is computed solely based on the basic level
 
-    EnvNAVXYTHETASTABHashEntry_t* HashEntry = EnvNAVXYTHETASTAB.StateID2CoordTable[stateID];
-
-    if (stateID == EnvNAVXYTHETASTAB.goalstateid) {
-
-        SBPL_FPRINTF(fOut, "the state is a goal state\n");
-    }
-
-    SBPL_FPRINTF(fOut, "X1=%d X2=%d X3=%d X4=%d\n", HashEntry->X1, HashEntry->X2, HashEntry->X3, HashEntry->X4);
+    return true;
 }
 
-void EnvironmentNAVXYTHETASTAB::PrintEnv_Config(FILE* fOut)
-{
-
-    //implement this if the planner needs to print out EnvNAVXYTHETASTAB. configuration
-
-    SBPL_ERROR("ERROR in EnvNAVXYTHETASTAB... function: PrintEnv_Config is undefined\n");
-
-    throw new SBPL_Exception();
-}
-
-
+//------------------------------------------------------------------------------
