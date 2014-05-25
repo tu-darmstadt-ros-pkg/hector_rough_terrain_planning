@@ -33,36 +33,7 @@ typedef struct
 class EnvironmentNAVXYTHETASTAB : public EnvironmentNAVXYTHETALAT
 {
 public:
-    /**
-* \brief initialization of additional levels. 0 is the original one. All additional ones will start with index 1
-* For each level, it also takes cost thresholds for cells lying
-* within inner radius of the robot (inscribed) and outside of the
-* inner circle but within outer radius (possibly_circumscribed).
-* See environment_navxythetalat.h for the explanation of these
-* parameters.
-*/
-    bool InitializeAdditionalLevels(int numofadditionalzlevs, const std::vector<sbpl_2Dpt_t>* perimeterptsV,
-                                    unsigned char* cost_inscribed_thresh,
-                                    unsigned char* cost_possibly_circumscribed_thresh);
 
-    /**
-* \brief setting 2D map for the additional level at levind index
-* (indices are zero-based and are only used to index the additional levels)
-* you can not use this function to set 2D map for the base level
-* transform from linear array mapdata to the 2D matrix used internally: Grid2D[x][y] = mapdata[x+y*width]
-*/
-    bool Set2DMapforAddLev(const unsigned char* mapdata, int levind);
-
-    /**
-* \brief set 2D map for the additional level levind
-* The version of Set2DMapforAddLev that takes newmap as 2D array instead of one linear array
-*/
-    bool Set2DMapforAddLev(const unsigned char** NewGrid2D, int levind);
-
-    /**
-* \brief update the traversability of a cell<x,y> in level zlev
-*/
-    bool UpdateCostinAddLev(int x, int y, unsigned char newcost, int zlev);
 
     /**
 * \brief incremental planning not supported
