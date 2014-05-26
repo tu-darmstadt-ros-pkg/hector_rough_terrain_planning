@@ -18,6 +18,8 @@ using namespace std;
 //global representation
 #include <nav_core/base_global_planner.h>
 
+#include <hector_sbpl_terrain_planner/discrete_space_information/environment_navxytheta_stability_lat.h>
+
 namespace sbpl_terrain_planner{
 
 class SBPLTerrainPlanner{ //: public nav_core::BaseGlobalPlanner{
