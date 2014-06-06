@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <sbpl/utils/key.h>
+//#include <geometry_msgs/pos>
 
 #include <ros/ros.h>
 
@@ -28,6 +29,8 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     AddLevelGrid2D = NULL;
     AddLevel_cost_possibly_circumscribed_thresh = NULL;
     AddLevel_cost_inscribed_thresh = NULL;
+
+
 }
 
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
@@ -204,7 +207,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     //ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
-    return __max(basecost, addcost);
+    return  addcost;
 }
 
 int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,

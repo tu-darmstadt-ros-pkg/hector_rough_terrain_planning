@@ -2,12 +2,34 @@
 
 namespace flor_terrain_classifier
 {
+
+bool add(TestModelService::Request &req,
+           TestModelService::Response &res)
+{
+    res.a_srvc_out = req.a_srvc_in + req.testmodel_in.A;
+    res.testmodel_out.A = 2*(req.a_srvc_in + req.testmodel_in.A);
+    ROS_INFO("request received: x=%ld, y=%ld", (long int)req.a_srvc_in, (long int)req.testmodel_in.A);
+    return true;
+}
+
+
 TerrainClassifier::TerrainClassifier()
   : frame_id("/world")
   , lock_input_cloud(false)
 {
   setDataOutdated();
+
+    ros::NodeHandle n;
+
+   // ros::CallbackQueue service_queue_;
+
+    ros::ServiceServer service = n.advertiseService("add_two_ints", add);
+    //ros::AdvertiseServiceOptions ops_normals=ros::AdvertiseServiceOptions::create<TestModelService>("get_normal", boost::bind(&add, this,_1,_2),ros::VoidConstPtr(),&service_queue_);
+
+  //  ros::ServiceServer = n.advertiseService(add);
+
 }
+
 
 TerrainClassifier::TerrainClassifier(const TerrainClassifierParams &params)
   : frame_id("/world")
@@ -822,6 +844,7 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
          }
      }
      pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
+
 
     // is used after while loop, but initiated in it.
     pcl::PointXYZ support_point_2;

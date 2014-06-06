@@ -1,0 +1,5 @@
+flor_terrain_classifier/TestModel testmodel_in
+int64 a_srvc_in
+---
+flor_terrain_classifier/TestModel testmodel_out
+int64 a_srvc_out

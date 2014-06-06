@@ -51,6 +51,10 @@
 
 #include <iostream>
 #include <pcl/io/pcd_io.h>
+
+
+#include <flor_terrain_classifier/TestModel.h>
+#include <flor_terrain_classifier/TestModelService.h>
 namespace flor_terrain_classifier
 {
 enum filterMask
@@ -106,6 +110,7 @@ struct TerrainClassifierParams
 
     nh.param("misc/low_res", low_res, 0.05);
   }
+
 
   unsigned int filter_mask;
 
@@ -323,7 +328,6 @@ protected:
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating;
 
   pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
-
 
   std::string frame_id;
 
