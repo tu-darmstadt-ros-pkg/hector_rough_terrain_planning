@@ -73,6 +73,8 @@ protected:
   // service clients
   ros::ServiceClient point_cloud_client;
 
+  ros::ServiceServer test_service;
+
   // publisher
   ros::Publisher cloud_input_pub;
   ros::Publisher cloud_points_processed_pub;

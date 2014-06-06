@@ -39,10 +39,12 @@
 
 using namespace flor_terrain_classifier;
 
+
 void test_normals()
 {
   ros::NodeHandle nh_("~");
   flor_terrain_classifier::TerrainClassifierParams params(nh_);
+
   params.filter_mask = FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
   flor_terrain_classifier::TerrainClassifier::Ptr terrain_classifier(new flor_terrain_classifier::TerrainClassifier(params));
 

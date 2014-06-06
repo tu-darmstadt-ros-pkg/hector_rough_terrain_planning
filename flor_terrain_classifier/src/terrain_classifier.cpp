@@ -19,14 +19,7 @@ TerrainClassifier::TerrainClassifier()
 {
   setDataOutdated();
 
-    ros::NodeHandle n;
 
-   // ros::CallbackQueue service_queue_;
-
-    ros::ServiceServer service = n.advertiseService("add_two_ints", add);
-    //ros::AdvertiseServiceOptions ops_normals=ros::AdvertiseServiceOptions::create<TestModelService>("get_normal", boost::bind(&add, this,_1,_2),ros::VoidConstPtr(),&service_queue_);
-
-  //  ros::ServiceServer = n.advertiseService(add);
 
 }
 

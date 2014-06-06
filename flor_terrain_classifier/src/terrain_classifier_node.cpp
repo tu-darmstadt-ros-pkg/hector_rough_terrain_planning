@@ -4,10 +4,22 @@
 
 namespace flor_terrain_classifier
 {
+
+bool add(TestModelService::Request &req,
+           TestModelService::Response &res)
+{
+    res.a_srvc_out = req.a_srvc_in + req.testmodel_in.A;
+    res.testmodel_out.A = 2*(req.a_srvc_in + req.testmodel_in.A);
+    ROS_INFO("request received: x=%ld, y=%ld", (long int)req.a_srvc_in, (long int)req.testmodel_in.A);
+    return true;
+}
+
 TerrainClassifierNode::TerrainClassifierNode()
 {
   ros::NodeHandle nh;
   ros::NodeHandle nh_("~");
+
+  test_service = nh_.advertiseService("add_two_ints", add);
 
   // load parameters
   nh_.param("point_cloud/min_bounding_box/x", min_bounding_box.x, -1.0);

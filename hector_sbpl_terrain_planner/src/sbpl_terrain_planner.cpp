@@ -423,22 +423,22 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   }
   plan_pub_.publish(gui_path);
   publishStats(solution_cost, sbpl_path.size(), start, goal);
-/**
-    ros::NodeHandle n;
-    ros::ServiceClient client = n.serviceClient<flor_terrain_classifier::TestModel>("add_two_ints");
-    flor_terrain_classifier::TestModelService srv;
-    srv.request.a_srvc_in = 3;
-    srv.request.testmodel_in.A = 5;
-    if (client.call(srv))
+
+  ros::NodeHandle n;
+  ros::ServiceClient client = n.serviceClient<flor_terrain_classifier::TestModelService>("/flor_terrain_classifier_node/add_two_ints");
+  flor_terrain_classifier::TestModelService srv;
+  srv.request.a_srvc_in = 3;
+  srv.request.testmodel_in.A = 5;
+  if (client.call(srv))
     {
         ROS_INFO("Sum: %ld", (long int)srv.response.a_srvc_out);
         ROS_INFO("Sum2: %ld", (long int)srv.response.testmodel_out.A);
     }
     else
     {
-        ROS_ERROR("Failed to call service add_two_ints");
+        ROS_ERROR("Failed to call service add_two_ints1");
         return 1;
-    }**/
+    }
 
   return true;
 }
