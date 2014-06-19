@@ -81,11 +81,12 @@ void TerrainPreprocessorNode::loadTestPointCloud()
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/traps_ground.pcd", *cloud_input);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/ramp.pcd", *cloud_input);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/ramp2.pcd", *cloud_input);
-  pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/rough_terrain_2_4.pcd", *cloud_input);
+  //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/rough_terrain_2_4.pcd", *cloud_input);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/rough_terrain_2_on_top.pcd", *cloud_input);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/zick_zack.pcd", *cloud_input);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/hector_terrain_preprocessor/pointclouds/new.pcd", *cloud_input);
 
+  pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_input);
   // add filtered point cloud to classifier
   terrain_preprocessor->addCloud(cloud_input);
 

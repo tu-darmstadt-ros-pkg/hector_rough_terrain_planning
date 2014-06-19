@@ -36,6 +36,12 @@
 
 #include <hector_terrain_preprocessor/terrain_preprocessor.h>
 
+#include <flor_terrain_classifier/TestModelService.h>
+#include <flor_terrain_classifier/TestModel.h>
+#include <flor_terrain_classifier/TerrainModel.h>
+#include <flor_terrain_classifier/TerrainModelService.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 using namespace hector_terrain_preprocessor;
 
@@ -109,13 +115,52 @@ void test_normals()
    // terrain_preprocessor->showPositionRating(viewer, "positionRating", view_port_4);
   }
 }
+void chatterCallback(const sensor_msgs::PointCloud2 msg)
+  {
 
+   pcl::PCLPointCloud2 pcl_pc;
+   pcl_conversions::toPCL(msg, pcl_pc);
+   pcl::PointCloud<pcl::PointXYZ> cloud;
+   pcl::fromPCLPointCloud2(pcl_pc, cloud);
+
+  }
+void testService()
+{
+
+    ros::NodeHandle nh_("~");
+    hector_terrain_preprocessor::TerrainClassifierParams params(nh_);
+    params.filter_mask = FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
+//    ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TestModelService>("/flor_terrain_classifier_node/add_two_ints");
+//    ros::ServiceClient client2 = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor_terrain_classifier_node/add_two_ints");
+//    flor_terrain_classifier::TestModelService srv;
+//    srv.request.a_srvc_in = 3;
+//    srv.request.testmodel_in.A = 5;
+//    if (client.call(srv))
+//    {
+//        ROS_INFO("Sum: %ld", (long int)srv.response.a_srvc_out);
+//        ROS_INFO("Sum2: %ld", (long int)srv.response.testmodel_out.A);
+//    }
+//    else
+//    {
+//        ROS_ERROR("Failed to call service add_two_ints1");
+//        return;
+//    }
+
+    ros::Subscriber sub = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000, chatterCallback);
+    ROS_INFO("SPIN:");
+    ros::spin();
+    ROS_INFO("EndSPIN:");
+
+
+
+}
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "terrain_test");
   ros::Time::init();
 
-  test_normals();
+  testService();
+  //test_normals();
 
   return 0;
 }
