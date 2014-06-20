@@ -9,6 +9,7 @@ TerrainModel::TerrainModel()
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
     cloud_processed=cloud;
+    int i=3;
 }
 
 
@@ -501,6 +502,7 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
      bool hull_cpp= (ccw(p0,p1,p2)<0);
+     return 0.f;
      for (unsigned int i = 0; i < cloud_processed->size(); i++)
      {
        const  pcl::PointXYZ &pp= cloud_processed->at(i);

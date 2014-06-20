@@ -55,7 +55,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
     ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
     flor_terrain_classifier::TerrainModelService srv;
-    ros::Subscriber sub = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
+    subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
 
 
@@ -130,35 +130,6 @@ bool EnvironmentNAVXYTHETASTAB::IsValidCell(int X, int Y, int levind)
             numofadditionalzlevs && AddLevelGrid2D[levind][X][Y] < EnvNAVXYTHETALATCfg.obsthresh);
 }
 
-//returns true if cell is untraversable at all levels
-bool EnvironmentNAVXYTHETASTAB::IsObstacle(int X, int Y)
-{
-    int levelind;
-
-    if (EnvironmentNAVXYTHETALAT::IsObstacle(X, Y)) return true;
-
-    //iterate through the additional levels
-    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
-        if (AddLevelGrid2D[levelind][X][Y] >= EnvNAVXYTHETALATCfg.obsthresh) return true;
-    }
-    //otherwise the cell is obstacle-free at all cells
-    return false;
-}
-
-//returns true if cell is untraversable in level # levelnum. If levelnum = -1, then it checks all levels
-bool EnvironmentNAVXYTHETASTAB::IsObstacle(int X, int Y, int levind)
-{
-#if DEBUG
-    if(levind >= numofadditionalzlevs)
-    {
-        SBPL_ERROR("ERROR: IsObstacle invoked at level %d\n", levind);
-        SBPL_FPRINTF(fDeb, "ERROR: IsObstacle invoked at level %d\n", levind);
-        return false;
-    }
-#endif
-
-    return (AddLevelGrid2D[levind][X][Y] >= EnvNAVXYTHETALATCfg.obsthresh);
-}
 
 // returns the maximum over all levels of the cost corresponding to the cell <x,y>
 unsigned char EnvironmentNAVXYTHETASTAB::GetMapCost(int X, int Y)
@@ -223,7 +194,17 @@ bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
 
     return true;
 }
+void EnvironmentNAVXYTHETASTAB::UpdataData()
+{
+    ros::NodeHandle nh_("~");
+    flor_terrain_classifier::TerrainClassifierParams params(nh_);
+    params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
+    ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
+    flor_terrain_classifier::TerrainModelService srv;
+    subTerrainModel = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
+    client.call(srv);
 
+}
 int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
                                                 EnvNAVXYTHETALATAction_t* action)
 {
@@ -248,6 +229,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
 
     pcl::PointXYZ checkPos(SourceX+ action->dX,SourceY+ action->dY,0.f);
 
+
     float addCost=  terrainModel.computePositionRating(checkPos, action->endtheta);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
@@ -257,14 +239,8 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
 
 }
 
-//---------------------------------------------------------------------
-
-//------------debugging functions---------------------------------------------
-
-//-----------------------------------------------------------------------------
-
-//-----------interface with outside functions-----------------------------------
-
-
-
-//------------------------------------------------------------------------------
+ int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
+{
+    UpdataData();
+    EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
+}

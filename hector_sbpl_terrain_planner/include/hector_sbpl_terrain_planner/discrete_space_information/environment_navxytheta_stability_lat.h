@@ -37,6 +37,7 @@ class EnvironmentNAVXYTHETASTAB : public EnvironmentNAVXYTHETALAT
 public:
 
 
+
     /**
 * \brief incremental planning not supported
 */
@@ -57,6 +58,7 @@ public:
         throw new SBPL_Exception();
     }
 
+
     /**
 * returns true if cell is traversable and within map limits - it checks against all levels including the base one
 */
@@ -67,15 +69,6 @@ public:
 */
     bool IsValidCell(int X, int Y, int levind);
 
-    /**
-* returns true if cell is untraversable at any level
-*/
-    bool IsObstacle(int x, int y);
-
-    /**
-* returns true if cell is untraversable at level levelnum.
-*/
-    bool IsObstacle(int x, int y, int levind);
 
     /**
 * \brief returns false if robot intersects obstacles or lies outside of the map.
@@ -99,6 +92,8 @@ public:
 
 
     void terrainModelCallback(const sensor_msgs::PointCloud2 msg);
+    void UpdataData();
+    virtual int SetStart(double x, double y, double theta);
 
 protected:
 
@@ -142,6 +137,7 @@ protected:
 
     virtual int GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
                                              EnvNAVXYTHETALATAction_t* action);
+    ros::Subscriber subTerrainModel;
 
 
 };

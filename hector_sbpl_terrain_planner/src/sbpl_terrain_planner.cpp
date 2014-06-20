@@ -117,7 +117,7 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
 
     //std::vector<geometry_msgs::Point> footprint = costmap_ros_->getRobotFootprint();
 
-    if ("XYThetaLattice" == environment_type_){
+    if ("XYThetaLattice" == environment_type_ || "testXYThetaLattice" == environment_type_){
       ROS_DEBUG("Using a 3D costmap for theta lattice\n");
       env_ = new EnvironmentNAVXYTHETALAT();
     }
@@ -262,6 +262,8 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
     ROS_ERROR("Global planner is not initialized");
     return false;
   }
+
+
 
   plan.clear();
 
