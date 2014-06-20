@@ -8,6 +8,7 @@
 #include <sbpl/discrete_space_information/environment_navxythetalat.h>
 #include <sbpl/sbpl_exception.h>
 #include <sbpl/utils/utils.h>
+#include <flor_terrain_classifier/terrain_model.h>
 
 // these structures contain footprints for the additional levels
 // each of these structures corresponds to one of the EnvNAVXYTHETALATAction_t structures
@@ -96,6 +97,8 @@ public:
     ~EnvironmentNAVXYTHETASTAB();
 
 protected:
+
+    hector_terrain_model::TerrainModel terrainModel;
     /**
 * \brief number of additional levels. If it is 0, then there is only one level - base level
 */

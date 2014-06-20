@@ -22,10 +22,12 @@ include_directories(${PCL_INCLUDE_DIRS})
 set(HEADERS
     include/flor_terrain_classifier/terrain_classifier.h
     include/flor_terrain_classifier/terrain_classifier_node.h
+    include/flor_terrain_classifier/terrain_model.h
 )
 
 set(SOURCES
     src/terrain_classifier.cpp
+    src/terrain_model.cpp
 )
 
 #uncomment if you have defined messages
@@ -40,8 +42,12 @@ rosbuild_add_library(${PROJECT_NAME} ${SOURCES})
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
+#rosbuild_add_executable(terrain_classifier src/terrain_classifier.cpp ${HEADERS})
 rosbuild_add_executable(terrain_classifier_node src/terrain_classifier_node.cpp ${HEADERS})
+#rosbuild_add_executable(terrain_model src/terrain_model.cpp ${HEADERS})
 rosbuild_add_executable(terrain_classifier_test src/terrain_classifier_test.cpp ${HEADERS})
 #target_link_libraries(example ${PROJECT_NAME})
+#target_link_libraries(terrain_classifier ${PROJECT_NAME} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
+#target_link_libraries(terrain_model ${PROJECT_NAME} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
 target_link_libraries(terrain_classifier_node ${PROJECT_NAME} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
 target_link_libraries(terrain_classifier_test ${PROJECT_NAME} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)

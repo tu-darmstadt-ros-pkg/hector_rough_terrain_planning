@@ -5,9 +5,8 @@
 #include <ctime>
 #include <sbpl/utils/key.h>
 //#include <geometry_msgs/pos>
-
+//#include <flor_terrain_classifier/terrain_classifier.h>
 #include <ros/ros.h>
-
 using namespace std;
 
 #if TIME_DEBUG
@@ -29,6 +28,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     AddLevelGrid2D = NULL;
     AddLevel_cost_possibly_circumscribed_thresh = NULL;
     AddLevel_cost_inscribed_thresh = NULL;
+    terrainModel = hector_terrain_model::TerrainModel();
 
 
 }
@@ -217,9 +217,12 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
     sbpl_xy_theta_cell_t interm3Dcell;
     int i, levelind = -1;
 
+
+    float addCost=terrainModel.computeCost();
+
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
-    return abs(SourceY + action->dY)*500;
+    return abs(SourceY + action->dY)*500+addCost;
 
 
 }
