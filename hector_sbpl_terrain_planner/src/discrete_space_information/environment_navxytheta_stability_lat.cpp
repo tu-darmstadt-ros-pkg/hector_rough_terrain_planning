@@ -7,6 +7,14 @@
 //#include <geometry_msgs/pos>
 //#include <flor_terrain_classifier/terrain_classifier.h>
 #include <ros/ros.h>
+
+#include <pcl_conversions/pcl_conversions.h>
+
+#include <flor_terrain_classifier/TestModelService.h>
+#include <flor_terrain_classifier/TestModel.h>
+#include <flor_terrain_classifier/TerrainModel.h>
+#include <flor_terrain_classifier/TerrainModelService.h>
+#include <flor_terrain_classifier/terrain_classifier.h>
 using namespace std;
 
 #if TIME_DEBUG
@@ -20,6 +28,19 @@ static long int checks = 0;
 
 //-----------------constructors/destructors-------------------------------
 
+void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
+  {
+
+   pcl::PCLPointCloud2 pcl_pc;
+   pcl_conversions::toPCL(msg, pcl_pc);
+   pcl::PointCloud<pcl::PointXYZ> cloud;
+   pcl::fromPCLPointCloud2(pcl_pc, cloud);
+   pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(&cloud);
+   terrainModel = hector_terrain_model::TerrainModel(cloudPtr);
+
+  }
+
+
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 {
     numofadditionalzlevs = 0; //by default there is only base level, no additional levels
@@ -28,7 +49,14 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     AddLevelGrid2D = NULL;
     AddLevel_cost_possibly_circumscribed_thresh = NULL;
     AddLevel_cost_inscribed_thresh = NULL;
-    terrainModel = hector_terrain_model::TerrainModel();
+
+    ros::NodeHandle nh_("~");
+    flor_terrain_classifier::TerrainClassifierParams params(nh_);
+    params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
+    ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
+    flor_terrain_classifier::TerrainModelService srv;
+    ros::Subscriber sub = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
+    client.call(srv);
 
 
 }
@@ -218,11 +246,13 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
     int i, levelind = -1;
 
 
-    float addCost=terrainModel.computeCost();
+    pcl::PointXYZ checkPos(SourceX+ action->dX,SourceY+ action->dY,0.f);
+
+    float addCost=  terrainModel.computePositionRating(checkPos, action->endtheta);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
-    return abs(SourceY + action->dY)*500+addCost;
+    return addCost;
 
 
 }

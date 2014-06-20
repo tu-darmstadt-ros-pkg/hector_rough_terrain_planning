@@ -32,7 +32,8 @@ namespace hector_terrain_model
 class TerrainModel
 {
 public:
-  TerrainModel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    TerrainModel();
+    TerrainModel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
   virtual ~TerrainModel();
 
 

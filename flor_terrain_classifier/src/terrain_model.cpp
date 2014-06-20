@@ -3,7 +3,8 @@
 namespace hector_terrain_model
 {
 
-
+TerrainModel::TerrainModel()
+{}
 
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {

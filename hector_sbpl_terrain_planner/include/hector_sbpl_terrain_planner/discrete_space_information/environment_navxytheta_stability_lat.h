@@ -9,6 +9,7 @@
 #include <sbpl/sbpl_exception.h>
 #include <sbpl/utils/utils.h>
 #include <flor_terrain_classifier/terrain_model.h>
+#include <sensor_msgs/PointCloud2.h>
 
 // these structures contain footprints for the additional levels
 // each of these structures corresponds to one of the EnvNAVXYTHETALATAction_t structures
@@ -96,6 +97,9 @@ public:
     EnvironmentNAVXYTHETASTAB();
     ~EnvironmentNAVXYTHETASTAB();
 
+
+    void terrainModelCallback(const sensor_msgs::PointCloud2 msg);
+
 protected:
 
     hector_terrain_model::TerrainModel terrainModel;
@@ -138,6 +142,7 @@ protected:
 
     virtual int GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
                                              EnvNAVXYTHETALATAction_t* action);
+
 
 };
 #endif
