@@ -29,24 +29,40 @@ static long int checks = 0;
 //-----------------constructors/destructors-------------------------------
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
-  {    
+  {
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
+    ROS_INFO("entered callback");
        pcl::PCLPointCloud2 pcl_pc;
        pcl_conversions::toPCL(msg, pcl_pc);
        pcl::PointCloud<pcl::PointXYZ> cloud;
        pcl::fromPCLPointCloud2(pcl_pc, cloud);
        terrainModel = hector_terrain_model::TerrainModel(cloud);
+       sleep(10);
   }
 
 
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 {
+
+
+    ROS_INFO("entered Const");
+    sleep(10);
+    ROS_INFO("continued");
     numofadditionalzlevs = 0; //by default there is only base level, no additional levels
     AddLevelFootprintPolygonV = NULL;
     AdditionalInfoinActionsV = NULL;
     AddLevelGrid2D = NULL;
     AddLevel_cost_possibly_circumscribed_thresh = NULL;
     AddLevel_cost_inscribed_thresh = NULL;
-
     ros::NodeHandle nh_("~");
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
@@ -54,6 +70,8 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     flor_terrain_classifier::TerrainModelService srv;
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
+    ROS_INFO("called service in constructor");
+    ros::spinOnce();
 }
 
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
@@ -196,7 +214,7 @@ void EnvironmentNAVXYTHETASTAB::UpdataData()
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
     ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
     flor_terrain_classifier::TerrainModelService srv;
-    subTerrainModel = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
+    //subTerrainModel = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
 
 }
@@ -209,7 +227,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     int addcost = basecost+GetActionCostacrossAddLevels(SourceX, SourceY, SourceTheta, action);
 
-    ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+   // ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     return  addcost;
 }
@@ -224,7 +242,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
     pcl::PointXYZ checkPos(SourceX+ action->dX,SourceY+ action->dY,0.f);
 
     float addCost=  terrainModel.computePositionRating(checkPos, action->endtheta);
-    ROS_INFO("cost %f", addCost);
+   // ROS_INFO("cost %f", addCost);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
@@ -235,6 +253,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
 
  int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 {
-    UpdataData();
+    //UpdataData();
     EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
 }

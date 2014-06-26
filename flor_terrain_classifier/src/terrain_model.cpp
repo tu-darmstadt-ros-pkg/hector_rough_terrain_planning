@@ -10,13 +10,17 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
     cloud_processed=cloud;
     cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
-    int i=3;
 }
-
 
 TerrainModel::~TerrainModel()
 {
 
+}
+
+void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
+{
+    cloud_processed=cloud;
+    cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
 }
 
 /*--------------------------------------------------------------------------------------------*/

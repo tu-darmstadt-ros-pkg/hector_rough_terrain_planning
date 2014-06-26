@@ -66,6 +66,7 @@ public:
   float computePositionRating(const pcl::PointXYZ& checkPos,
                              const float orientation);
 
+  void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
 
   //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed_Ptr;
