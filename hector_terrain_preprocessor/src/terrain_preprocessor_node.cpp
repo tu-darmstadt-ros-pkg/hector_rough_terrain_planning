@@ -163,9 +163,10 @@ void TerrainPreprocessorNode::setPointCloud(const sensor_msgs::PointCloud2 &clou
 
 void TerrainPreprocessorNode::generateTerrainModel(const TerrainModelRequest &req)
 {
-  TerrainModelService srv;
-  srv.request.terrain_model_request = req;
-  terrainModelService(srv.request, srv.response);
+    assert(0); //temp hack
+ // TerrainModelService srv;
+ // srv.request.terrain_model_request = req;
+ // terrainModelService(srv.request, srv.response);
 }
 
 bool TerrainPreprocessorNode::generateTerrainModel()

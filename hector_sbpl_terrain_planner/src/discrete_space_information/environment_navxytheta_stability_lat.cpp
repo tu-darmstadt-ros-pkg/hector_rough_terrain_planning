@@ -29,15 +29,12 @@ static long int checks = 0;
 //-----------------constructors/destructors-------------------------------
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
-  {
-
-   pcl::PCLPointCloud2 pcl_pc;
-   pcl_conversions::toPCL(msg, pcl_pc);
-   pcl::PointCloud<pcl::PointXYZ> cloud;
-   pcl::fromPCLPointCloud2(pcl_pc, cloud);
-   pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(&cloud);
-   terrainModel = hector_terrain_model::TerrainModel(cloudPtr);
-
+  {    
+       pcl::PCLPointCloud2 pcl_pc;
+       pcl_conversions::toPCL(msg, pcl_pc);
+       pcl::PointCloud<pcl::PointXYZ> cloud;
+       pcl::fromPCLPointCloud2(pcl_pc, cloud);
+       terrainModel = hector_terrain_model::TerrainModel(cloud);
   }
 
 
@@ -57,8 +54,6 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     flor_terrain_classifier::TerrainModelService srv;
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
-
-
 }
 
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
@@ -214,7 +209,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     int addcost = basecost+GetActionCostacrossAddLevels(SourceX, SourceY, SourceTheta, action);
 
-    //ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+    ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     return  addcost;
 }
@@ -226,11 +221,10 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
     sbpl_xy_theta_cell_t interm3Dcell;
     int i, levelind = -1;
 
-
     pcl::PointXYZ checkPos(SourceX+ action->dX,SourceY+ action->dY,0.f);
 
-
     float addCost=  terrainModel.computePositionRating(checkPos, action->endtheta);
+    ROS_INFO("cost %f", addCost);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;

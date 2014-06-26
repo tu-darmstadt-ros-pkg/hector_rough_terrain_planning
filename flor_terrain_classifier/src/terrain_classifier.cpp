@@ -18,9 +18,6 @@ TerrainClassifier::TerrainClassifier()
   , lock_input_cloud(false)
 {
   setDataOutdated();
-
-
-
 }
 
 

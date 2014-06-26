@@ -146,7 +146,11 @@ void testService()
 //        return;
 //    }
 
+    ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
+    flor_terrain_classifier::TerrainModelService srv;
+
     ros::Subscriber sub = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000, chatterCallback);
+    client.call(srv);
     ROS_INFO("SPIN:");
     ros::spin();
     ROS_INFO("EndSPIN:");

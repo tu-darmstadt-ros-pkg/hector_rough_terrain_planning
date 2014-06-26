@@ -33,7 +33,7 @@ class TerrainModel
 {
 public:
     TerrainModel();
-    TerrainModel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud);
   virtual ~TerrainModel();
 
 
@@ -68,7 +68,8 @@ public:
 
 
   //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed_Ptr;
+  pcl::PointCloud<pcl::PointXYZ> cloud_processed;
   //pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_outfiltered;
  // pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
   //pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_height;

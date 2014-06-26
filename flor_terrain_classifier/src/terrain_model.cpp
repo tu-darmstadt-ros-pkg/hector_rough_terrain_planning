@@ -6,9 +6,10 @@ namespace hector_terrain_model
 TerrainModel::TerrainModel()
 {}
 
-TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
     cloud_processed=cloud;
+    cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
     int i=3;
 }
 
@@ -442,7 +443,7 @@ void TerrainModel::compute_robot_positions(const pcl::PointXYZ support_point_1, 
     normal.z = normal_vector.z();
 
     // ERROR ? ACHTUNG EVENTUELL FLASCH RUM, DA ICH NICHT WEISS WIE RUM DER ROBOTER STEHT
-    // --------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
     // bezg p_pro 1 / 0
     robot_center_of_mass = compute_center_of_mass(robot_point_0, robot_point_1, normal_vector, robot_point_mid, offset_CM);
 
@@ -503,9 +504,9 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
      bool hull_cpp= (ccw(p0,p1,p2)<0);
      return 0.f;
-     for (unsigned int i = 0; i < cloud_processed->size(); i++)
+     for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
      {
-       const  pcl::PointXYZ &pp= cloud_processed->at(i);
+       const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i);
 
        bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
        bool c1=hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
