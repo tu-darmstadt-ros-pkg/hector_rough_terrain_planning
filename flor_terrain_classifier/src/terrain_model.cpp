@@ -513,9 +513,10 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
          return 0.f;
      }
 
-     for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
+     uint32_t cloudSize=cloud_processed.size();
+     for (uint32_t i = 0; i < cloudSize2; i++)
      {
-       const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i);
+       const pcl::PointXYZ& pp= cloud_processed.at(i);
 
        bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
        bool c1=hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
