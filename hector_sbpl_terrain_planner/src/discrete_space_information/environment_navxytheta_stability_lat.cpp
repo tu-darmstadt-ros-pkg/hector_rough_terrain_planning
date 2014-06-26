@@ -30,33 +30,27 @@ static long int checks = 0;
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
   {
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
-    ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
+        ROS_INFO("entered callback");
        pcl::PCLPointCloud2 pcl_pc;
        pcl_conversions::toPCL(msg, pcl_pc);
        pcl::PointCloud<pcl::PointXYZ> cloud;
        pcl::fromPCLPointCloud2(pcl_pc, cloud);
        terrainModel = hector_terrain_model::TerrainModel(cloud);
-       sleep(10);
   }
 
 
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 {
-
-
-    ROS_INFO("entered Const");
-    sleep(10);
-    ROS_INFO("continued");
     numofadditionalzlevs = 0; //by default there is only base level, no additional levels
     AddLevelFootprintPolygonV = NULL;
     AdditionalInfoinActionsV = NULL;
@@ -227,7 +221,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     int addcost = basecost+GetActionCostacrossAddLevels(SourceX, SourceY, SourceTheta, action);
 
-   // ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+    ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     return  addcost;
 }
@@ -239,10 +233,11 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
     sbpl_xy_theta_cell_t interm3Dcell;
     int i, levelind = -1;
 
-    pcl::PointXYZ checkPos(SourceX+ action->dX,SourceY+ action->dY,0.f);
+    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f-2.f,0.f);
+
 
     float addCost=  terrainModel.computePositionRating(checkPos, action->endtheta);
-   // ROS_INFO("cost %f", addCost);
+    ROS_INFO("cost %f", addCost);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;

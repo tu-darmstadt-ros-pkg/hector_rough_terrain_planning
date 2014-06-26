@@ -507,7 +507,12 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
      bool hull_cpp= (ccw(p0,p1,p2)<0);
-     return 0.f;
+     if(!cloud_processed_Ptr)
+     {
+         ROS_ERROR("[Terrain Model] Empty pointcloud");
+         return 0.f;
+     }
+
      for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
      {
        const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i);
@@ -534,7 +539,8 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
      if(cloud_positionRating->size()==0)
      {
-         return false;
+         ROS_ERROR("[Terrain Model] Robotposition out of pointcloud %f, %f, %f",check_pos.x,check_pos.y,check_pos.z);
+         return 0.0f;
      }
 
 
