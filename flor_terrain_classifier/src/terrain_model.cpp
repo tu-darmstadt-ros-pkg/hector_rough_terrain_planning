@@ -479,16 +479,16 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 {
 
 
-    bool usetippingover = true;
-    bool draw_convex_hull_first_polygon = false;
-    bool draw_convex_hull_iterative = true;
+    bool usetippingover = false;
+    bool draw_convex_hull_first_polygon = true;
+    bool draw_convex_hull_iterative = false;
 
     Eigen::Vector3f offset_CM = Eigen::Vector3f(0.10,0.0,0.3);
 
   //   lastRatedPosition=check_pos;
 
-     float widthx=0.50;
-     float lengthy=1.20;
+    float width=0.50; // y
+    float length=1.20; // x
 
      // Points under robot
      cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -496,15 +496,23 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
      unsigned int n_counter=0;
 
      //filter relevant points and find max
-     const float x_max=check_pos.x+cos(orientation)*widthx*0.5-sin(orientation)*lengthy*0.5;
-     const float x_min=check_pos.x-cos(orientation)*widthx*0.5+sin(orientation)*lengthy*0.5;
-     const float y_max=check_pos.y+sin(orientation)*widthx*0.5+cos(orientation)*lengthy*0.5;
-     const float y_min=check_pos.y-sin(orientation)*widthx*0.5-cos(orientation)*lengthy*0.5;
-     const pcl::PointXYZ p0=pcl::PointXYZ(x_min,y_min,0);
-     const pcl::PointXYZ p1=pcl::PointXYZ(x_max,y_min,0);
-     const pcl::PointXYZ p2=pcl::PointXYZ(x_max,y_max,0);
-     const pcl::PointXYZ p3=pcl::PointXYZ(x_min,y_max,0);
+     const float x_max=check_pos.x+cos(orientation)*width*0.5-sin(orientation)*length*0.5;
+     const float x_min=check_pos.x-cos(orientation)*width*0.5+sin(orientation)*length*0.5;
+     const float y_max=check_pos.y+sin(orientation)*width*0.5+cos(orientation)*length*0.5;
+     const float y_min=check_pos.y-sin(orientation)*width*0.5-cos(orientation)*length*0.5;
 
+     const pcl::PointXYZ p0=pcl::PointXYZ(check_pos.x + (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
+                                    check_pos.y + (sin(orientation)*length*0.5 + cos(orientation)*width*0.5),
+                                    0);
+     const pcl::PointXYZ p1=pcl::PointXYZ(check_pos.x - (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
+                                    check_pos.y + (sin(orientation)*length*0.5 + cos(orientation)*width*0.5),
+                                    0);
+     const pcl::PointXYZ p2=pcl::PointXYZ(check_pos.x + (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
+                                    check_pos.y - (sin(orientation)*length*0.5 + cos(orientation)*width*0.5),
+                                    0);
+     const pcl::PointXYZ p3=pcl::PointXYZ(check_pos.x - (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
+                                    check_pos.y - (sin(orientation)*length*0.5 + cos(orientation)*width*0.5),
+                                    0);
 
      bool hull_cpp= (ccw(p0,p1,p2)<0);
      if(!cloud_processed_Ptr)
@@ -514,7 +522,7 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
      }
 
      uint32_t cloudSize=cloud_processed.size();
-     for (uint32_t i = 0; i < cloudSize2; i++)
+     for (uint32_t i = 0; i < cloudSize; i++)
      {
        const pcl::PointXYZ& pp= cloud_processed.at(i);
 
