@@ -34,24 +34,19 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
 
         if(!receivedWorldmodelPC)
         {
+           receivedWorldmodelPC=true;
            pcl::PCLPointCloud2 pcl_pc;
            pcl_conversions::toPCL(msg, pcl_pc);
            pcl::PointCloud<pcl::PointXYZ> cloud;
            pcl::fromPCLPointCloud2(pcl_pc, cloud);
            terrainModel = hector_terrain_model::TerrainModel(cloud);
-           receivedWorldmodelPC=true;
         }
   }
 
 
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 {
-    numofadditionalzlevs = 0; //by default there is only base level, no additional levels
-    AddLevelFootprintPolygonV = NULL;
-    AdditionalInfoinActionsV = NULL;
-    AddLevelGrid2D = NULL;
-    AddLevel_cost_possibly_circumscribed_thresh = NULL;
-    AddLevel_cost_inscribed_thresh = NULL;
+
     receivedWorldmodelPC=false;
     ros::NodeHandle nh_("~");
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
@@ -75,137 +70,10 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
 {
-    if (AddLevelFootprintPolygonV != NULL) {
-        delete[] AddLevelFootprintPolygonV;
-        AddLevelFootprintPolygonV = NULL;
-    }
 
-    if (AdditionalInfoinActionsV != NULL) {
-        for (int tind = 0; tind < EnvNAVXYTHETALATCfg.NumThetaDirs; tind++) {
-            for (int aind = 0; aind < EnvNAVXYTHETALATCfg.actionwidth; aind++) {
-                delete[] AdditionalInfoinActionsV[tind][aind].intersectingcellsV;
-            }
-            delete[] AdditionalInfoinActionsV[tind];
-        }
-        delete[] AdditionalInfoinActionsV;
-        AdditionalInfoinActionsV = NULL;
-    }
-
-    if (AddLevelGrid2D != NULL) {
-        for (int levelind = 0; levelind < numofadditionalzlevs; levelind++) {
-            for (int xind = 0; xind < EnvNAVXYTHETALATCfg.EnvWidth_c; xind++) {
-                delete[] AddLevelGrid2D[levelind][xind];
-            }
-            delete[] AddLevelGrid2D[levelind];
-        }
-        delete[] AddLevelGrid2D;
-        AddLevelGrid2D = NULL;
-    }
-
-    if (AddLevel_cost_possibly_circumscribed_thresh != NULL) {
-        delete[] AddLevel_cost_possibly_circumscribed_thresh;
-        AddLevel_cost_possibly_circumscribed_thresh = NULL;
-    }
-
-    if (AddLevel_cost_inscribed_thresh != NULL) {
-        delete[] AddLevel_cost_inscribed_thresh;
-        AddLevel_cost_inscribed_thresh = NULL;
-    }
-
-    //reset the number of additional levels
-    numofadditionalzlevs = 0;
-}
-
-//---------------------------------------------------------------------
-
-//-------------------problem specific and local functions---------------------
-
-//returns true if cell is traversable and within map limits - it checks against all levels including the base one
-bool EnvironmentNAVXYTHETASTAB::IsValidCell(int X, int Y)
-{
-    int levelind;
-
-    if (!EnvironmentNAVXYTHETALAT::IsValidCell(X, Y)) return false;
-
-    //iterate through the additional levels
-    for (levelind = 0; levelind < numofadditionalzlevs; levelind++) {
-        if (AddLevelGrid2D[levelind][X][Y] >= EnvNAVXYTHETALATCfg.obsthresh) return false;
-    }
-    //otherwise the cell is valid at all levels
-    return true;
-}
-
-// returns true if cell is traversable and within map limits for a particular level
-bool EnvironmentNAVXYTHETASTAB::IsValidCell(int X, int Y, int levind)
-{
-    return (X >= 0 && X < EnvNAVXYTHETALATCfg.EnvWidth_c && Y >= 0 && Y < EnvNAVXYTHETALATCfg.EnvHeight_c && levind <
-            numofadditionalzlevs && AddLevelGrid2D[levind][X][Y] < EnvNAVXYTHETALATCfg.obsthresh);
 }
 
 
-// returns the maximum over all levels of the cost corresponding to the cell <x,y>
-unsigned char EnvironmentNAVXYTHETASTAB::GetMapCost(int X, int Y)
-{
-    unsigned char mapcost = EnvNAVXYTHETALATCfg.Grid2D[X][Y];
-
-    for (int levind = 0; levind < numofadditionalzlevs; levind++) {
-        mapcost = __max(mapcost, AddLevelGrid2D[levind][X][Y]);
-    }
-
-    return mapcost;
-}
-
-// returns the cost corresponding to the cell <x,y> at level levind
-unsigned char EnvironmentNAVXYTHETASTAB::GetMapCost(int X, int Y, int levind)
-{
-#if DEBUG
-    if(levind >= numofadditionalzlevs)
-    {
-        SBPL_ERROR("ERROR: GetMapCost invoked at level %d\n", levind);
-        SBPL_FPRINTF(fDeb, "ERROR: GetMapCost invoked at level %d\n", levind);
-        return false;
-    }
-#endif
-
-    return AddLevelGrid2D[levind][X][Y];
-}
-
-//returns false if robot intersects obstacles or lies outside of the map.
-bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
-{
-    //check the base footprint first
-    if (!EnvironmentNAVXYTHETALAT::IsValidConfiguration(X, Y, Theta)) return false;
-
-    //check the remaining levels now
-    vector<sbpl_2Dcell_t> footprint;
-    sbpl_xy_theta_pt_t pose;
-
-    //compute continuous pose
-    pose.x = DISCXY2CONT(X, EnvNAVXYTHETALATCfg.cellsize_m);
-    pose.y = DISCXY2CONT(Y, EnvNAVXYTHETALATCfg.cellsize_m);
-    pose.theta = DiscTheta2Cont(Theta, EnvNAVXYTHETALATCfg.NumThetaDirs);
-
-    //iterate over additional levels
-    for (int levind = 0; levind < numofadditionalzlevs; levind++) {
-
-        //compute footprint cells
-        footprint.clear();
-        get_2d_footprint_cells(AddLevelFootprintPolygonV[levind], &footprint, pose, EnvNAVXYTHETALATCfg.cellsize_m);
-
-        //iterate over all footprint cells
-        for (int find = 0; find < (int)footprint.size(); find++) {
-            int x = footprint.at(find).x;
-            int y = footprint.at(find).y;
-
-            if (x < 0 || x >= EnvNAVXYTHETALATCfg.EnvWidth_c || y < 0 || y >= EnvNAVXYTHETALATCfg.EnvHeight_c
-                || AddLevelGrid2D[levind][x][y] >= EnvNAVXYTHETALATCfg.obsthresh) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
 void EnvironmentNAVXYTHETASTAB::UpdataData()
 {
     ros::NodeHandle nh_("~");
@@ -227,14 +95,14 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     if (basecost >= INFINITECOST) return INFINITECOST;
 
-    int addcost = basecost+GetActionCostacrossAddLevels(SourceX, SourceY, SourceTheta, action);
+    int addcost = basecost+getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     return  addcost;
 }
 
-int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
+int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
     sbpl_2Dcell_t cell;
