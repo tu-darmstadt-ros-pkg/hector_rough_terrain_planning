@@ -479,6 +479,7 @@ float TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 {
 
 
+
     bool usetippingover = false;
     bool draw_convex_hull_first_polygon = true;
     bool draw_convex_hull_iterative = false;

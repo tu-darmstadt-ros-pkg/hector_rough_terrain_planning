@@ -31,22 +31,16 @@ static long int checks = 0;
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
   {
         ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-        ROS_INFO("entered callback");
-       pcl::PCLPointCloud2 pcl_pc;
-       pcl_conversions::toPCL(msg, pcl_pc);
-       pcl::PointCloud<pcl::PointXYZ> cloud;
-       pcl::fromPCLPointCloud2(pcl_pc, cloud);
-       terrainModel = hector_terrain_model::TerrainModel(cloud);
-       receivedWorldmodelPC=true;
+
+        if(!receivedWorldmodelPC)
+        {
+           pcl::PCLPointCloud2 pcl_pc;
+           pcl_conversions::toPCL(msg, pcl_pc);
+           pcl::PointCloud<pcl::PointXYZ> cloud;
+           pcl::fromPCLPointCloud2(pcl_pc, cloud);
+           terrainModel = hector_terrain_model::TerrainModel(cloud);
+           receivedWorldmodelPC=true;
+        }
   }
 
 
@@ -67,11 +61,16 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
     ROS_INFO("called service in constructor");
+    int counter=0;
     while(!receivedWorldmodelPC)
     {
-        ROS_INFO("constructor spin");
+        counter++;
+        ROS_INFO("Constructor spin %i",counter);
         ros::spinOnce();
+        ros::Duration(0.1).sleep();
+        client.call(srv);
     }
+
 }
 
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
