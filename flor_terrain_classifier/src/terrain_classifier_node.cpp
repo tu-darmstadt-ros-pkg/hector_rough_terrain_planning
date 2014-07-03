@@ -95,52 +95,12 @@ void TerrainClassifierNode::loadTestPointCloud()
 
 bool TerrainClassifierNode::terrainModelService(TerrainModelService::Request &req, TerrainModelService::Response &resp)
 {
-//  if (lower_body_state)
-//  {
-//    // request new point cloud
-//    flor_perception_msgs::PointCloudRegionRequest srv;
-
-//    geometry_msgs::Point min;
-//    geometry_msgs::Point max;
-//    uint32_t aggregation_size = 0;
-
-//    if (req.terrain_model_request.use_default_region_request)
-//    {
-//      min = min_bounding_box;
-//      max = max_bounding_box;
-//      aggregation_size = this->aggregation_size;
-//    }
-//    else
-//    {
-//      min = req.terrain_model_request.region_req.bounding_box_min;
-//      max = req.terrain_model_request.region_req.bounding_box_max;
-//      aggregation_size = req.terrain_model_request.aggregation_size;
-//    }
-
-//    srv.request.region_req.header.frame_id = "/world";
-//    srv.request.region_req.header.stamp = ros::Time::now();
-//    srv.request.region_req.bounding_box_min.x = min.x + lower_body_state->pelvis_pose.position.x;
-//    srv.request.region_req.bounding_box_min.y = min.y + lower_body_state->pelvis_pose.position.y;
-//    srv.request.region_req.bounding_box_min.z = min.z + std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-//    srv.request.region_req.bounding_box_max.x = max.x + lower_body_state->pelvis_pose.position.x;
-//    srv.request.region_req.bounding_box_max.y = max.y + lower_body_state->pelvis_pose.position.y;
-//    srv.request.region_req.bounding_box_max.z = max.z + std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-//    srv.request.region_req.resolution = 0.0;
-//    srv.request.aggregation_size = aggregation_size;
-
-//    if (point_cloud_client.call(srv.request, srv.response))
-//      setPointCloud(srv.response.cloud);
-//    else
-//      ROS_WARN("Point cloud request failed!");
-//  }
-//  else
-    ROS_WARN("Can't request new cloud point due to missing pelvis pose! Using last one if available.");
-
   // generate terrain model
-  if (!generateTerrainModel())
-    return false;
-
-
+  if (!generateTerrainModel())    
+  {
+      ROS_WARN("TerrainClassifierNode::terrainModelService failed");
+      return false;
+  }
   return true;
 }
 
@@ -180,8 +140,10 @@ void TerrainClassifierNode::publishResult() const
 {
   sensor_msgs::PointCloud2 cloud_point_msg;
 
+  ROS_INFO("TerrainClassifierNode publishResult");
   if (cloud_input_pub.getNumSubscribers() > 0)
   {
+    ROS_INFO("TerrainClassifierNode publish cloud input");
     pcl::toROSMsg(*(terrain_classifier->getCloudInput()), cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
     cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
@@ -192,6 +154,7 @@ void TerrainClassifierNode::publishResult() const
 
   if (cloud_points_processed_low_res_pub.getNumSubscribers() > 0)
   {
+      ROS_INFO("TerrainClassifierNode publish cloud lowres");
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
     terrain_classifier->getCloudProcessedLowRes(cloud);
     pcl::toROSMsg(*cloud, cloud_point_msg);
@@ -202,6 +165,7 @@ void TerrainClassifierNode::publishResult() const
 
   if (cloud_points_outfiltered_pub.getNumSubscribers() > 0)
   {
+      ROS_INFO("TerrainClassifierNode publish cloud outfiltered");
     pcl::toROSMsg(*(terrain_classifier->getCloudOutfiltered()), cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
     cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();

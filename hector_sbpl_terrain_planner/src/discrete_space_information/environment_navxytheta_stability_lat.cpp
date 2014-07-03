@@ -46,6 +46,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
        pcl::PointCloud<pcl::PointXYZ> cloud;
        pcl::fromPCLPointCloud2(pcl_pc, cloud);
        terrainModel = hector_terrain_model::TerrainModel(cloud);
+       receivedWorldmodelPC=true;
   }
 
 
@@ -57,6 +58,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     AddLevelGrid2D = NULL;
     AddLevel_cost_possibly_circumscribed_thresh = NULL;
     AddLevel_cost_inscribed_thresh = NULL;
+    receivedWorldmodelPC=false;
     ros::NodeHandle nh_("~");
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
@@ -65,7 +67,11 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
     ROS_INFO("called service in constructor");
-    ros::spinOnce();
+    while(!receivedWorldmodelPC)
+    {
+        ROS_INFO("constructor spin");
+        ros::spinOnce();
+    }
 }
 
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
@@ -210,6 +216,9 @@ void EnvironmentNAVXYTHETASTAB::UpdataData()
     flor_terrain_classifier::TerrainModelService srv;
     //subTerrainModel = nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
+    ros::spinOnce();
+    ROS_INFO("Called Service");
+
 
 }
 int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
@@ -248,6 +257,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCostacrossAddLevels(int SourceX, int Sou
 
  int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 {
-    //UpdataData();
+   // UpdataData();
     EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
 }

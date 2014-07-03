@@ -138,6 +138,7 @@ protected:
     virtual int GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
                                              EnvNAVXYTHETALATAction_t* action);
     ros::Subscriber subTerrainModel;
+    bool receivedWorldmodelPC;
 
 
 };
