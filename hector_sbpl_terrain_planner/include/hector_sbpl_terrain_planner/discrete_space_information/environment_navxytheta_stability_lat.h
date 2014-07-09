@@ -59,33 +59,6 @@ public:
     }
 
 
-    /**
-* returns true if cell is traversable and within map limits - it checks against all levels including the base one
-*/
-    bool IsValidCell(int X, int Y);
-
-    /**
-* returns true if cell is traversable and within map limits for a particular level
-*/
-    bool IsValidCell(int X, int Y, int levind);
-
-
-    /**
-* \brief returns false if robot intersects obstacles or lies outside of the map.
-* Note this is pretty expensive operation since it computes the footprint
-* of the robot based on its x,y,theta
-*/
-    bool IsValidConfiguration(int X, int Y, int Theta);
-
-    /**
-* \brief returns the maximum over all levels of the cost corresponding to the cell <x,y>
-*/
-    unsigned char GetMapCost(int X, int Y);
-
-    /**
-* \brief returns the cost corresponding to the cell <x,y> at level levind
-*/
-    unsigned char GetMapCost(int X, int Y, int levind);
 
     EnvironmentNAVXYTHETASTAB();
     ~EnvironmentNAVXYTHETASTAB();
@@ -98,44 +71,11 @@ public:
 protected:
 
     hector_terrain_model::TerrainModel terrainModel;
-    /**
-* \brief number of additional levels. If it is 0, then there is only one level - base level
-*/
-    int numofadditionalzlevs;
 
-    /**
-* \brief footprints for the additional levels
-*/
-    std::vector<sbpl_2Dpt_t>* AddLevelFootprintPolygonV;
-
-    /**
-* \brief array of additional info in actions,
-* AdditionalInfoinActionsV[i][j] - jth action for sourcetheta = i
-* basically, each Additional info structure will contain numofadditionalzlevs additional intersecting
-* cells vector<sbpl_2Dcell_t> intersectingcellsV
-*/
-    EnvNAVXYTHETASTABAddInfoAction_t** AdditionalInfoinActionsV;
-
-    /**
-* \brief 2D maps for additional levels.
-* AddLevelGrid2D[lind][x][y] refers to <x,y> cell on the additional level lind
-*/
-    unsigned char*** AddLevelGrid2D;
-
-    /**
-* \brief inscribed cost thresholds for additional levels
-* see environment_navxythetalat.h file for the explanation of this threshold
-*/
-    unsigned char* AddLevel_cost_inscribed_thresh;
-    /**
-* \brief possibly_circumscribed cost thresholds for additional levels
-* see environment_navxythetalat.h file for the explanation of this threshold
-*/
-    unsigned char* AddLevel_cost_possibly_circumscribed_thresh;
 
     virtual int GetActionCost(int SourceX, int SourceY, int SourceTheta, EnvNAVXYTHETALATAction_t* action);
 
-    virtual int GetActionCostacrossAddLevels(int SourceX, int SourceY, int SourceTheta,
+    virtual int getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                              EnvNAVXYTHETALATAction_t* action);
     ros::Subscriber subTerrainModel;
     bool receivedWorldmodelPC;
