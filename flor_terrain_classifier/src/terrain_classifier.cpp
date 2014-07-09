@@ -4,7 +4,7 @@ namespace flor_terrain_classifier
 {
 
 bool add(TestModelService::Request &req,
-           TestModelService::Response &res)
+         TestModelService::Response &res)
 {
     res.a_srvc_out = req.a_srvc_in + req.testmodel_in.A;
     res.testmodel_out.A = 2*(req.a_srvc_in + req.testmodel_in.A);
@@ -14,18 +14,18 @@ bool add(TestModelService::Request &req,
 
 
 TerrainClassifier::TerrainClassifier()
-  : frame_id("/world")
-  , lock_input_cloud(false)
+    : frame_id("/world")
+    , lock_input_cloud(false)
 {
-  setDataOutdated();
+    setDataOutdated();
 }
 
 
 TerrainClassifier::TerrainClassifier(const TerrainClassifierParams &params)
-  : frame_id("/world")
-  , lock_input_cloud(false)
+    : frame_id("/world")
+    , lock_input_cloud(false)
 {
-  setParams(params);
+    setParams(params);
 }
 
 TerrainClassifier::~TerrainClassifier()
@@ -34,267 +34,267 @@ TerrainClassifier::~TerrainClassifier()
 
 void TerrainClassifier::setParams(const TerrainClassifierParams &params)
 {
-  this->params = params;
+    this->params = params;
 
-  if (params.filter_mask & FILTER_PASS_THROUGH)           // cut out area of interest
-    ROS_INFO("Using FILTER_PASS_THROUGH");
-  if (params.filter_mask & FILTER_STATISTICAL_OUTLIER)    // remove outliers
-    ROS_INFO("Using FILTER_STATISTICAL_OUTLIER");
-  if (params.filter_mask & FILTER_VOXEL_GRID)             // summarize data
-    ROS_INFO("Using FILTER_VOXEL_GRID");
-  if (params.filter_mask & FILTER_MLS_SMOOTH)             // smooth data
-    ROS_INFO("Using FILTER_MLS_SMOOTH");
+    if (params.filter_mask & FILTER_PASS_THROUGH)           // cut out area of interest
+        ROS_INFO("Using FILTER_PASS_THROUGH");
+    if (params.filter_mask & FILTER_STATISTICAL_OUTLIER)    // remove outliers
+        ROS_INFO("Using FILTER_STATISTICAL_OUTLIER");
+    if (params.filter_mask & FILTER_VOXEL_GRID)             // summarize data
+        ROS_INFO("Using FILTER_VOXEL_GRID");
+    if (params.filter_mask & FILTER_MLS_SMOOTH)             // smooth data
+        ROS_INFO("Using FILTER_MLS_SMOOTH");
 
-  // clear old data
-  if (cloud_input)
-    cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
-  setDataOutdated();
+    // clear old data
+    if (cloud_input)
+        cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
+    setDataOutdated();
 }
 
 void TerrainClassifier::addCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud, const std::string &frame_id)
 {
-  if (lock_input_cloud)
-    return;
+    if (lock_input_cloud)
+        return;
 
-  this->cloud_input = cloud;
-  this->frame_id = frame_id;
+    this->cloud_input = cloud;
+    this->frame_id = frame_id;
 
-  // clear old data
-  cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
-  setDataOutdated();
+    // clear old data
+    cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
+    setDataOutdated();
 }
 
 void TerrainClassifier::showHeight(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const
 {
-  if (!cloud_height || cloud_height->empty())
-  {
-    ROS_WARN("showEdges was called before edges were detected!");
-    return;
-  }
+    if (!cloud_height || cloud_height->empty())
+    {
+        ROS_WARN("showEdges was called before edges were detected!");
+        return;
+    }
 
-  pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_height, "intensity");
-  viewer.addPointCloud<pcl::PointXYZI>(cloud_height, intensity_distribution, name + std::string("_cloud"), viewport);
-  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
+    pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_height, "intensity");
+    viewer.addPointCloud<pcl::PointXYZI>(cloud_height, intensity_distribution, name + std::string("_cloud"), viewport);
+    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
 
 
 }
 
 const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &TerrainClassifier::getCloudInput() const
 {
-  if (!cloud_input || cloud_input->empty())
-    ROS_WARN("getCloudInput was called before a input cloud was given!");
-  return cloud_input;
+    if (!cloud_input || cloud_input->empty())
+        ROS_WARN("getCloudInput was called before a input cloud was given!");
+    return cloud_input;
 }
 
 const pcl::PointCloud<pcl::PointXYZ>::Ptr &TerrainClassifier::getCloudProcessed() const
 {
-  if (!cloud_processed || cloud_processed->empty())
-    ROS_WARN("getCloudProcessed was called before a input cloud was given!");
-  return cloud_processed;
+    if (!cloud_processed || cloud_processed->empty())
+        ROS_WARN("getCloudProcessed was called before a input cloud was given!");
+    return cloud_processed;
 }
 
 const pcl::PointCloud<pcl::PointXYZ>::Ptr &TerrainClassifier::getCloudOutfiltered() const
 {
-  if (!cloud_outfiltered)
-    ROS_WARN("getCloudOutfiltered was called before a input cloud was given!");
-  return cloud_outfiltered;
+    if (!cloud_outfiltered)
+        ROS_WARN("getCloudOutfiltered was called before a input cloud was given!");
+    return cloud_outfiltered;
 }
 
 
 void TerrainClassifier::getCloudProcessedLowRes(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud) const
 {
-  cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
-  if (!cloud_points_with_normals || cloud_points_with_normals->empty())
-    ROS_WARN("getCloudProcessedLow was called before normals were computed!");
-  else
-  {
-    double half_low_res = 0.5*params.low_res;
-    cloud->resize(cloud_points_with_normals->size());
-    for (size_t i = 0; i < cloud->size(); i++)
+    if (!cloud_points_with_normals || cloud_points_with_normals->empty())
+        ROS_WARN("getCloudProcessedLow was called before normals were computed!");
+    else
     {
-      cloud->at(i).x = cloud_points_with_normals->at(i).x;
-      cloud->at(i).y = cloud_points_with_normals->at(i).y;
-      cloud->at(i).z = cloud_points_with_normals->at(i).z - half_low_res; // reduce height so it matches vis with boxes
-    }
+        double half_low_res = 0.5*params.low_res;
+        cloud->resize(cloud_points_with_normals->size());
+        for (size_t i = 0; i < cloud->size(); i++)
+        {
+            cloud->at(i).x = cloud_points_with_normals->at(i).x;
+            cloud->at(i).y = cloud_points_with_normals->at(i).y;
+            cloud->at(i).z = cloud_points_with_normals->at(i).z - half_low_res; // reduce height so it matches vis with boxes
+        }
 
-    filterVoxelGrid<pcl::PointXYZ>(cloud,0.01,0.01,0.01);// params.low_res, params.low_res, 0.1);
-  }
+        filterVoxelGrid<pcl::PointXYZ>(cloud,0.01,0.01,0.01);// params.low_res, params.low_res, 0.1);
+    }
 }
 
 
 
 bool TerrainClassifier::computeNormals()
 {
-  // normals are up-to-date -> do nothing
-  if (!cloud_normals_outdated && cloud_points_with_normals)
-    return true;
+    // normals are up-to-date -> do nothing
+    if (!cloud_normals_outdated && cloud_points_with_normals)
+        return true;
 
-  if (!cloud_input || cloud_input->empty())
-  {
-    ROS_ERROR("computeNormals was called but no point cloud was available");
-    return false;
-  }
+    if (!cloud_input || cloud_input->empty())
+    {
+        ROS_ERROR("computeNormals was called but no point cloud was available");
+        return false;
+    }
 
-  lock_input_cloud = true;
+    lock_input_cloud = true;
 
-  // init map with standard data
-  double ground_z = 0.0;
-  //if (lower_body_state)
-  //  ground_z = std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
-  //else
+    // init map with standard data
+    double ground_z = 0.0;
+    //if (lower_body_state)
+    //  ground_z = std::min(lower_body_state->left_foot_pose.position.z, lower_body_state->right_foot_pose.position.z);
+    //else
     ROS_WARN("computeNormals: No state estimation of feet available. Assuming default ground level to be zero!");
 
-  // preprocessing of cloud point
-  cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
-  if (params.filter_mask & FILTER_PASS_THROUGH)           // cut out area of interest
-    filterPassThrough<pcl::PointXYZ>(cloud_processed, params.pt_field_name, ground_z + params.pt_min-0.3, ground_z + params.pt_max+0.3);
-  if (params.filter_mask & FILTER_VOXEL_GRID)             // summarize data
-    filterVoxelGrid<pcl::PointXYZ>(cloud_processed,0.03,0.03,0.03);// params.vg_lx, params.vg_ly, params.vg_lz);
-  if (params.filter_mask & FILTER_MLS_SMOOTH)             // smooth data
-    filterMlsSmooth<pcl::PointXYZ>(cloud_processed, params.ms_radius);
+    // preprocessing of cloud point
+    cloud_processed.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_input));
+    if (params.filter_mask & FILTER_PASS_THROUGH)           // cut out area of interest
+        filterPassThrough<pcl::PointXYZ>(cloud_processed, params.pt_field_name, ground_z + params.pt_min-0.3, ground_z + params.pt_max+0.3);
+    if (params.filter_mask & FILTER_VOXEL_GRID)             // summarize data
+        filterVoxelGrid<pcl::PointXYZ>(cloud_processed,0.03,0.03,0.03);// params.vg_lx, params.vg_ly, params.vg_lz);
+    if (params.filter_mask & FILTER_MLS_SMOOTH)             // smooth data
+        filterMlsSmooth<pcl::PointXYZ>(cloud_processed, params.ms_radius);
 
-  if (cloud_processed->empty())
-  {
-    ROS_ERROR("Can compute normals. Got empty cloud point after filtering.");
-    lock_input_cloud = false;
-    return false;
-  }
-
-  // init normals data structure
-  pcl::PointCloud<pcl::Normal> cloud_normals;
-  cloud_points_with_normals.reset(new pcl::PointCloud<pcl::PointNormal>());
-
-  // compute normals
-  pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne(params.threads);
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
-  ne.setInputCloud(cloud_processed);
-  ne.setSearchMethod(tree);
-  ne.setRadiusSearch(params.ne_radius);
-  //ne.setKSearch(20);
-  ne.compute(cloud_normals);
-
-  pcl::concatenateFields(*cloud_processed, cloud_normals, *cloud_points_with_normals);
-
-  // postprocessing
-  if (params.filter_mask & FILTER_STATISTICAL_OUTLIER)    // remove outliers
-  {
-    cloud_outfiltered.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_processed));
-    filterStatisticalOutlier<pcl::PointNormal>(cloud_points_with_normals, params.so_k, params.so_radius);
-    filterStatisticalOutlier<pcl::PointXYZ>(cloud_outfiltered, params.so_k, params.so_radius, true);
-  }
-  else
-    cloud_outfiltered.reset(new pcl::PointCloud<pcl::PointXYZ>());
-
-  // filter and some further postprocessing
-  std::vector<int> indices;
-  for (size_t i = 0; i < cloud_points_with_normals->size(); i++)
-  {
-    pcl::PointNormal &n = cloud_points_with_normals->at(i);
-    if (!pcl_isfinite(n.normal_z))
-      continue;
-
-    indices.push_back((int)i);
-
-    // flip all other normals in one direction
-    if (n.normal_z < 0.0)
+    if (cloud_processed->empty())
     {
-      n.normal_x = -n.normal_x;
-      n.normal_y = -n.normal_y;
-      n.normal_z = -n.normal_z;
+        ROS_ERROR("Can compute normals. Got empty cloud point after filtering.");
+        lock_input_cloud = false;
+        return false;
     }
-  }
 
-  // apply filtering
-  pcl::PointCloud<pcl::PointNormal>::Ptr filtered(new pcl::PointCloud<pcl::PointNormal>());
-  copyPointCloud(*cloud_points_with_normals, indices, *filtered);
-  cloud_points_with_normals = filtered;
+    // init normals data structure
+    pcl::PointCloud<pcl::Normal> cloud_normals;
+    cloud_points_with_normals.reset(new pcl::PointCloud<pcl::PointNormal>());
 
-  cloud_normals_outdated = false;
-  lock_input_cloud = false;
-  return true;
+    // compute normals
+    pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne(params.threads);
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+    ne.setInputCloud(cloud_processed);
+    ne.setSearchMethod(tree);
+    ne.setRadiusSearch(params.ne_radius);
+    //ne.setKSearch(20);
+    ne.compute(cloud_normals);
+
+    pcl::concatenateFields(*cloud_processed, cloud_normals, *cloud_points_with_normals);
+
+    // postprocessing
+    if (params.filter_mask & FILTER_STATISTICAL_OUTLIER)    // remove outliers
+    {
+        cloud_outfiltered.reset(new pcl::PointCloud<pcl::PointXYZ>(*cloud_processed));
+        filterStatisticalOutlier<pcl::PointNormal>(cloud_points_with_normals, params.so_k, params.so_radius);
+        filterStatisticalOutlier<pcl::PointXYZ>(cloud_outfiltered, params.so_k, params.so_radius, true);
+    }
+    else
+        cloud_outfiltered.reset(new pcl::PointCloud<pcl::PointXYZ>());
+
+    // filter and some further postprocessing
+    std::vector<int> indices;
+    for (size_t i = 0; i < cloud_points_with_normals->size(); i++)
+    {
+        pcl::PointNormal &n = cloud_points_with_normals->at(i);
+        if (!pcl_isfinite(n.normal_z))
+            continue;
+
+        indices.push_back((int)i);
+
+        // flip all other normals in one direction
+        if (n.normal_z < 0.0)
+        {
+            n.normal_x = -n.normal_x;
+            n.normal_y = -n.normal_y;
+            n.normal_z = -n.normal_z;
+        }
+    }
+
+    // apply filtering
+    pcl::PointCloud<pcl::PointNormal>::Ptr filtered(new pcl::PointCloud<pcl::PointNormal>());
+    copyPointCloud(*cloud_points_with_normals, indices, *filtered);
+    cloud_points_with_normals = filtered;
+
+    cloud_normals_outdated = false;
+    lock_input_cloud = false;
+    return true;
 }
 
 bool TerrainClassifier::computeHeight()
 {
 
 
-  if (!computeNormals())
-  {
-    ROS_ERROR("Can't run edge detection!");
-    return false;
-  }
+    if (!computeNormals())
+    {
+        ROS_ERROR("Can't run edge detection!");
+        return false;
+    }
 
-  lock_input_cloud = true;
+    lock_input_cloud = true;
 
-  // init edge data structure
-  cloud_height.reset(new pcl::PointCloud<pcl::PointXYZI>());
-  cloud_height->resize(cloud_processed->size());
+    // init edge data structure
+    cloud_height.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    cloud_height->resize(cloud_processed->size());
 
-  // project all data to plane
-  pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
-  points->resize(cloud_processed->size());
-  for (unsigned int i = 0; i < cloud_processed->size(); i++)
-  {
-    const pcl::PointXYZ &n = cloud_processed->at(i);
-    pcl::PointXYZ &p = points->at(i);
-    p.x = n.x;
-    p.y = n.y;
-    p.z = n.z;
-  }
-
-
-  for (size_t i = 0; i < points->size(); i++)
-  {
-    const pcl::PointXYZ &current = cloud_processed->at(i);
-    pcl::PointXYZI &result = cloud_height->at(i);
-
-    result.x = current.x;
-    result.y = current.y;
-    result.z = current.z;
-    result.intensity = 0.0;
-
-      if (result.z>0.5)
-          result.intensity=0.5;
-      else if (result.z<-0.1)
-          result.intensity=-0.1;
-      else
-          result.intensity = result.z;
+    // project all data to plane
+    pcl::PointCloud<pcl::PointXYZ>::Ptr points(new pcl::PointCloud<pcl::PointXYZ>());
+    points->resize(cloud_processed->size());
+    for (unsigned int i = 0; i < cloud_processed->size(); i++)
+    {
+        const pcl::PointXYZ &n = cloud_processed->at(i);
+        pcl::PointXYZ &p = points->at(i);
+        p.x = n.x;
+        p.y = n.y;
+        p.z = n.z;
+    }
 
 
+    for (size_t i = 0; i < points->size(); i++)
+    {
+        const pcl::PointXYZ &current = cloud_processed->at(i);
+        pcl::PointXYZI &result = cloud_height->at(i);
+
+        result.x = current.x;
+        result.y = current.y;
+        result.z = current.z;
+        result.intensity = 0.0;
+
+        if (result.z>0.5)
+            result.intensity=0.5;
+        else if (result.z<-0.1)
+            result.intensity=-0.1;
+        else
+            result.intensity = result.z;
 
 
-  }
 
-  lock_input_cloud = false;
-  return true;
+
+    }
+
+    lock_input_cloud = false;
+    return true;
 }
 
 
 void TerrainClassifier::setDataOutdated()
 {
-  cloud_normals_outdated = true;
-  cloud_gradients_outdated = true;
+    cloud_normals_outdated = true;
+    cloud_gradients_outdated = true;
 }
 
 void TerrainClassifier::getGridMapIndex(const nav_msgs::OccupancyGrid::ConstPtr &map, float x, float y, int &idx) const
 {
-  int map_x = floor((x-map->info.origin.position.x) * 1/map->info.resolution);
-  int map_y = floor((y-map->info.origin.position.y) * 1/map->info.resolution);
+    int map_x = floor((x-map->info.origin.position.x) * 1/map->info.resolution);
+    int map_y = floor((y-map->info.origin.position.y) * 1/map->info.resolution);
 
-  if (map_x < 0 || map->info.width <= (unsigned int)map_x || map_y < 0 || map->info.height <= (unsigned int)map_y)
-    idx = -1;
-  else
-    idx = map_x + map_y * map->info.width;
+    if (map_x < 0 || map->info.width <= (unsigned int)map_x || map_y < 0 || map->info.height <= (unsigned int)map_y)
+        idx = -1;
+    else
+        idx = map_x + map_y * map->info.width;
 }
 
 void TerrainClassifier::getGridMapCoords(const nav_msgs::OccupancyGrid::ConstPtr &map, unsigned int idx, float &x, float &y) const
 {
-  unsigned int map_x = idx % map->info.width;
-  unsigned int map_y = std::floor(idx / map->info.width);
+    unsigned int map_x = idx % map->info.width;
+    unsigned int map_y = std::floor(idx / map->info.width);
 
-  x = (float)map_x * map->info.resolution + map->info.origin.position.x;
-  y = (float)map_y * map->info.resolution + map->info.origin.position.y;
+    x = (float)map_x * map->info.resolution + map->info.origin.position.x;
+    y = (float)map_y * map->info.resolution + map->info.origin.position.y;
 }
 
 
@@ -302,6 +302,18 @@ void TerrainClassifier::getGridMapCoords(const nav_msgs::OccupancyGrid::ConstPtr
 /* ---------------Helper Functions for Eigen Vector3 and PointXYZ ----------------------------*/
 /*--------------------------------------------------------------------------------------------*/
 
+// TODO unused or use it
+bool pointsEqual(pcl::PointXYZ p1, pcl::PointXYZ p2){
+    /*float delta = 0.0000001;
+    if ((fabs(p1.x - p2.x)) < delta &&
+            (fabs(p1.y - p2.y)) < delta &&
+            (fabs(p1.z - p2.z)) < delta)
+        return true;*/
+    if (p1.x == p2.x && p1.y == p2.y && p1.z == p2.z)
+        return true;
+    else
+        return false;
+}
 // normal adding, subtracting points
 pcl::PointXYZ addPointVector(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
     return pcl::PointXYZ(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
@@ -317,6 +329,13 @@ pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
 
 Eigen::Vector3f subtractPointsEigen(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
     return Eigen::Vector3f(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
+}
+
+// z stays
+pcl::PointXYZ rotatePoint(pcl::PointXYZ p, float degree /*radiants*/){
+    return pcl::PointXYZ(cos(degree)*p.x - sin(degree)*p.y,
+                         sin(degree)*p.x + cos(degree)*p.y,
+                         p.z);
 }
 
 float dotproductEigen(Eigen::Vector3f v1, Eigen::Vector3f v2){
@@ -357,6 +376,13 @@ float distanceXYZ(const pcl::PointXYZ p1, const pcl::PointXYZ p2){
                 (p1.z-p2.z)*(p1.z-p2.z));
 }
 
+// computes distance between straight / axis (ps, vector) and the point p
+float distancePointStraight(pcl::PointXYZ ps, pcl::PointXYZ vector, pcl::PointXYZ p){
+    pcl::PointXYZ perpendicular = crossProduct((subtractPoints(p,ps)), vector);
+    float d = sqrt(dotProduct(perpendicular, perpendicular)) / sqrt(dotProduct(vector, vector));
+    return d;
+}
+
 // 1 if positive, 0 if zero, -1 if negative
 int sign(float a){
     if (a == 0) return 0;
@@ -365,18 +391,43 @@ int sign(float a){
 }
 
 // checks if 2 vectors are similar; needed for deletion of convex_hull_ dge. TODO check reference / copy
-bool check_similar_vector(pcl::PointXYZ support_point_1, pcl::PointXYZ support_point_2,
+/*bool check_similar_vector(pcl::PointXYZ support_point_1, pcl::PointXYZ support_point_2,
                           pcl::PointXYZ hull_p1, pcl::PointXYZ  hull_p2,
                           float similarity_distance, float similarity_angle){
     // check angle similarity
-    float angle = angleBetween(subtractPointsEigen(support_point_1, support_point_2), subtractPointsEigen(hull_p1, hull_p2));
+    float angle1 = angleBetween(subtractPointsEigen(support_point_1, support_point_2), subtractPointsEigen(hull_p2, hull_p1));
+    float angle2 = angleBetween(subtractPointsEigen(support_point_1, support_point_2), subtractPointsEigen(hull_p1, hull_p2));
+    float angle = fmin(angle1, angle2);
     if (angle > similarity_angle)
         return false;
     //check distance similarity evaluated by point distances
-    float average_dist = (distanceXYZ(support_point_1, hull_p2) + distanceXYZ(support_point_2, hull_p2)) / 2.0;
+    float distance1 = (distanceXYZ(support_point_1, hull_p1) + distanceXYZ(support_point_2, hull_p2)) / 2.0;
+    float distance2 = (distanceXYZ(support_point_1, hull_p2) + distanceXYZ(support_point_2, hull_p1)) / 2.0;
+    float average_dist = fmin(distance1, distance2);
+
     if (average_dist > similarity_distance)
         return false;
     return true;
+}*/
+
+// returns a value how similar vectors are to each other. close to 0 is very similar, 0.50 would not be similar anymore.
+float vectorSimilarity(pcl::PointXYZ support_point_1, pcl::PointXYZ support_point_2,
+                       pcl::PointXYZ hull_p1, pcl::PointXYZ  hull_p2){
+    // check angle similarity
+    float angle1 = angleBetween(subtractPointsEigen(support_point_1, support_point_2), subtractPointsEigen(hull_p2, hull_p1));
+    float angle2 = angleBetween(subtractPointsEigen(support_point_1, support_point_2), subtractPointsEigen(hull_p1, hull_p2));
+    float angle = fmin(angle1, angle2);
+    // value is 1 for 1 degree
+
+    //check distance similarity evaluated by point distances
+    float distance1 = (distanceXYZ(support_point_1, hull_p1) + distanceXYZ(support_point_2, hull_p2));
+    float distance2 = (distanceXYZ(support_point_1, hull_p2) + distanceXYZ(support_point_2, hull_p1));
+    float distance = fmin(distance1, distance2);
+    // value is 0.01 for 1 centimeters
+
+    // 1 degree is same value as 2 centimeter offset
+    // example 10 centimeters offset (eg 2 times 5cm) and 7 degree -> value will be 0.20 + 0.07 = 0.27
+    return distance*20.0 + angle/100.0;
 }
 
 // return > 0 -> counterclockwise, // return < 0 -> clockwise  // return = 0 -> neither nor
@@ -487,8 +538,8 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
 
     for(unsigned int i=0; i<convex_hull_points_pcl.size();++i)
     {
-         pcl::PointXYZ& pi = convex_hull_points_pcl.at(i);
-         p.push_back(Eigen::Vector3f(pi.x,pi.y,pi.z));
+        pcl::PointXYZ& pi = convex_hull_points_pcl.at(i);
+        p.push_back(Eigen::Vector3f(pi.x,pi.y,pi.z));
     }
     std::vector<float> res;
     for(unsigned int i=0; i<(p.size()-1);++i)
@@ -496,22 +547,22 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
         Eigen::Vector3f p_i1;
         if(p.size()==1) p_i1 = p.at(0);
         else p_i1 = p.at(i+1);
-         Eigen::Vector3f ai=p_i1-p.at(i);
-         ai.normalize();
-         Eigen::Matrix3f ident_mat =Eigen::Matrix3f::Identity();
-         Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p_i1-center_of_mass);
-         Eigen::Vector3f fi=(ident_mat-ai*ai.transpose())*f_r;
-         Eigen::Vector3f li_norm=li;
-         Eigen::Vector3f fi_norm=fi;
-         li_norm.normalize();
-         fi_norm.normalize();
-         Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
-         float theta_i=acos(li_norm.dot(fi_norm));
-         float sigma_i=((fi_norm.cross(li_norm)).dot(ai))?1.0:-1.0 ;
+        Eigen::Vector3f ai=p_i1-p.at(i);
+        ai.normalize();
+        Eigen::Matrix3f ident_mat =Eigen::Matrix3f::Identity();
+        Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p_i1-center_of_mass);
+        Eigen::Vector3f fi=(ident_mat-ai*ai.transpose())*f_r;
+        Eigen::Vector3f li_norm=li;
+        Eigen::Vector3f fi_norm=fi;
+        li_norm.normalize();
+        fi_norm.normalize();
+        Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
+        float theta_i=acos(li_norm.dot(fi_norm));
+        float sigma_i=((fi_norm.cross(li_norm)).dot(ai))?1.0:-1.0 ;
 
 
-         float beta=sigma_i*theta_i*di.norm()*f_r.norm();
-         res.push_back(beta);
+        float beta=sigma_i*theta_i*di.norm()*f_r.norm();
+        res.push_back(beta);
     }
 
     return res;
@@ -521,12 +572,16 @@ std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_
 
 // evaluates the second or third point of the supporting plane
 // if false is returned, there could not be a point found.
-bool TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
-                                            const pcl::PointXYZ& tip_over_axis_vector,
-                                            const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
-                                            const pcl::PointXYZ& tip_over_direction,
-                                            pcl::PointXYZ& support_point)
+bool TerrainClassifier::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
+                                         const pcl::PointXYZ& tip_over_axis_vector,
+                                         const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
+                                         const pcl::PointXYZ& tip_over_direction,
+                                         pcl::PointXYZ& support_point)
 {
+
+    // PARAMETER
+    float minimum_distance = 0.15; // minimum distance in which a support point can be found from the last one.
+
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
     cloud_projected.resize(pointcloud_robo.size());
     for(unsigned int i=0; i<cloud_projected.size();++i)
@@ -547,14 +602,13 @@ bool TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
 
     int min_angle_idx = -1;
     const pcl::PointXYZ v1 = tip_over_direction;
-    std::vector<float> angles;
 
 
     //states the direction of the points if on one side of the tip_over_axis, or on the other
     // 1 = counterclockwise, -1 = clockwise
     const int directionccw = sign(ccw (tip_over_axis_point,
-                                        addPointVector(tip_over_axis_point, tip_over_axis_vector),
-                                        addPointVector(tip_over_axis_point, tip_over_direction)));
+                                       addPointVector(tip_over_axis_point, tip_over_axis_vector),
+                                       addPointVector(tip_over_axis_point, tip_over_direction)));
 
 
     for(unsigned int i=0; i<cloud_projected.size();++i)
@@ -570,20 +624,19 @@ bool TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
         // which side to the axis
         pcl::PointXYZ ps=pcl::PointXYZ( pointcloud_robo.at(i).x,pointcloud_robo.at(i).y,pointcloud_robo.at(i).z);
         const int side = sign(ccw(tip_over_axis_point,
-                              addPointVector(tip_over_axis_point, tip_over_axis_vector),
-                              ps));
+                                  addPointVector(tip_over_axis_point, tip_over_axis_vector),
+                                  ps));
 
-       // ROS_INFO("is side %i %i", side, directionccw);
-        if (side == directionccw){
-           angles.push_back(angle);
-           if (angle<min_angle)
-            {
-              min_angle=angle;
-              min_angle_idx=i;
-             // ROS_INFO("newminangle : %f ",angle);
-             }
-
+        if (angle<min_angle &&
+                side == directionccw)
+        {
+            pcl::PointXYZ current = pcl::PointXYZ(pointcloud_robo.at(i).x,pointcloud_robo.at(i).y,pointcloud_robo.at(i).z);
+            if (distancePointStraight(tip_over_axis_point, tip_over_axis_vector, current) > minimum_distance){
+                min_angle=angle;
+                min_angle_idx=i;
+            }
         }
+
     }
 
     // IF NO POINT COULD BE FOUND
@@ -595,16 +648,23 @@ bool TerrainClassifier::eval_point(const pcl::PointXYZ& tip_over_axis_point,
     return true;
 }
 
-std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
-                                             const pcl::PointXYZ& check_pos,
-                                             const pcl::PointXYZ& support_point_1,
-                                             const pcl::PointXYZ& support_point_2,
-                                             const pcl::PointXYZ& support_point_3,
-                                             std::vector<unsigned int>& convex_hull_indices, // empty before call
-                                             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2){ // empty before call
 
+
+/* builds the convex hull with the given supportpoints */
+std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
+                                                               const pcl::PointXYZ& check_pos,
+                                                               const pcl::PointXYZ& support_point_1,
+                                                               const pcl::PointXYZ& support_point_2,
+                                                               const pcl::PointXYZ& support_point_3,
+                                                               const bool iterative, // if this is true, points on one side of supp1, supp2 will not be considerred
+                                                               std::vector<unsigned int>& convex_hull_indices, // empty before call
+                                                               pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2){ // empty before call
+
+    float delta_for_contact = 0.015; //  +- in m
+    // PARAMETER smoothing
     bool smooth_hull = true;
-    float smooth_max_angle = 10.0;
+    float smooth_max_angle = 20.0;
+    float smooth_max_distance = 0.05;
 
 
     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
@@ -616,9 +676,20 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::Poin
     {
         pcl::PointXYZI& p = cloud_positionRating->at(i);
         const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
-        if(dist<0.01 && dist>-0.01)
+        if(fabs(dist) < delta_for_contact)
         {
-            cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
+            if (!iterative){
+                cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
+            }
+            else {
+                // TODO diesen Punkt umwandeln ist nicht perfomant // sollte aber nicht bei so vielen der fall sein.
+                pcl::PointXYZ pointXYZ = pcl::PointXYZ(p.x, p.y, p.z);
+                // only add points on the right side of the supp points 1 and 2
+                if (sign(ccw(support_point_1, support_point_2, support_point_3)) == sign(ccw(support_point_1, support_point_2, pointXYZ))
+                       /* || ccw(support_point_1, support_point_2, pointXYZ) == 0*/){ // TODO doesnt want to add SPs -> endless loop
+                    cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
+                }
+            }
         }
         p.intensity=p.z;
     }
@@ -640,55 +711,112 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: build_convex_hull(const pcl::Poin
         convex_hull_points.push_back(p1);
     }
 
-    if (smooth_hull == true){
-    // make hull a little smoother
-    ROS_INFO("smoothing");
-    for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
-        //ROS_INFO("%i ", i);
-        if (i < convex_hull_points.size()-2){
-            Eigen::Vector3f direction1 = subtractPointsEigen(convex_hull_points.at(i + 1),convex_hull_points.at(i));
-            Eigen::Vector3f direction2 = subtractPointsEigen(convex_hull_points.at(i + 2),convex_hull_points.at(i+1));
-            float angle = angleBetween(direction1, direction2);
-           // ROS_INFO("%f angle", angle);
-            if (angle < smooth_max_angle){
-              //  ROS_INFO("in if");
-                convex_hull_points.erase(convex_hull_points.begin()+(i+1));
-                convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
+    if (smooth_hull){
+        ROS_INFO("smoothing");
+        // distance smoothing
+        for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
+            if (i < convex_hull_points.size()-2){
+                if (distanceXYZ(convex_hull_points.at(i), convex_hull_points.at(i+1)) < smooth_max_distance){
+                    // keep the point which is further away from the others (try not make area smaller)
+                    unsigned int offset = 0;
+                    float dist_p_i = 0.0;
+                    float dist_p_next = 0.0;
+                    for (unsigned int k = 0; k < convex_hull_points.size() - 1; k++){
+                        dist_p_i = dist_p_i + pow(distanceXYZ(convex_hull_points.at(i), convex_hull_points.at(k)), 2);
+                        dist_p_next = dist_p_next + pow(distanceXYZ(convex_hull_points.at(i+1), convex_hull_points.at(k)),2);
+                    }
+                    /*if (distanceXYZ(convex_hull_points.at(i), check_pos) > distanceXYZ(convex_hull_points.at(i+1), check_pos)){
+                    offset = 1;
+                }*/
+                    if (dist_p_i > dist_p_next){
+                        offset = 1;
+                    }
+                    convex_hull_points.erase(convex_hull_points.begin()+(i+offset));
+                    convex_hull_indices.erase(convex_hull_indices.begin()+(i+offset));
+                }
+                else {
+                    ++i;
+                }
             }
+            // same thing for last (= first) point
             else {
-                ++i;
+                if (distanceXYZ(convex_hull_points.at(i), convex_hull_points.at(i+1)) < smooth_max_distance){
+                    // a point must be deleted
+                    float dist_p_i = 0.0;
+                    float dist_p_next = 0.0;
+                    for (unsigned int k = 0; k < convex_hull_points.size() - 1; k++){
+                        dist_p_i = dist_p_i + pow(distanceXYZ(convex_hull_points.at(i), convex_hull_points.at(k)),2);
+                        dist_p_next = dist_p_next + pow(distanceXYZ(convex_hull_points.at(i+1), convex_hull_points.at(k)),2);
+                    }
+                    if (dist_p_i < dist_p_next){
+                        /*if (distanceXYZ(convex_hull_points.at(i), check_pos) < distanceXYZ(convex_hull_points.at(i+1), check_pos)){*/
+                        // second last must be removed
+                        convex_hull_points.erase(convex_hull_points.begin()+(i));
+                        convex_hull_indices.erase(convex_hull_indices.begin()+(i));
+                    }
+                    else{
+                        // last = first must be removed
+                        convex_hull_points.erase(convex_hull_points.begin()+(i+1));
+                        convex_hull_points.at(0) = convex_hull_points.at(i);
+                        convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
+                        convex_hull_indices.at(0) = convex_hull_indices.at(i);
+                    }
+                }
             }
         }
-        else {
-            //ROS_INFO("in else");
-            Eigen::Vector3f directionlast = subtractPointsEigen(convex_hull_points.at(i + 1),convex_hull_points.at(i));
-            Eigen::Vector3f directionfirst = subtractPointsEigen(convex_hull_points.at(1),convex_hull_points.at(0));
-            float angle = angleBetween(directionlast, directionfirst);
-            if (angle < smooth_max_angle){
-                //delete last ( = first) point
-                convex_hull_points.erase(convex_hull_points.begin()+(i+1));
-                convex_hull_points.at(0) = convex_hull_points.at(i);
-                convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
-                convex_hull_indices.at(0) = convex_hull_indices.at(i);
-            }
-            break; // not needed
 
+        bool angle_smoothing = true;
+        // angle smoothing
+        if (angle_smoothing){
+            for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
+                if (i < convex_hull_points.size()-2){
+
+                    Eigen::Vector3f direction1 = subtractPointsEigen(convex_hull_points.at(i + 1),convex_hull_points.at(i));
+                    Eigen::Vector3f direction2 = subtractPointsEigen(convex_hull_points.at(i + 2),convex_hull_points.at(i+1));
+                    float angle = angleBetween(direction1, direction2);
+
+                    // delete the point if angle is very low
+                    if (angle < smooth_max_angle){
+                        convex_hull_points.erase(convex_hull_points.begin()+(i+1));
+                        convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
+                    }
+
+                    else {
+                        ++i;
+                    }
+                }
+                // same thing for last (= first) point
+                else {
+                    Eigen::Vector3f directionlast = subtractPointsEigen(convex_hull_points.at(i + 1),convex_hull_points.at(i));
+                    Eigen::Vector3f directionfirst = subtractPointsEigen(convex_hull_points.at(1),convex_hull_points.at(0));
+                    float angle = angleBetween(directionlast, directionfirst);
+
+                    if (angle < smooth_max_angle){
+                        //delete last ( = first) point
+                        convex_hull_points.erase(convex_hull_points.begin()+(i+1));
+                        convex_hull_points.at(0) = convex_hull_points.at(i);
+                        convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
+                        convex_hull_indices.at(0) = convex_hull_indices.at(i);
+                    }
+                    break; // not needed
+
+                }
+            }
         }
-    }
-    ROS_INFO("end smoothing");
+        ROS_INFO("end smoothing");
     }
     return convex_hull_points;
 }
 
-void TerrainClassifier::compute_robot_positions(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
-                                                const pcl::PointXYZ p0, const pcl::PointXYZ p1, const pcl::PointXYZ p2, const pcl::PointXYZ p3,
-                                                const Eigen::Vector3f& offset_CM,
-                                                pcl::PointXYZ& normal,
-                                                pcl::PointXYZ& robot_point_0, pcl::PointXYZ& robot_point_1, pcl::PointXYZ& robot_point_2, pcl::PointXYZ& robot_point_3,
-                                                pcl::PointXYZ& robot_point_mid, pcl::PointXYZ& robot_center_of_mass){
+void TerrainClassifier::computeRobotPosition(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
+                                             const pcl::PointXYZ p0, const pcl::PointXYZ p1, const pcl::PointXYZ p2, const pcl::PointXYZ p3,
+                                             const Eigen::Vector3f& offset_CM,
+                                             pcl::PointXYZ& normal,
+                                             pcl::PointXYZ& robot_point_0, pcl::PointXYZ& robot_point_1, pcl::PointXYZ& robot_point_2, pcl::PointXYZ& robot_point_3,
+                                             pcl::PointXYZ& robot_point_mid, pcl::PointXYZ& robot_center_of_mass){
 
     normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
-                                                   pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+                         pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
     if (normal.z < 0){
         normal.x = -normal.x;
         normal.y = -normal.y;
@@ -729,17 +857,17 @@ void TerrainClassifier::compute_robot_positions(const pcl::PointXYZ support_poin
     // ERROR ? ACHTUNG EVENTUELL FLASCH RUM, DA ICH NICHT WEISS WIE RUM DER ROBOTER STEHT
     // --------------------------------------------------------------------------------------------
     // bezg p_pro 1 / 0
-    robot_center_of_mass = compute_center_of_mass(robot_point_0, robot_point_1, normal_vector, robot_point_mid, offset_CM);
+    robot_center_of_mass = computeCenterOfMass(robot_point_0, robot_point_1, normal_vector, robot_point_mid, offset_CM);
 
 
 
 }
 
-pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &p1_left,
-                                                        const pcl::PointXYZ &p2_left,
-                                                        const Eigen::Vector3f &normal,
-                                                        const pcl::PointXYZ &mid,
-                                                        const Eigen::Vector3f &offset){
+pcl::PointXYZ TerrainClassifier::computeCenterOfMass(const pcl::PointXYZ &p1_left,
+                                                     const pcl::PointXYZ &p2_left,
+                                                     const Eigen::Vector3f &normal,
+                                                     const pcl::PointXYZ &mid,
+                                                     const Eigen::Vector3f &offset){
 
     Eigen::Vector3f axis_left = Eigen::Vector3f(p2_left.x - p1_left.x, p2_left.y - p1_left.y, p2_left.z - p1_left.z);
     axis_left.normalize();
@@ -754,39 +882,61 @@ pcl::PointXYZ TerrainClassifier::compute_center_of_mass(const pcl::PointXYZ &p1_
     return center_of_mass;
 }
 
+
+
+
+// orientation in radiants
 float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
-                                              const float orientation,
-                                              pcl::visualization::PCLVisualizer &viewer,
-                                              const std::string &name, int viewport)
+                                               const float orientation,
+                                               pcl::visualization::PCLVisualizer &viewer,
+                                               const std::string &name, int viewport)
 {
 
-
-    bool usetippingover = true;
+    // PARAMETER tipp over robot scale
+    bool tip_over_active = true;
     bool draw_convex_hull_first_polygon = true;
     bool draw_convex_hull_iterative = true;
+    bool draw_convex_hull_iterative_ground_points= true;
 
-    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.10,0.0,0.3);
+    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.0,0.0,0.15);
 
-     lastRatedPosition=check_pos;
+    lastRatedPosition=check_pos;
 
-     float width=0.50; // y
-     float length=1.20; // x
+    float width=0.50; // y
+    float length=0.70; // x
 
-     // Points under robot
-     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
-     unsigned int highest_Point_idx;
-     unsigned int n_counter=0;
+    // Points under robot
+    cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    unsigned int highest_Point_idx;
+    unsigned int n_counter=0;
 
-     //filter relevant points and find max
-   /*  const float x_max=check_pos.x+cos(orientation)*width*0.5-sin(orientation)*length*0.5;
-     const float x_min=check_pos.x-cos(orientation)*width*0.5+sin(orientation)*length*0.5;
-     const float y_max=check_pos.y+sin(orientation)*width*0.5+cos(orientation)*length*0.5;
-     const float y_min=check_pos.y-sin(orientation)*width*0.5-cos(orientation)*length*0.5;
-*/  // DAS MUSS WEG ^
+    pcl::PointXYZ p0=pcl::PointXYZ(+ 0.5*length,
+                                   + 0.5*width,
+                                   0);
+    p0 = rotatePoint(p0, orientation);
+    p0 = addPointVector(p0, check_pos);
+
+    pcl::PointXYZ p1=pcl::PointXYZ(- 0.5*length,
+                                   + 0.5*width,
+                                   0);
+    p1 = rotatePoint(p1, orientation);
+    p1 = addPointVector(p1, check_pos);
+
+    pcl::PointXYZ p2=pcl::PointXYZ(- 0.5*length,
+                                   - 0.5*width,
+                                   0);
+    p2 = rotatePoint(p2, orientation);
+    p2 = addPointVector(p2, check_pos);
+
+    pcl::PointXYZ p3=pcl::PointXYZ(+ 0.5*length,
+                                   - 0.5*width,
+                                   0);
+    p3 = rotatePoint(p3, orientation);
+    p3 = addPointVector(p3, check_pos);
 
 
-     //corner points of robot with z = 0
-     const pcl::PointXYZ p0=pcl::PointXYZ(check_pos.x + (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
+    //corner points of robot with z = 0
+    /*const pcl::PointXYZ p0=pcl::PointXYZ(check_pos.x + (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
                                     check_pos.y + (sin(orientation)*length*0.5 + cos(orientation)*width*0.5),
                                     0);
      const pcl::PointXYZ p1=pcl::PointXYZ(check_pos.x - (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
@@ -798,65 +948,65 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
      const pcl::PointXYZ p3=pcl::PointXYZ(check_pos.x + (cos(orientation)*length*0.5 - sin(orientation)*width*0.5),
                                     check_pos.y - (sin(orientation)*length*0.5 + cos(orientation)*width*0.5),
                                     0);
-
-   /*  ROS_INFO("p0 after %f %f %f", p0.x, p0.y, p0.z);
+*/
+    /*  ROS_INFO("p0 after %f %f %f", p0.x, p0.y, p0.z);
      ROS_INFO("p1 after %f %f %f", p1.x, p1.y, p1.z);
      ROS_INFO("p2 after %f %f %f", p2.x, p2.y, p2.z);
      ROS_INFO("p3 after %f %f %f", p3.x, p3.y, p3.z); */  // kann weg
 
 
-     bool hull_cpp= (ccw(p0,p1,p2)<0);
-     for (unsigned int i = 0; i < cloud_processed->size(); i++)
-     {
-       const  pcl::PointXYZ &pp= cloud_processed->at(i);
+    bool hull_cpp= (ccw(p0,p1,p2)<0);
+    for (unsigned int i = 0; i < cloud_processed->size(); i++)
+    {
+        const  pcl::PointXYZ &pp= cloud_processed->at(i);
 
-       bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
-       bool c1=hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
-       bool c2=hull_cpp ? (ccw(p2,p3,pp)<0) : (ccw(p2,p3,pp)>0);
-       bool c3=hull_cpp ? (ccw(p3,p0,pp)<0) : (ccw(p3,p0,pp)>0);
+        bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
+        bool c1=hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
+        bool c2=hull_cpp ? (ccw(p2,p3,pp)<0) : (ccw(p2,p3,pp)>0);
+        bool c3=hull_cpp ? (ccw(p3,p0,pp)<0) : (ccw(p3,p0,pp)>0);
 
-       if(c0&&c1&&c2&&c3)
-       {
-           pcl::PointXYZI p= pcl::PointXYZI();
-           p.x=pp.x;
-           p.y=pp.y;
-           p.z=pp.z;
-           p.intensity=0.0;
-           cloud_positionRating->push_back(p);
+        if(c0&&c1&&c2&&c3)
+        {
+            pcl::PointXYZI p= pcl::PointXYZI();
+            p.x=pp.x;
+            p.y=pp.y;
+            p.z=pp.z;
+            p.intensity=0.0;
+            cloud_positionRating->push_back(p);
 
-           if(n_counter==0) highest_Point_idx=1;
-           else if(p.z>cloud_positionRating->at(highest_Point_idx).z) highest_Point_idx=n_counter;
-           ++n_counter;
-       }
-     }
+            if(n_counter==0) highest_Point_idx=1;
+            else if(p.z>cloud_positionRating->at(highest_Point_idx).z) highest_Point_idx=n_counter;
+            ++n_counter;
+        }
+    }
 
-     if(cloud_positionRating->size()==0)
-     {
-         ROS_ERROR("[flor terrain classifier] cloud size is 0");
-         return false;
-     }
+    if(cloud_positionRating->size()==0)
+    {
+        ROS_ERROR("[flor terrain classifier] cloud size is 0");
+        return false;
+    }
 
 
-     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);//highest point
-     int support_point_1_idx;
-     float min_dist=-1.0;
-     //choose highest point (+-delta), closest to CoM
-     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
-     {
-         pcl::PointXYZI& p = cloud_positionRating->at(i);
-         if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
-         {
-             float dist=sqrt((p.x-check_pos.x)*(p.x-check_pos.x)+(p.y-check_pos.y)*(p.y-check_pos.y));
-             if(min_dist<0.0 || dist<min_dist)
-             {
-                 min_dist=dist;
-                 support_point_1_idx=i;
+    pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);//highest point
+    int support_point_1_idx;
+    float min_dist=-1.0;
+    //choose highest point (+-delta), closest to CoM
+    for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
+    {
+        pcl::PointXYZI& p = cloud_positionRating->at(i);
+        if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
+        {
+            float dist=sqrt((p.x-check_pos.x)*(p.x-check_pos.x)+(p.y-check_pos.y)*(p.y-check_pos.y));
+            if(min_dist<0.0 || dist<min_dist)
+            {
+                min_dist=dist;
+                support_point_1_idx=i;
                 // ("i d : %i %f %f ",i,min_dist, dist);
-             }
+            }
 
-         }
-     }
-     pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
+        }
+    }
+    pcl::PointXYZ support_point_1 = pcl::PointXYZ(cloud_positionRating->at(support_point_1_idx).x,cloud_positionRating->at(support_point_1_idx).y,cloud_positionRating->at(support_point_1_idx).z);
 
 
     // is used after while loop, but initiated in it.
@@ -875,89 +1025,90 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
         const pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
         const pcl::PointXYZ tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
 
-        bool point_evaluated = eval_point(tip_over_axis_point,
-                                          tip_over_axis_vector,
-                                          (*cloud_positionRating),
-                                          tip_over_direction,
-                                          support_point_2);
+        bool point_evaluated = findSupportPoint(tip_over_axis_point,
+                                                tip_over_axis_vector,
+                                                (*cloud_positionRating),
+                                                tip_over_direction,
+                                                support_point_2);
         if (!point_evaluated)
             ROS_ERROR("[flor_terrain_classifier::compute_position_rating] no support_point found ");
 
-       //find third point
-       const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
-       const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
-       pcl::PointXYZ tip_over_direction_3 ;
-       if(ccw(support_point_1,support_point_2,check_pos)>0)
-             tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
-       else
-             tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
+        //find third point
+        const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
+        const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
+        pcl::PointXYZ tip_over_direction_3 ;
+        if(ccw(support_point_1,support_point_2,check_pos)>0)
+            tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
+        else
+            tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
 
-       point_evaluated = eval_point(tip_over_axis_point_3,
-                                    tip_over_axis_vector_3,
-                                    (*cloud_positionRating),
-                                    tip_over_direction_3,
-                                    support_point_3);
-       if (!point_evaluated)
-           ROS_ERROR("[flor_terrain_classifier::compute_position_rating] no support_point found ");
-
-
-       convex_hull_points = build_convex_hull(cloud_positionRating,
-                                              check_pos,
-                                              support_point_1,
-                                              support_point_2,
-                                              support_point_3,
-                                              convex_hull_indices,
-                                              cloud_positionRating2);
-
-         // check if check_pos is in hull
-         bool CenterInHull = true;
-
-         for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
-             if (i < convex_hull_points.size() - 1){
-                 if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
-                     CenterInHull = false;
-                 }
-             }
-         } // end for
+        point_evaluated = findSupportPoint(tip_over_axis_point_3,
+                                           tip_over_axis_vector_3,
+                                           (*cloud_positionRating),
+                                           tip_over_direction_3,
+                                           support_point_3);
+        if (!point_evaluated)
+            ROS_ERROR("[flor_terrain_classifier::compute_position_rating] no support_point found ");
 
 
+        convex_hull_points = buildConvexHull(cloud_positionRating,
+                                             check_pos,
+                                             support_point_1,
+                                             support_point_2,
+                                             support_point_3,
+                                             false,
+                                             convex_hull_indices,
+                                             cloud_positionRating2);
 
-         if (CenterInHull == true){
-             ROS_INFO("check in hull is true");
-             // The checkpos is in the convex hull. nothing needs to be changed
-             break; // endwhile
-         }
+        // check if check_pos is in hull
+        bool center_in_hull = true;
 
-         // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
-         counter++;
-         ROS_INFO("%i iteration while loop", counter);
+        for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
+            if (i < convex_hull_points.size() - 1){
+                if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
+                    center_in_hull = false;
+                }
+            }
+        } // end for
 
 
-         if (counter > 1){
-             ROS_INFO("ERROR -Supporting polygon after %i itereations not found // check_pos not in hull- ERROR", counter);
-                     break;
-         }
 
-         // checkpos is not in hull
-         if (CenterInHull == false){
-             ROS_INFO("check in hull is false");
-             // find closest point to checkpos
-             float dist = distanceXY(convex_hull_points.at(0), check_pos);
-             int index_of_closest_point = 0;
-             for (unsigned int i = 1; i < convex_hull_points.size(); ++i){
+        if (center_in_hull == true){
+            ROS_INFO("check in hull is true");
+            // The checkpos is in the convex hull. nothing needs to be changed
+            break; // endwhile
+        }
+
+        // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
+        counter++;
+        ROS_INFO("%i iteration while loop", counter);
+
+
+        if (counter > 1){
+            ROS_INFO("ERROR -Supporting polygon after %i itereations not found // check_pos not in hull- ERROR", counter);
+            break;
+        }
+
+        // checkpos is not in hull
+        if (center_in_hull == false){
+            ROS_INFO("check in hull is false");
+            // find closest point to checkpos
+            float dist = distanceXY(convex_hull_points.at(0), check_pos);
+            int index_of_closest_point = 0;
+            for (unsigned int i = 1; i < convex_hull_points.size(); ++i){
                 float dist_to_check = distanceXY(convex_hull_points.at(i), check_pos);
                 if (dist_to_check < dist){
                     dist = dist_to_check;
                     index_of_closest_point = i;
                 }
-             }
-             support_point_1 = convex_hull_points.at(index_of_closest_point);
-             convex_hull_indices.clear();
-             cloud_positionRating2->clear();
-         }
+            }
+            support_point_1 = convex_hull_points.at(index_of_closest_point);
+            convex_hull_indices.clear();
+            cloud_positionRating2->clear();
+        }
 
 
-     } // endwhile
+    } // endwhile
 
 
 
@@ -972,25 +1123,27 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
     pcl::PointXYZ robot_point_mid;
     pcl::PointXYZ center_of_mass_iterative;
 
-    compute_robot_positions(support_point_1, support_point_2, support_point_3, p0, p1, p2, p3,
-                            offset_CM,
-                            normal,
-                            robot_point_0, robot_point_1, robot_point_2, robot_point_3,
-                            robot_point_mid, center_of_mass_iterative);
+    computeRobotPosition(support_point_1, support_point_2, support_point_3, p0, p1, p2, p3,
+                         offset_CM,
+                         normal,
+                         robot_point_0, robot_point_1, robot_point_2, robot_point_3,
+                         robot_point_mid, center_of_mass_iterative);
+
+    // draw robot lines
+    viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0");
+    viewer.addLine(robot_point_1,robot_point_2,1.0,1.0,1.0,"f1");
+    viewer.addLine(robot_point_2,robot_point_3,1.0,1.0,1.0,"f2");
+    viewer.addLine(robot_point_3,robot_point_0,1.0,1.0,1.0,"f3");
 
     // render points
- /*  viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
+    /*  viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1", viewport);
    viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2", viewport);
    viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3", viewport);
    for (unsigned int i = 0; i < cloud_positionRating2->size(); ++i){
        std::string name ="groundContactArea"+boost::lexical_cast<std::string>(i);
        viewer.addSphere(cloud_positionRating2->at(i), 0.01,0,1,1, name, viewport);
    }
-    // draw robot lines
-    viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0");
-    viewer.addLine(robot_point_1,robot_point_3,1.0,1.0,1.0,"f1");
-    viewer.addLine(robot_point_3,robot_point_2,1.0,1.0,1.0,"f2");
-    viewer.addLine(robot_point_2,robot_point_0,1.0,1.0,1.0,"f3");
+
     // draw center
     viewer.addSphere(check_pos, 0.03,1,0,0, "checkPosition", viewport);
     viewer.addSphere(robot_point_mid, 0.03,0,1,0, "proMidx", viewport);
@@ -1002,81 +1155,112 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
 
-     //Compute Force Angle Stability Metric
+    //Compute Force Angle Stability Metric
 
-     std::vector<float> rating =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points);
-   //  std::iterator max_it =std::max_element(rating.begin(),rating.end());
+    std::vector<float> rating =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points);
+    //  std::iterator max_it =std::max_element(rating.begin(),rating.end());
 
 
-     for (unsigned int i=0; i<rating.size();++i)
-     {
+    for (unsigned int i=0; i<rating.size();++i)
+    {
 
-         // rating between convex_hull_point (i and i+1)
+        // rating between convex_hull_point (i and i+1)
 
-         float c =rating.at(i);
-         std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
-         const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
-         const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
+        float c =rating.at(i);
+        std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
+        const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
+        const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
-         //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
-         ROS_INFO("Rating %f", rating.at(i));
+        //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+        ROS_INFO("Rating %f", rating.at(i));
 
-         if (draw_convex_hull_first_polygon){
-         if(c<invalid_rating)
-             viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
-         else
-             viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
+        if (draw_convex_hull_first_polygon){
+            if(c<invalid_rating)
+                viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
+            else
+                viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
 
-         // draw convex hull (points only)
-         std::string namech ="convexhullstart"+boost::lexical_cast<std::string>(i);
-         viewer.addSphere(convex_hull_points[i], 0.025,0,1,0, namech,2 /*viewport*/);
-         }
-     }
-     if (draw_convex_hull_first_polygon){
+            // draw convex hull (points only)
+            std::string namech ="convexhullstart"+boost::lexical_cast<std::string>(i);
+            viewer.addSphere(convex_hull_points[i], 0.025,0,1,0, namech,2 /*viewport*/);
+        }
+    }
+    if (draw_convex_hull_first_polygon){
         viewer.addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2 /*viewport*/);
     }
 
-     if (usetippingover){
-     // iterative checking if still fine after flipping over invalid axis
-     for (unsigned int i = 0; i < rating.size(); i++){
-         if (rating.at(i) < invalid_rating){ // instabil
-             ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
-             support_point_1 = convex_hull_points.at(i);
-             support_point_2 = convex_hull_points.at(i+1);
+    if (tip_over_active){
+        // iterative checking if still fine after flipping over invalid axis
+        for (unsigned int i = 0; i < rating.size(); i++){
+            if (rating.at(i) < invalid_rating){ // instabil
+                ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
+                support_point_1 = convex_hull_points.at(i);
+                support_point_2 = convex_hull_points.at(i+1);
 
-             const pcl::PointXYZ tip_over_axis_vector= subtractPoints(support_point_2, support_point_1);
-             pcl::PointXYZ tip_over_direction = crossProduct(tip_over_axis_vector, pcl::PointXYZ(0,0,1));
-
-
-             bool point_evaluated = eval_point(support_point_1,
-                                          tip_over_axis_vector,
-                                          (*cloud_positionRating),
-                                          tip_over_direction,
-                                          support_point_3);
-
-             if (!point_evaluated){
-                 break; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
-             }
+                const pcl::PointXYZ tip_over_axis_vector= subtractPoints(support_point_2, support_point_1);
+                pcl::PointXYZ tip_over_direction = crossProduct(tip_over_axis_vector, pcl::PointXYZ(0,0,1));
 
 
+                bool point_evaluated = findSupportPoint(support_point_1,
+                                                        tip_over_axis_vector,
+                                                        (*cloud_positionRating),
+                                                        tip_over_direction,
+                                                        support_point_3);
 
-             std::vector<unsigned int> convex_hull_indices_iterative;
-             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating_iterative(new pcl::PointCloud<pcl::PointXYZ>());
+                if (!point_evaluated){
+                    break; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
+                }
 
-             std::vector<pcl::PointXYZ> convex_hull_points_iterative = build_convex_hull(cloud_positionRating,
-                                                    check_pos,
-                                                    support_point_1,
-                                                    support_point_2,
-                                                    support_point_3,
-                                                    convex_hull_indices_iterative,
-                                                    cloud_positionRating_iterative);
 
-             // TODO next 4 parameters may be slow
 
-             float similarity_distance = 0.01; // meter
-             float similarity_angle = 3.0; // degree
-             float sim_dist_add = similarity_distance;
-             float sim_angle_add = similarity_angle;
+                std::vector<unsigned int> convex_hull_indices_iterative;
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating_iterative(new pcl::PointCloud<pcl::PointXYZ>());
+
+                std::vector<pcl::PointXYZ> convex_hull_points_iterative = buildConvexHull(cloud_positionRating,
+                                                                                          check_pos,
+                                                                                          support_point_1,
+                                                                                          support_point_2,
+                                                                                          support_point_3,
+                                                                                          true,
+                                                                                          convex_hull_indices_iterative,
+                                                                                          cloud_positionRating_iterative);
+
+
+                float min_value = 100.0;
+                unsigned int iterator = 0;
+                for (unsigned int k = 0; k< convex_hull_points_iterative.size()-1; k++){
+                    float value = vectorSimilarity(support_point_1, support_point_2,
+                                                   convex_hull_points_iterative.at(k), convex_hull_points_iterative.at(k+1));
+                    if (value < min_value){
+                        min_value = value;
+                        iterator = k;
+                    }
+                }
+                if (min_value == 100.0){
+                    ROS_ERROR("[flor_terrain_classifier / model] after tipping over no edge could be removed from the rating");
+                }
+                // edge that must be removed is at position k in the vector
+
+                convex_hull_points_iterative.erase(convex_hull_points_iterative.begin()+ convex_hull_points_iterative.size()-1);
+                convex_hull_indices_iterative.erase(convex_hull_indices_iterative.begin() + convex_hull_indices_iterative.size() -1);
+                for (unsigned int l = 0; l < iterator+1; l++){ //TODO looks right, maybe double check
+                    // shift first of list to last of list
+                    pcl::PointXYZ temp = convex_hull_points_iterative.at(0);
+                    convex_hull_points_iterative.erase(convex_hull_points_iterative.begin()+0);
+                    convex_hull_points_iterative.push_back(temp);
+
+                    unsigned int temp_index = convex_hull_indices_iterative.at(0);
+                    convex_hull_indices_iterative.erase((convex_hull_indices_iterative.begin() + 0));
+                    convex_hull_indices_iterative.push_back(temp_index);
+
+                }
+
+
+                // THIS WAS DONE BEFORE AND SEEMED TO BE RIGHT THE UPPER IS NOT TESTED MUCH BUT IS NICER
+                /* float similarity_distance = 0.04; // meter
+             float similarity_angle = 10.0; // degree
+             float sim_dist_add = 0.02;
+             float sim_angle_add = 3.0;
 
              bool one_edge_removed = false;
              while (one_edge_removed == false){ // one edge must be removed
@@ -1106,79 +1290,85 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
                 similarity_distance += sim_dist_add;
                 similarity_angle += sim_angle_add;
              }
+*/
+                // draw supporting points
+                viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1it_tippedOver"+boost::lexical_cast<std::string>(i), viewport);
+                viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2it_tippedOver"+boost::lexical_cast<std::string>(i), viewport);
+                viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3it_tippedOver"+boost::lexical_cast<std::string>(i), viewport);
+                if (draw_convex_hull_iterative_ground_points){
+                    for (unsigned int j = 0; j < cloud_positionRating_iterative->size(); ++j){
+                        std::string name ="groundContactAreait"+boost::lexical_cast<std::string>(j)+"tippedOver"+boost::lexical_cast<std::string>(i);
+                        viewer.addSphere(cloud_positionRating_iterative->at(j), 0.01,0,1,1, name, viewport);
+                    }
+                }
+                // draw robot lines
+                /*
+             viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0it" + i);
+             viewer.addLine(robot_point_1,robot_point_2,1.0,1.0,1.0,"f1it" + i);
+             viewer.addLine(robot_point_2,robot_point_3,1.0,1.0,1.0,"f2it" + i);
+             viewer.addLine(robot_point_3,robot_point_0,1.0,1.0,1.0,"f3it" + i);*/
+                // draw center
+                if (i == 1){
+                    viewer.addSphere(check_pos, 0.05,1,0,0, "checkPositionit", viewport);
+                    viewer.addSphere(robot_point_mid, 0.05,0,1,0, "proMidxit", viewport);
+                    viewer.addSphere(center_of_mass_iterative, 0.05,0,0,1, "CMit", viewport);
+                    // draw normal
+                    const pcl::PointXYZ p_uff(addPointVector(robot_point_mid, normal));
+                    viewer.addLine(robot_point_mid,p_uff,1.0,1.0,1.0,"fnormalit");
+                }
 
-             // draw supporting points
-            viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1it", viewport);
-            viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2it", viewport);
-            viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3it", viewport);
-            for (unsigned int i = 0; i < cloud_positionRating_iterative->size(); ++i){
-                std::string name ="groundContactAreait"+boost::lexical_cast<std::string>(i);
-                viewer.addSphere(cloud_positionRating_iterative->at(i), 0.01,0,1,1, name, viewport);
+
+                //Compute Force Angle Stability Metric
+                std::vector<float> rating_iterative =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points_iterative);
+                for (unsigned int k=0; k<rating_iterative.size();++k)
+                {
+
+                    // rating between convex_hull_point (i and i+1)
+                    float c =rating_iterative.at(k);
+
+                    // TODO insert number of iteration in name
+                    std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(convex_hull_indices_iterative[k])+"tippedOver"+boost::lexical_cast<std::string>(i);
+                    const pcl::PointXYZ p1(convex_hull_points_iterative[k].x,convex_hull_points_iterative[k].y,convex_hull_points_iterative[k].z);
+                    const pcl::PointXYZ p2(convex_hull_points_iterative[k+1].x,convex_hull_points_iterative[k+1].y,convex_hull_points_iterative[k+1].z);
+
+                    //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+                    ROS_INFO("Rating %f", rating_iterative.at(k));
+
+
+                    if (draw_convex_hull_iterative){
+
+                        if(c<invalid_rating)
+                            viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
+                        else
+                            viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
+
+
+                        // draw convex hull (points only)
+                        std::string namech ="convexhullstart_it"+boost::lexical_cast<std::string>(k)+"tippedOver"+boost::lexical_cast<std::string>(i);
+                        viewer.addSphere(convex_hull_points_iterative[k+1], 0.015,0,1,0, namech,2 /*viewport*/);
+                    }
+
+                }
+                if (draw_convex_hull_iterative){
+                    viewer.addSphere(convex_hull_points_iterative[0], 0.015,1,0,0, "convexhullstart_it_tippedOver"+boost::lexical_cast<std::string>(i), 2 /*viewport*/);
+                }
+
+
+
+                float min_value_rating_iterative =*std::min_element(rating_iterative.begin(),rating_iterative.end());
+
+                // wenn gekippt und es hier stabiler ist, übernehme den schlechtesen Wert der gekippten Position an
+                // der entsprechenden Stelle
+                if (min_value_rating_iterative > rating.at(i)){
+                    rating.at(i) = min_value_rating_iterative;
+                }
+
             }
-             // draw robot lines
-             viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0it");
-             viewer.addLine(robot_point_1,robot_point_2,1.0,1.0,1.0,"f1it");
-             viewer.addLine(robot_point_2,robot_point_3,1.0,1.0,1.0,"f2it");
-             viewer.addLine(robot_point_3,robot_point_0,1.0,1.0,1.0,"f3it");
-             // draw center
-             viewer.addSphere(check_pos, 0.05,1,0,0, "checkPositionit", viewport);
-             viewer.addSphere(robot_point_mid, 0.05,0,1,0, "proMidxit", viewport);
-             viewer.addSphere(center_of_mass_iterative, 0.05,0,0,1, "CMit", viewport);
-             // draw normal
-             const pcl::PointXYZ p_uff(addPointVector(robot_point_mid, normal));
-             viewer.addLine(robot_point_mid,p_uff,1.0,1.0,1.0,"fnormalit");
+        }
+    } // usetippingover end
 
-
-             //Compute Force Angle Stability Metric
-             std::vector<float> rating_iterative =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points_iterative);
-             for (unsigned int k=0; k<rating_iterative.size();++k)
-             {
-
-                 // rating between convex_hull_point (i and i+1)
-                 float c =rating_iterative.at(k);
-
-                 // TODO insert number of iteration in name
-                 std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(convex_hull_indices_iterative[k]);
-                 const pcl::PointXYZ p1(convex_hull_points_iterative[k].x,convex_hull_points_iterative[k].y,convex_hull_points_iterative[k].z);
-                 const pcl::PointXYZ p2(convex_hull_points_iterative[k+1].x,convex_hull_points_iterative[k+1].y,convex_hull_points_iterative[k+1].z);
-
-                 //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
-                 ROS_INFO("Rating %f", rating_iterative.at(k));
-
-
-                 if (draw_convex_hull_iterative){
-
-                 if(c<invalid_rating)
-                     viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
-                 else
-                     viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
-
-                 // draw convex hull (points only)
-                 // TODO insert number of iteration in name
-                 std::string namech ="convexhullstart_it"+boost::lexical_cast<std::string>(k);
-                 viewer.addSphere(convex_hull_points_iterative[k+1], 0.015,0,1,0, namech,2 /*viewport*/);
-                 }
-             }
-             if (draw_convex_hull_iterative){
-                viewer.addSphere(convex_hull_points_iterative[0], 0.015,1,0,0, "convexhullstart_it", 2 /*viewport*/);
-            }
-
-
-
-             float min_value_rating_iterative =*std::min_element(rating_iterative.begin(),rating_iterative.end());
-
-             // wenn gekippt und es hier stabiler ist, übernehme den schlechtesen Wert der gekippten Position an
-             // der entsprechenden Stelle
-             if (min_value_rating_iterative > rating.at(i)){
-                 rating.at(i) = min_value_rating_iterative;
-             }
-
-         }
-     }
-     } // usetippingover end
-
-     float min_value_rating=*std::min_element(rating.begin(),rating.end());
-     ROS_INFO("min_value_rating = %f", min_value_rating);
+    float min_value_rating=*std::min_element(rating.begin(),rating.end());
+    ROS_INFO("min_value_rating = %f", min_value_rating);
 
     return min_value_rating;
 }
