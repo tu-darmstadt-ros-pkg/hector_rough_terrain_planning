@@ -90,7 +90,7 @@ void test_normals()
   ROS_INFO("Compute Position rating...");
 
   // Position, Orientation (in radiants)
-  terrain_classifier->computePositionRating(pcl::PointXYZ(0.48,-1.60, 0.0), (90.0+30.0)/180.0*3.14,viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
+  terrain_classifier->computePositionRating(pcl::PointXYZ(0.48,-1.70, 0.0), (90.0+20.0)/180.0*3.14,viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
   //check 1.50,-1.35,0)  check 0.48, -1.66, kleiner winkel noch drin -> wird nichit entfernt falsch
   terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);

@@ -662,7 +662,8 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
 
     float delta_for_contact = 0.015; //  +- in m
     // PARAMETER smoothing
-    bool smooth_hull = true;
+    bool distance_smoothing = true;
+    bool angle_smoothing = true;
     float smooth_max_angle = 20.0;
     float smooth_max_distance = 0.05;
 
@@ -686,7 +687,7 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
                 pcl::PointXYZ pointXYZ = pcl::PointXYZ(p.x, p.y, p.z);
                 // only add points on the right side of the supp points 1 and 2
                 if (sign(ccw(support_point_1, support_point_2, support_point_3)) == sign(ccw(support_point_1, support_point_2, pointXYZ))
-                       /* || ccw(support_point_1, support_point_2, pointXYZ) == 0*/){ // TODO doesnt want to add SPs -> endless loop
+                        || ccw(support_point_1, support_point_2, pointXYZ) == 0){
                     cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
                 }
             }
@@ -711,8 +712,8 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
         convex_hull_points.push_back(p1);
     }
 
-    if (smooth_hull){
-        ROS_INFO("smoothing");
+    if (distance_smoothing){
+        ROS_INFO("distance smoothing");
         // distance smoothing
         for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
             if (i < convex_hull_points.size()-2){
@@ -735,7 +736,7 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
                     convex_hull_indices.erase(convex_hull_indices.begin()+(i+offset));
                 }
                 else {
-                    ++i;
+                    i++;
                 }
             }
             // same thing for last (= first) point
@@ -762,12 +763,17 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
                         convex_hull_indices.at(0) = convex_hull_indices.at(i);
                     }
                 }
+                break; // needed because loop is doing i = i // could also be i++
             }
         }
 
-        bool angle_smoothing = true;
+        ROS_INFO("end distance smoothing");
+    }
+
         // angle smoothing
         if (angle_smoothing){
+
+            ROS_INFO("angle smoothing");
             for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
                 if (i < convex_hull_points.size()-2){
 
@@ -798,13 +804,14 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
                         convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
                         convex_hull_indices.at(0) = convex_hull_indices.at(i);
                     }
-                    break; // not needed
-
+                    break; // needed because loop is doing i = i // could also be i++
                 }
             }
+            ROS_INFO("end angle smoothing");
         }
-        ROS_INFO("end smoothing");
-    }
+
+
+
     return convex_hull_points;
 }
 
@@ -1079,7 +1086,7 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
             break; // endwhile
         }
 
-        // find supppolygon, if check_pos not in supppolygon do again with another supp p 1
+        // find supppolygon, if check_pos not in supppolygon do again with another supp p 1 TODO this is not tested, counter should not be more than 1
         counter++;
         ROS_INFO("%i iteration while loop", counter);
 
@@ -1355,22 +1362,22 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
 
-                float min_value_rating_iterative =*std::min_element(rating_iterative.begin(),rating_iterative.end());
+                float min_rating_iterative =*std::min_element(rating_iterative.begin(),rating_iterative.end());
 
                 // wenn gekippt und es hier stabiler ist, übernehme den schlechtesen Wert der gekippten Position an
                 // der entsprechenden Stelle
-                if (min_value_rating_iterative > rating.at(i)){
-                    rating.at(i) = min_value_rating_iterative;
+                if (min_rating_iterative > rating.at(i)){
+                    rating.at(i) = min_rating_iterative;
                 }
 
             }
         }
     } // usetippingover end
 
-    float min_value_rating=*std::min_element(rating.begin(),rating.end());
-    ROS_INFO("min_value_rating = %f", min_value_rating);
+    float min_rating=*std::min_element(rating.begin(),rating.end());
+    ROS_INFO("min_value_rating = %f", min_rating);
 
-    return min_value_rating;
+    return min_rating;
 }
 
 void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const{
