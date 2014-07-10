@@ -100,24 +100,11 @@ void test_normals()
   pcl::PointXYZ check_pos = pcl::PointXYZ(1.00,-0.85, 0.0);
   float orientation = (0.0)/180.0*3.14;
   float position_rating = 10.0;
-  //float contact_area = 0.0;
   int unstable_axis = 10;
- /* terrain_classifier->computePositionRating(check_pos, orientation,
-                                            position_rating, unstable_axis,
-                                            viewer, view_port_4);
-
-  terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);*/
-
 
   terrain_model.computePositionRating(check_pos, orientation,
-                                            position_rating, /*contact_area,*/ unstable_axis,
-                                            viewer, view_port_4);
-
-  terrain_model.showPositionRating(viewer, "positionRating", view_port_4);
-
-
-
-  //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);
+                                            position_rating, unstable_axis);
+                                            //viewer, view_port_4);
 
   float x=0.0;
 
@@ -129,8 +116,6 @@ void test_normals()
     viewer.spinOnce(100);
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
-    // terrain_classifier->computePositionRating(pcl::PointXYZ(-1.00+x,-1.00,0.5),viewer, "computePositionRating", view_port_4);//1.00,-0.85,0
-   // terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
   }
 }
 
