@@ -112,8 +112,8 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f-2.f,0.f);
 
 
-    float addCost=  terrainModel.computePositionRating(checkPos, action->endtheta);
-    ROS_INFO("cost %f", addCost);
+    float addCost=0.f;//  terrainModel.computePositionRating(checkPos, action->endtheta);
+  //  ROS_INFO("cost %f", addCost);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
@@ -121,9 +121,58 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
 }
-
+bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
+{
+    true;
+}
  int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 {
    // UpdataData();
     EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
 }
+
+/** bool EnvironmentNAVXYTHETASTAB::IsWithinMapCell(int X,int Y)
+ {
+    return true;
+ }**/
+/**
+ void EnvironmentNAVXYTHETASTAB::SetConfiguration(int width, int height,
+                                          const unsigned char* mapdata,
+                                         int startx, int starty,
+                                          int goalx, int goaly) {
+    EnvNAV2DCfg.EnvWidth_c = width;
+    EnvNAV2DCfg.EnvHeight_c = height;
+    EnvNAV2DCfg.StartX_c = startx;
+    EnvNAV2DCfg.StartY_c = starty;
+    int x;
+
+
+
+    EnvNAV2DCfg.EndX_c = goalx;
+    EnvNAV2DCfg.EndY_c = goaly;
+
+    //allocate the 2D environment
+    EnvNAV2DCfg.Grid2D = new unsigned char* [EnvNAV2DCfg.EnvWidth_c];
+    for (x = 0; x < EnvNAV2DCfg.EnvWidth_c; x++) {
+      EnvNAV2DCfg.Grid2D[x] = new unsigned char [EnvNAV2DCfg.EnvHeight_c];
+    }
+
+
+    //environment:
+    if (0 == mapdata) {
+      for (int y = 0; y < EnvNAV2DCfg.EnvHeight_c; y++) {
+        for (int x = 0; x < EnvNAV2DCfg.EnvWidth_c; x++) {
+          EnvNAV2DCfg.Grid2D[x][y] = 0;
+        }
+      }
+    }
+    else {
+      for (int y = 0; y < EnvNAV2DCfg.EnvHeight_c; y++) {
+        for (int x = 0; x < EnvNAV2DCfg.EnvWidth_c; x++) {
+          unsigned char cval = mapdata[x+y*width];
+          EnvNAV2DCfg.Grid2D[x][y] = cval;
+        }
+      }
+    }
+
+ }**/

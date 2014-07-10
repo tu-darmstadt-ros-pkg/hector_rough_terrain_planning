@@ -58,11 +58,12 @@ public:
         throw new SBPL_Exception();
     }
 
-
+virtual bool IsValidConfiguration(int X, int Y, int Theta);
 
     EnvironmentNAVXYTHETASTAB();
     ~EnvironmentNAVXYTHETASTAB();
 
+    // bool IsWithinMapCell(int X,int Y);
 
     void terrainModelCallback(const sensor_msgs::PointCloud2 msg);
     void UpdataData();

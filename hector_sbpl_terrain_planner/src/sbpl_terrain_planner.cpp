@@ -84,16 +84,22 @@ SBPLTerrainPlanner::SBPLTerrainPlanner(std::string name)
   initialize(name);
 }
 
+void SBPLTerrainPlanner::mapCallback(const nav_msgs::OccupancyGridConstPtr& map)
+{
+    t_lastMapPos_ = map->header.stamp;
+    map_center_map=map->info.origin.position;
+}
 
 void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DROS* costmap_ros){
   if(!initialized_){
     ros::NodeHandle private_nh("~/"+name);
     ros::NodeHandle nh("~/");
+    ros::NodeHandle n("");
 
     ROS_INFO("Name is %s", name.c_str());
 
     private_nh.param("planner_type", planner_type_, string("ARAPlanner"));
-    private_nh.param("allocated_time", allocated_time_, 30.0);
+    private_nh.param("allocated_time", allocated_time_, 10.0);
     private_nh.param("initial_epsilon",initial_epsilon_,3.0);
     nh.param("environment_type", environment_type_, string("testXYThetaLattice"));
     private_nh.param("forward_search", forward_search_, bool(false));
@@ -104,13 +110,15 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     private_nh.param("nominalvel_mpersecs", nominalvel_mpersecs, 0.4);
     private_nh.param("timetoturn45degsinplace_secs", timetoturn45degsinplace_secs, 0.6);
 
+
+
     int lethal_obstacle;
     private_nh.param("lethal_obstacle",lethal_obstacle,20);
     lethal_obstacle_ = (unsigned char) lethal_obstacle;
     inscribed_inflated_obstacle_ = lethal_obstacle_-1;
     sbpl_cost_multiplier_ = (unsigned char) (costmap_2d::INSCRIBED_INFLATED_OBSTACLE/inscribed_inflated_obstacle_ + 1);
     ROS_DEBUG("SBPL: lethal: %uz, inscribed inflated: %uz, multiplier: %uz",lethal_obstacle,inscribed_inflated_obstacle_,sbpl_cost_multiplier_);
-
+    map_subscriber_=n.subscribe("map", 1000,  &SBPLTerrainPlanner::mapCallback, this);
     //costmap_ros_ = costmap_ros;
     //costmap_ros_->clearRobotFootprint();
     //costmap_ros_->getCostmapCopy(cost_map_);
@@ -273,7 +281,18 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
 
   //costmap_ros_->getCostmapCopy(cost_map_);
 
-  ROS_INFO("[sbpl_lattice_planner] getting start point (%g,%g) goal point (%g,%g)",
+  boost::shared_ptr<tf::TransformListener> tf_listener_;
+  tf_listener_.reset(new tf::TransformListener());
+//
+  tf::StampedTransform worldTosensorTf;
+  try{
+      tf_listener_->waitForTransform("/map", "/base_link",  t_lastMapPos_, ros::Duration(0.6));
+      tf_listener_->lookupTransform("/map", "/base_link", t_lastMapPos_, worldTosensorTf);
+   }catch(tf::TransformException& ex){
+     ROS_ERROR_STREAM( "[hector_sbpl_terrain_planner] Transform error for map-base_link TF: " << ex.what() << "\n");
+  }
+
+  ROS_INFO("[hector_sbpl_terrain_planner] getting start point (%g,%g) goal point (%g,%g)",
            start.pose.position.x, start.pose.position.y,goal.pose.position.x, goal.pose.position.y);
   double theta_start = 2 * atan2(start.pose.orientation.z, start.pose.orientation.w);
   double theta_goal = 2 * atan2(goal.pose.orientation.z, goal.pose.orientation.w);

@@ -61,6 +61,10 @@ public:
   virtual ~SBPLTerrainPlanner(){};
 
 private:
+
+  void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
+  geometry_msgs::Point map_center_map;
+
   unsigned char costMapCostToSBPLCost(unsigned char newcost);
   void publishStats(int solution_cost, int solution_size, 
                     const geometry_msgs::PoseStamped& start, 
@@ -93,6 +97,8 @@ private:
 
   ros::Publisher plan_pub_;
   ros::Publisher stats_publisher_;
+  ros::Time t_lastMapPos_;
+  ros::Subscriber map_subscriber_;
   
   std::vector<geometry_msgs::Point> footprint_;
 
