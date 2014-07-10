@@ -1,6 +1,8 @@
 #ifndef TERRAIN_MODEL_H__
 #define TERRAIN_MODEL_H__
 
+//#define viewer_on
+
 #include <ros/ros.h>
 
 #include <nav_msgs/OccupancyGrid.h>
@@ -75,8 +77,7 @@ public:
     bool computePositionRating(const pcl::PointXYZ& checkPos,
                                const float orientation,
                                float position_rating,
-                               int unstable_axis,
-                               pcl::visualization::PCLVisualizer &viewer, int viewport);
+                               int unstable_axis);
 
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);

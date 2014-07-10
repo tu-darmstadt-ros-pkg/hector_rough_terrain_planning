@@ -103,8 +103,8 @@ void test_normals()
   int unstable_axis = 10;
 
   terrain_model.computePositionRating(check_pos, orientation,
-                                            position_rating, unstable_axis,
-                                            viewer, view_port_4);
+                                            position_rating, unstable_axis);
+                                            //viewer, view_port_4);
 
   float x=0.0;
 
