@@ -79,8 +79,6 @@ public:
                                pcl::visualization::PCLVisualizer &viewer, int viewport);
 
 
-    void showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name = "positionRating", int viewport = 0) const;
-
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
 
     //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;

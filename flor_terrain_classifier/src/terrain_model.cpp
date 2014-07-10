@@ -83,9 +83,17 @@ pcl::PointXYZ crossProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
 // returns angle value in degree
 float angleBetween(Eigen::Vector3f v1, Eigen::Vector3f v2){
     float PI = 3.14159265;
-    return acos(dotproductEigen(v1,v2)/
-                (sqrt(dotproductEigen(v1,v1)) * sqrt(dotproductEigen(v2,v2))))
-            * (180.0 / PI);
+    float acosvalue = dotproductEigen(v1,v2)/
+            (sqrt(dotproductEigen(v1,v1)) * sqrt(dotproductEigen(v2,v2)));
+    if (acosvalue > 0.9999999){
+        return 0.0;
+    }
+    if (acosvalue < -0.999999){
+        return 180.0;
+    }
+    float result = acos(acosvalue) * (180.0 / PI);
+
+    return result;
 }
 
 // distance between 2 points (only seen in Z = 0 plane)
@@ -969,6 +977,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 for (unsigned int k = 0; k< convex_hull_points_iterative.size()-1; k++){
                     float value = vectorSimilarity(support_point_1, support_point_2,
                                                    convex_hull_points_iterative.at(k), convex_hull_points_iterative.at(k+1));
+                    ROS_INFO("vector_similarity = %f", value);
                     if (value < min_value){
                         min_value = value;
                         iterator = k;
@@ -1104,18 +1113,15 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         }
     } // usetippingover end
 
+    // draw groundpoints
+    pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
+    viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
+    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "positionRating" + std::string("_edges"), viewport);
+
     position_rating = *std::min_element(rating.begin(),rating.end());
     ROS_INFO("position_rating = %f, contact_area not implemented, unstable_axis = %i", position_rating, unstable_axis);
 
     return true;
 }
-
-void TerrainModel::showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const{
-
-    pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(cloud_positionRating, "intensity");
-    viewer.addPointCloud<pcl::PointXYZI>(cloud_positionRating,intensity_distribution, "positionRating_cloud", viewport);
-    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name + std::string("_edges"), viewport);
-}
-
 
 }
