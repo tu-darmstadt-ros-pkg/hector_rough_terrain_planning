@@ -81,8 +81,6 @@ public:
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
 
-    void updateViewer(pcl::visualization::PCLVisualizer update_viewer);
-
 
     //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed_Ptr;
@@ -92,9 +90,6 @@ public:
     //pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_height;
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating;
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
-
-    bool viewer_init;
-    pcl::visualization::PCLVisualizer viewer;
 
 
     static const float invalid_rating = 1.0;

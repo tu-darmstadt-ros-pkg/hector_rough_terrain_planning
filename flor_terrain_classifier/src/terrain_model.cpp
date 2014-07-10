@@ -5,12 +5,10 @@ namespace hector_terrain_model
 
 TerrainModel::TerrainModel()
 {
-    viewer_init = false;
 }
 
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
-    viewer_init = false;
     cloud_processed=cloud;
     cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
 }
@@ -24,12 +22,6 @@ void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
     cloud_processed=cloud;
     cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
-}
-
-
-void TerrainModel::updateViewer(pcl::visualization::PCLVisualizer update_viewer){
-    viewer_init = false;
-    viewer = update_viewer;
 }
 
 
