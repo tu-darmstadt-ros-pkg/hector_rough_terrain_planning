@@ -35,10 +35,12 @@
 #include <pcl/features/intensity_gradient.h>
 
 #include <flor_terrain_classifier/terrain_classifier.h>
+#include <flor_terrain_classifier/terrain_model.h>
+
 
 
 using namespace flor_terrain_classifier;
-
+using namespace hector_terrain_model;
 
 void test_normals()
 {
@@ -48,12 +50,16 @@ void test_normals()
   params.filter_mask = FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
   flor_terrain_classifier::TerrainClassifier::Ptr terrain_classifier(new flor_terrain_classifier::TerrainClassifier(params));
 
+
   ROS_INFO("Load point cloud");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
  // pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
+
+
+  hector_terrain_model::TerrainModel terrain_model(*cloud_original);
 
 
   // add filtered point cloud to classifier
@@ -96,11 +102,21 @@ void test_normals()
   float position_rating = 10.0;
   //float contact_area = 0.0;
   int unstable_axis = 10;
-  terrain_classifier->computePositionRating(check_pos, orientation,
+ /* terrain_classifier->computePositionRating(check_pos, orientation,
+                                            position_rating, unstable_axis,
+                                            viewer, view_port_4);
+
+  terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);*/
+
+
+  terrain_model.computePositionRating(check_pos, orientation,
                                             position_rating, /*contact_area,*/ unstable_axis,
                                             viewer, view_port_4);
 
-  terrain_classifier->showPositionRating(viewer, "positionRating", view_port_4);
+  terrain_model.showPositionRating(viewer, "positionRating", view_port_4);
+
+
+
   //viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_4);
 
   float x=0.0;
