@@ -658,7 +658,7 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
                                                                const pcl::PointXYZ& support_point_3,
                                                                const bool iterative, // if this is true, points on one side of supp1, supp2 will not be considerred
                                                                std::vector<unsigned int>& convex_hull_indices, // empty before call
-                                                               pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2){ // empty before call
+                                                               pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points){ // empty before call
 
     float delta_for_contact = 0.015; //  +- in m
     // PARAMETER smoothing
@@ -680,7 +680,7 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
         if(fabs(dist) < delta_for_contact)
         {
             if (!iterative){
-                cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
+                ground_contact_points->push_back(pcl::PointXYZ(p.x,p.y,p.z));
             }
             else {
                 // TODO diesen Punkt umwandeln ist nicht perfomant // sollte aber nicht bei so vielen der fall sein.
@@ -688,7 +688,7 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
                 // only add points on the right side of the supp points 1 and 2
                 if (sign(ccw(support_point_1, support_point_2, support_point_3)) == sign(ccw(support_point_1, support_point_2, pointXYZ))
                         || ccw(support_point_1, support_point_2, pointXYZ) == 0){
-                    cloud_positionRating2->push_back(pcl::PointXYZ(p.x,p.y,p.z));
+                    ground_contact_points->push_back(pcl::PointXYZ(p.x,p.y,p.z));
                 }
             }
         }
@@ -701,14 +701,14 @@ std::vector<pcl::PointXYZ> TerrainClassifier:: buildConvexHull(const pcl::PointC
 
     // convex hull build here
     // first point is also last point
-    convex_hull_comp(*cloud_positionRating2, convex_hull_indices);
+    convex_hull_comp(*ground_contact_points, convex_hull_indices);
 
     std::vector<pcl::PointXYZ> convex_hull_points;
 
     // add points to the list
     for(int i=0; i<(convex_hull_indices.size()); ++i)
     {
-        const pcl::PointXYZ p1(cloud_positionRating2->at(convex_hull_indices[i]).x,cloud_positionRating2->at(convex_hull_indices[i]).y,cloud_positionRating2->at(convex_hull_indices[i]).z);
+        const pcl::PointXYZ p1(ground_contact_points->at(convex_hull_indices[i]).x,ground_contact_points->at(convex_hull_indices[i]).y,ground_contact_points->at(convex_hull_indices[i]).z);
         convex_hull_points.push_back(p1);
     }
 
@@ -893,11 +893,15 @@ pcl::PointXYZ TerrainClassifier::computeCenterOfMass(const pcl::PointXYZ &p1_lef
 
 
 // orientation in radiants
-float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
-                                               const float orientation,
-                                               pcl::visualization::PCLVisualizer &viewer,
-                                               const std::string &name, int viewport)
-{
+bool TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
+                                              const float orientation,
+                                              float position_rating,
+                                              /*float contact_area,*/
+                                              int unstable_axis,
+                                              pcl::visualization::PCLVisualizer &viewer,
+                                              int viewport){
+
+    unstable_axis = 0;
 
     // PARAMETER tipp over robot scale
     bool tip_over_active = true;
@@ -1196,6 +1200,13 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
         viewer.addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2 /*viewport*/);
     }
 
+
+    for (unsigned int j = 0; j < rating.size(); j++){
+         if (rating.at(j) < 1.0){
+             unstable_axis += 1;
+         }
+     }
+
     if (tip_over_active){
         // iterative checking if still fine after flipping over invalid axis
         for (unsigned int i = 0; i < rating.size(); i++){
@@ -1374,10 +1385,10 @@ float TerrainClassifier::computePositionRating(const pcl::PointXYZ& check_pos,
         }
     } // usetippingover end
 
-    float min_rating=*std::min_element(rating.begin(),rating.end());
-    ROS_INFO("min_value_rating = %f", min_rating);
+    position_rating=*std::min_element(rating.begin(),rating.end());
+    ROS_INFO("min_value_rating = %f unstable axis = %i", position_rating, unstable_axis);
 
-    return min_rating;
+    return true;
 }
 
 void TerrainClassifier::showPositionRating(pcl::visualization::PCLVisualizer &viewer, const std::string &name, int viewport) const{
