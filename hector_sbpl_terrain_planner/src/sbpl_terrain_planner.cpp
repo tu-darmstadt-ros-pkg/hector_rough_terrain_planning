@@ -281,13 +281,13 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
 
   //costmap_ros_->getCostmapCopy(cost_map_);
 
-  boost::shared_ptr<tf::TransformListener> tf_listener_;
-  tf_listener_.reset(new tf::TransformListener());
+ // boost::shared_ptr<tf::TransformListener> tf_listener_;
+ // tf_listener_.reset(new tf::TransformListener());
 //
-  tf::StampedTransform worldTosensorTf;
+  //tf::StampedTransform worldTosensorTf;
   try{
-      tf_listener_->waitForTransform("/map", "/base_link",  t_lastMapPos_, ros::Duration(0.6));
-      tf_listener_->lookupTransform("/map", "/base_link", t_lastMapPos_, worldTosensorTf);
+     // tf_listener_->waitForTransform("/map", "/base_link",  t_lastMapPos_, ros::Duration(0.6));
+     // tf_listener_->lookupTransform("/map", "/base_link", t_lastMapPos_, worldTosensorTf);
    }catch(tf::TransformException& ex){
      ROS_ERROR_STREAM( "[hector_sbpl_terrain_planner] Transform error for map-base_link TF: " << ex.what() << "\n");
   }
