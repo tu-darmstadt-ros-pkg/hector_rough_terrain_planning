@@ -56,6 +56,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
     ROS_INFO("called service in constructor");
+    ros::Duration(0.1).sleep();
     int counter=0;
     while(!receivedWorldmodelPC)
     {
@@ -63,6 +64,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
         ROS_INFO("Constructor spin %i",counter);
         ros::spinOnce();
         ros::Duration(0.1).sleep();
+        ROS_INFO("End dur");
         client.call(srv);
     }
 
@@ -113,7 +115,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     float addCost=0.f;//  terrainModel.computePositionRating(checkPos, action->endtheta);
-  //  ROS_INFO("cost %f", addCost);
+    ROS_INFO("cost %f", addCost);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;

@@ -98,10 +98,9 @@ private:
   ros::Publisher plan_pub_;
   ros::Publisher stats_publisher_;
   ros::Time t_lastMapPos_;
-  ros::Subscriber map_subscriber_;
-  
+  ros::Subscriber map_subscriber_;  
   std::vector<geometry_msgs::Point> footprint_;
-
+  boost::shared_ptr<tf::TransformListener> tf_listener_;
 };
 };
 
