@@ -97,11 +97,11 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     if (basecost >= INFINITECOST) return INFINITECOST;
 
-    int addcost = basecost+getAdditionalCost(SourceX, SourceY, SourceTheta, action);
+    int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
-    return  addcost;
+    return  addcost + basecost;
 }
 
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
@@ -111,14 +111,24 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     sbpl_xy_theta_cell_t interm3Dcell;
     int i, levelind = -1;
 
-    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f-2.f,0.f);
 
-
-    float addCost=0.f;//  terrainModel.computePositionRating(checkPos, action->endtheta);
-    ROS_INFO("cost %f", addCost);
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
+
+    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f-2.f,0.f);
+    float positionRating;
+    int invalidAxis;
+    bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
+
+    if (!positionRatingComputed){
+        return INFINITECOST;
+    }
+
+    float addCost = positionRating * 100 + invalidAxis * 100;
+
+    ROS_INFO("cost %f", addCost);
+
     return addCost;
 
 
