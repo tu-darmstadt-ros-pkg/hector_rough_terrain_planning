@@ -97,6 +97,7 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     ros::NodeHandle n("");
 
     ROS_INFO("Name is %s", name.c_str());
+    tf_listener_.reset(new tf::TransformListener());
 
     private_nh.param("planner_type", planner_type_, string("ARAPlanner"));
     private_nh.param("allocated_time", allocated_time_, 10.0);
@@ -281,15 +282,12 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
 
   //costmap_ros_->getCostmapCopy(cost_map_);
 
- // boost::shared_ptr<tf::TransformListener> tf_listener_;
-   //tf_listener_.reset(new tf::TransformListener());
- // if(tf_) delete(tf_);
-//  tf_=new tf::TransformListener();
-//
-  //tf::StampedTransform worldTosensorTf;
+     tf::StampedTransform worldTosensorTf;
   try{
-    //  tf_->waitForTransform("/map", "/base_link",  t_lastMapPos_, ros::Duration(0.6));
-   //   tf_->lookupTransform("/map", "/base_link", t_lastMapPos_, worldTosensorTf);
+     tf_listener_->waitForTransform("/map", "/base_link",  t_lastMapPos_, ros::Duration(0.6));
+     tf_listener_->lookupTransform("/map", "/base_link", t_lastMapPos_, worldTosensorTf);
+     tf::Vector3 org=worldTosensorTf.getOrigin();
+     ROS_INFO("[hector_sbpl_terrain_planner] getting start point (%f,%f)",org.x(),org.y());
    }catch(tf::TransformException& ex){
      ROS_ERROR_STREAM( "[hector_sbpl_terrain_planner] Transform error for map-base_link TF: " << ex.what() << "\n");
   }
