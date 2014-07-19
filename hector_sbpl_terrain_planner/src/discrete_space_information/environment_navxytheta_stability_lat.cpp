@@ -43,6 +43,11 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         }
   }
 
+void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPtr& map)
+{
+    t_lastMapPos_ = map->header.stamp;
+    map_center_map=map->info.origin.position;
+}
 
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 {
@@ -73,6 +78,33 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
 {
 
+}
+
+void EnvironmentNAVXYTHETASTAB::mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy)
+{
+    int *size_x; int *size_y; int* num_thetas; double* startx; double* starty;
+                                 double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
+                                 double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
+                                 unsigned char* obsthresh; std::vector<SBPL_xytheta_mprimitive>* motionprimitiveV;
+   GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
+                                   nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
+
+    //wx =  origin_x_ + (mx + 0.5) * resolution_;
+   // wy = origin_y_ + (my + 0.5) * resolution_;
+}
+
+bool EnvironmentNAVXYTHETASTAB::worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my)
+{
+//    if (wx < origin_x_ || wy < origin_y_)
+  //      return false;
+
+  //  mx = (int)((wx - origin_x_) / resolution_);
+  //  my = (int)((wy - origin_y_) / resolution_);
+
+ //   if (mx < size_x_ && my < size_y_)
+  //      return true;
+
+    return false;
 }
 
 
@@ -107,9 +139,9 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
-    sbpl_2Dcell_t cell;
-    sbpl_xy_theta_cell_t interm3Dcell;
-    int i, levelind = -1;
+    //sbpl_2Dcell_t cell;
+  //  sbpl_xy_theta_cell_t interm3Dcell;
+  //  int i, levelind = -1;
 
     pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f-2.f,0.f);
 
@@ -133,48 +165,3 @@ bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
     EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
 }
 
-/** bool EnvironmentNAVXYTHETASTAB::IsWithinMapCell(int X,int Y)
- {
-    return true;
- }**/
-/**
- void EnvironmentNAVXYTHETASTAB::SetConfiguration(int width, int height,
-                                          const unsigned char* mapdata,
-                                         int startx, int starty,
-                                          int goalx, int goaly) {
-    EnvNAV2DCfg.EnvWidth_c = width;
-    EnvNAV2DCfg.EnvHeight_c = height;
-    EnvNAV2DCfg.StartX_c = startx;
-    EnvNAV2DCfg.StartY_c = starty;
-    int x;
-
-
-
-    EnvNAV2DCfg.EndX_c = goalx;
-    EnvNAV2DCfg.EndY_c = goaly;
-
-    //allocate the 2D environment
-    EnvNAV2DCfg.Grid2D = new unsigned char* [EnvNAV2DCfg.EnvWidth_c];
-    for (x = 0; x < EnvNAV2DCfg.EnvWidth_c; x++) {
-      EnvNAV2DCfg.Grid2D[x] = new unsigned char [EnvNAV2DCfg.EnvHeight_c];
-    }
-
-
-    //environment:
-    if (0 == mapdata) {
-      for (int y = 0; y < EnvNAV2DCfg.EnvHeight_c; y++) {
-        for (int x = 0; x < EnvNAV2DCfg.EnvWidth_c; x++) {
-          EnvNAV2DCfg.Grid2D[x][y] = 0;
-        }
-      }
-    }
-    else {
-      for (int y = 0; y < EnvNAV2DCfg.EnvHeight_c; y++) {
-        for (int x = 0; x < EnvNAV2DCfg.EnvWidth_c; x++) {
-          unsigned char cval = mapdata[x+y*width];
-          EnvNAV2DCfg.Grid2D[x][y] = cval;
-        }
-      }
-    }
-
- }**/

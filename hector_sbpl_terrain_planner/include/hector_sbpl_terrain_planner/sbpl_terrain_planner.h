@@ -63,7 +63,7 @@ public:
 private:
 
   void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
-  geometry_msgs::Point map_center_map;
+
 
   unsigned char costMapCostToSBPLCost(unsigned char newcost);
   void publishStats(int solution_cost, int solution_size, 
@@ -101,6 +101,9 @@ private:
   ros::Subscriber map_subscriber_;  
   std::vector<geometry_msgs::Point> footprint_;
   boost::shared_ptr<tf::TransformListener> tf_listener_;
+  geometry_msgs::Point map_center_map;
+
+
 };
 };
 

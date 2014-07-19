@@ -10,6 +10,8 @@
 #include <sbpl/utils/utils.h>
 #include <flor_terrain_classifier/terrain_model.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <ros/ros.h>
+#include <tf/transform_listener.h>
 
 // these structures contain footprints for the additional levels
 // each of these structures corresponds to one of the EnvNAVXYTHETALATAction_t structures
@@ -66,6 +68,7 @@ virtual bool IsValidConfiguration(int X, int Y, int Theta);
     // bool IsWithinMapCell(int X,int Y);
 
     void terrainModelCallback(const sensor_msgs::PointCloud2 msg);
+    void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
     void UpdataData();
     virtual int SetStart(double x, double y, double theta);
 
@@ -78,8 +81,18 @@ protected:
 
     virtual int getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                              EnvNAVXYTHETALATAction_t* action);
+
+    void mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy);
+    bool worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my);
+
     ros::Subscriber subTerrainModel;
     bool receivedWorldmodelPC;
+
+    ros::Time t_lastMapPos_;
+    ros::Subscriber map_subscriber_;
+    std::vector<geometry_msgs::Point> footprint_;
+    boost::shared_ptr<tf::TransformListener> tf_listener_;
+    geometry_msgs::Point map_center_map;
 
 
 };

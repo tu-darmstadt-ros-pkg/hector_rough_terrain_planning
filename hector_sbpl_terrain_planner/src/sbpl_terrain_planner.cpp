@@ -111,8 +111,6 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     private_nh.param("nominalvel_mpersecs", nominalvel_mpersecs, 0.4);
     private_nh.param("timetoturn45degsinplace_secs", timetoturn45degsinplace_secs, 0.6);
 
-
-
     int lethal_obstacle;
     private_nh.param("lethal_obstacle",lethal_obstacle,20);
     lethal_obstacle_ = (unsigned char) lethal_obstacle;
@@ -120,11 +118,6 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     sbpl_cost_multiplier_ = (unsigned char) (costmap_2d::INSCRIBED_INFLATED_OBSTACLE/inscribed_inflated_obstacle_ + 1);
     ROS_DEBUG("SBPL: lethal: %uz, inscribed inflated: %uz, multiplier: %uz",lethal_obstacle,inscribed_inflated_obstacle_,sbpl_cost_multiplier_);
     map_subscriber_=n.subscribe("map", 1000,  &SBPLTerrainPlanner::mapCallback, this);
-    //costmap_ros_ = costmap_ros;
-    //costmap_ros_->clearRobotFootprint();
-    //costmap_ros_->getCostmapCopy(cost_map_);
-
-    //std::vector<geometry_msgs::Point> footprint = costmap_ros_->getRobotFootprint();
 
     if ("XYThetaLattice" == environment_type_ || "testXYThetaLattice" == environment_type_){
       ROS_DEBUG("Using a 3D costmap for theta lattice\n");
@@ -140,16 +133,6 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
       exit(1);
     }
 
-    /*
-    if(!env_->SetEnvParameter("cost_inscribed_thresh",costMapCostToSBPLCost(costmap_2d::INSCRIBED_INFLATED_OBSTACLE))){
-      ROS_ERROR("Failed to set cost_inscribed_thresh parameter");
-      exit(1);
-    }
-    if(!env_->SetEnvParameter("cost_possibly_circumscribed_thresh", costMapCostToSBPLCost(cost_map_.getCircumscribedCost()))){
-      ROS_ERROR("Failed to set cost_possibly_circumscribed_thresh parameter");
-      exit(1);
-    }
-    */
     int obst_cost_thresh = 1;//costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE);
 
     vector<sbpl_2Dpt_t> perimeterptsV;
@@ -166,15 +149,6 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     pt.x = 0.1;
     perimeterptsV.push_back(pt);
 
-
-    /*
-    for (size_t ii(0); ii < 4; ++ii) {
-      sbpl_2Dpt_t pt;
-      pt.x = footprint[ii].x;
-      pt.y = footprint[ii].y;
-      perimeterptsV.push_back(pt);
-    }
-    */
 
     bool ret;
     try{
@@ -243,25 +217,7 @@ unsigned char SBPLTerrainPlanner::costMapCostToSBPLCost(unsigned char newcost){
 void SBPLTerrainPlanner::publishStats(int solution_cost, int solution_size,
                                       const geometry_msgs::PoseStamped& start,
                                       const geometry_msgs::PoseStamped& goal){
-  // Fill up statistics and publish
-  /*
-  sbpl_lattice_planner::SBPLTerrainPlannerStats stats;
-  stats.initial_epsilon = initial_epsilon_;
-  stats.plan_to_first_solution = false;
-  stats.final_number_of_expands = planner_->get_n_expands();
-  stats.allocated_time = allocated_time_;
 
-  stats.time_to_first_solution = planner_->get_initial_eps_planning_time();
-  stats.actual_time = planner_->get_final_eps_planning_time();
-  stats.number_of_expands_initial_solution = planner_->get_n_expands_init_solution();
-  stats.final_epsilon = planner_->get_final_epsilon();
-
-  stats.solution_cost = solution_cost;
-  stats.path_size = solution_size;
-  stats.start = start;
-  stats.goal = goal;
-  stats_publisher_.publish(stats);
-  */
 }
 
 bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
@@ -327,37 +283,6 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   int allCount = 0;
   vector<nav2dcell_t> changedcellsV;
 
-  /*
-  for(unsigned int ix = 0; ix < cost_map_.getSizeInCellsX(); ix++) {
-    for(unsigned int iy = 0; iy < cost_map_.getSizeInCellsY(); iy++) {
-
-      unsigned char oldCost = env_->GetMapCost(ix,iy);
-      unsigned char newCost = costMapCostToSBPLCost(cost_map_.getCost(ix,iy));
-
-      if(oldCost == newCost) continue;
-
-      allCount++;
-
-      //first case - off cell goes on
-
-      if((oldCost != costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE) && oldCost != costMapCostToSBPLCost(costmap_2d::INSCRIBED_INFLATED_OBSTACLE)) &&
-          (newCost == costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE) || newCost == costMapCostToSBPLCost(costmap_2d::INSCRIBED_INFLATED_OBSTACLE))) {
-        offOnCount++;
-      }
-
-      if((oldCost == costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE) || oldCost == costMapCostToSBPLCost(costmap_2d::INSCRIBED_INFLATED_OBSTACLE)) &&
-          (newCost != costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE) && newCost != costMapCostToSBPLCost(costmap_2d::INSCRIBED_INFLATED_OBSTACLE))) {
-        onOffCount++;
-      }
-      env_->UpdateCost(ix, iy, costMapCostToSBPLCost(cost_map_.getCost(ix,iy)));
-
-      nav2dcell_t nav2dcell;
-      nav2dcell.x = ix;
-      nav2dcell.y = iy;
-      changedcellsV.push_back(nav2dcell);
-    }
-  }
-  */
 
   try{
     if(!changedcellsV.empty()){
@@ -443,22 +368,9 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   plan_pub_.publish(gui_path);
   publishStats(solution_cost, sbpl_path.size(), start, goal);
 
-//  ros::NodeHandle n;
-//  ros::ServiceClient client = n.serviceClient<flor_terrain_classifier::TestModelService>("/flor_terrain_classifier_node/add_two_ints");
-//  flor_terrain_classifier::TestModelService srv;
-//  srv.request.a_srvc_in = 3;
-//  srv.request.testmodel_in.A = 5;
-//  if (client.call(srv))
-//    {
-//        ROS_INFO("Sum: %ld", (long int)srv.response.a_srvc_out);
-//        ROS_INFO("Sum2: %ld", (long int)srv.response.testmodel_out.A);
-//    }
-//    else
-//    {
-//        ROS_ERROR("Failed to call service add_two_ints1");
-//        return 1;
-//    }
 
   return true;
 }
+
+
 };
