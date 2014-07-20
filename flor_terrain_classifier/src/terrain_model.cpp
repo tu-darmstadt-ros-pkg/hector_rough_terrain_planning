@@ -605,6 +605,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                          /*pcl::visualization::PCLVisualizer &viewer,
                                          int viewport*/)
 {
+
     unstable_axis = 0;
     bool tip_over_active = true;
 
