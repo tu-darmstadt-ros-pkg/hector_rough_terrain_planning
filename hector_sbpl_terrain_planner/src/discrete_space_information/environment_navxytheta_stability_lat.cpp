@@ -54,13 +54,15 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 
     receivedWorldmodelPC=false;
     ros::NodeHandle nh_("~");
+
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
     ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
     flor_terrain_classifier::TerrainModelService srv;
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
-    ROS_INFO("called service in constructor");
+    ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor");
+    tf_listener_.reset(new tf::TransformListener());
     ros::Duration(0.1).sleep();
     int counter=0;
     while(!receivedWorldmodelPC)
@@ -80,8 +82,27 @@ EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
 
 }
 
-void EnvironmentNAVXYTHETASTAB::mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy)
+//Map is is the planner grid and world is the normal map
+void EnvironmentNAVXYTHETASTAB::gridMapToMap(unsigned int mx, unsigned int my, double& wx, double& wy)
 {
+    int *size_x; int *size_y;
+    int* num_thetas; double* startx; double* starty;
+                                 double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
+                                 double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
+                                 unsigned char* obsthresh; std::vector<SBPL_xytheta_mprimitive>* motionprimitiveV;
+   GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
+                                   nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
+   wx= -map_center_map.x+(mx+0.5)* *cellsize_m;
+   wy= -map_center_map.y+(my+0.5)* *cellsize_m;
+    //wx =  origin_x_ + (mx + 0.5) * resolution_;
+    //wy = origin_y_ + (my + 0.5) * resolution_;
+}
+
+bool EnvironmentNAVXYTHETASTAB::mapToGridMap(double wx, double wy, unsigned int& mx, unsigned int& my)
+{
+    if(wx< - map_center_map.x || wy< - map_center_map.y)
+        return false;
+
     int *size_x; int *size_y; int* num_thetas; double* startx; double* starty;
                                  double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
                                  double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
@@ -89,12 +110,10 @@ void EnvironmentNAVXYTHETASTAB::mapToWorld(unsigned int mx, unsigned int my, dou
    GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
                                    nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
 
-    //wx =  origin_x_ + (mx + 0.5) * resolution_;
-   // wy = origin_y_ + (my + 0.5) * resolution_;
-}
+   mx=(int)((wx + map_center_map.x)) / *cellsize_m;
+   my=(int)((wy + map_center_map.y)) / *cellsize_m;
+   return true;
 
-bool EnvironmentNAVXYTHETASTAB::worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my)
-{
 //    if (wx < origin_x_ || wy < origin_y_)
   //      return false;
 
@@ -104,7 +123,7 @@ bool EnvironmentNAVXYTHETASTAB::worldToMap(double wx, double wy, unsigned int& m
  //   if (mx < size_x_ && my < size_y_)
   //      return true;
 
-    return false;
+  //  return false;
 }
 
 
@@ -157,6 +176,10 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
         return INFINITECOST;
     }
 
+    if (positionRating > 1.0f){
+        return INFINITECOST;
+    }
+
     float addCost = positionRating * 100 + invalidAxis * 100;
 
     ROS_INFO("cost %f", addCost);
@@ -167,7 +190,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 }
 bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
 {
-    true;
+    return true;
 }
  int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 {

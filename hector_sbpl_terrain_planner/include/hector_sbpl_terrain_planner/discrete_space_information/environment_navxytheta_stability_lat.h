@@ -72,6 +72,10 @@ virtual bool IsValidConfiguration(int X, int Y, int Theta);
     void UpdataData();
     virtual int SetStart(double x, double y, double theta);
 
+
+    void gridMapToMap(unsigned int mx, unsigned int my, double& wx, double& wy);
+    bool mapToGridMap(double wx, double wy, unsigned int& mx, unsigned int& my);
+
 protected:
 
     hector_terrain_model::TerrainModel terrainModel;
@@ -82,8 +86,9 @@ protected:
     virtual int getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                              EnvNAVXYTHETALATAction_t* action);
 
-    void mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy);
-    bool worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my);
+
+   // void mapToTf(double mx, double my, double& tx, double& ty);
+   // void tfToMap(double tx, double ty, double& mx, double& my);
 
     ros::Subscriber subTerrainModel;
     bool receivedWorldmodelPC;
