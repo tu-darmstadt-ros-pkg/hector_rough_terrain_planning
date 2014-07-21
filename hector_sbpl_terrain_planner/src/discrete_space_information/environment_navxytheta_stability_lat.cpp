@@ -41,10 +41,16 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
            pcl::fromPCLPointCloud2(pcl_pc, cloud);
            terrainModel = hector_terrain_model::TerrainModel(cloud);
            ROS_INFO("cloud was just initialized. size = %i", cloud.size());
-           sleep(10);
+           ROS_INFO("cloud in terrainModel size %i", terrainModel.cloud_processed.size());
+           ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
+           //sleep(10);
         }
-        else
+        else{
             ROS_INFO("entered Callback, world model was received before");
+            // GEHT NICHT  : terrainModel.cloud_processed_Ptr = pcl::PointCloud<pcl::PointXYZ>::Ptr (&terrainModel.cloud_processed);
+            ROS_INFO("cloud_processed_Ptr in terrainModel: size = %i", terrainModel.cloud_processed_Ptr->size());
+            ROS_INFO("cloud size (von env aus) %i", terrainModel.cloud_processed.size());
+        }
   }
 
 void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPtr& map)
@@ -68,18 +74,17 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor");
   //  tf_listener_.reset(new tf::TransformListener());
     //ros::Duration(0.1).sleep();
-    sleep(0.1);
     int counter=0;
     while(!receivedWorldmodelPC)
     {
+        sleep(1);
         counter++;
         ROS_INFO("Constructor spin %i",counter);
         ros::spinOnce();
-
         //ros::Duration(0.1).sleep();
-        sleep(0.1);
         ROS_INFO("End dur");
         client.call(srv);
+
     }
 
     ROS_INFO(".called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor END");

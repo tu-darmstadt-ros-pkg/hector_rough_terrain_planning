@@ -10,7 +10,10 @@ TerrainModel::TerrainModel()
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
     cloud_processed=cloud;
+    ROS_INFO("terrainmodel cloud size = %i", cloud_processed.size());
     cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
+
+    ROS_INFO("terrainmodel cloudPTR size = %i", cloud_processed_Ptr->size());
 }
 
 TerrainModel::~TerrainModel()
@@ -644,16 +647,16 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     p3 = rotatePoint(p3, orientation);
     p3 = addPointVector(p3, check_pos);
 
-
     ROS_INFO("CPR2");
     bool hull_cpp= (ccw(p0,p1,p2)<0);
-    if (cloud_processed_Ptr->size() == 0)
+    if (cloud_processed_Ptr->size() < 1)
 
         ROS_INFO("CPR2fail");
     else
 
         ROS_INFO("CPR2good");
-    ROS_INFO("cloud_processed_Ptr size = %i", (unsigned int) cloud_processed_Ptr->size());
+    ROS_INFO("cloud_processed_Ptr size = %i", cloud_processed_Ptr->size());
+    ROS_INFO("this is not the point here ; cloud_processed size = %i", cloud_processed.size());
 
     for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
     {
