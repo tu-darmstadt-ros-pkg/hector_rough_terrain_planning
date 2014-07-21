@@ -605,6 +605,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                          /*pcl::visualization::PCLVisualizer &viewer,
                                          int viewport*/)
 {
+    ROS_INFO("CPR1");
 
     unstable_axis = 0;
     bool tip_over_active = true;
@@ -644,9 +645,20 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     p3 = addPointVector(p3, check_pos);
 
 
+    ROS_INFO("CPR2");
     bool hull_cpp= (ccw(p0,p1,p2)<0);
+    if (cloud_processed_Ptr->size() == 0)
+
+        ROS_INFO("CPR2fail");
+    else
+
+        ROS_INFO("CPR2good");
+    ROS_INFO("cloud_processed_Ptr size = %i", (unsigned int) cloud_processed_Ptr->size());
+
     for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
     {
+
+        ROS_INFO("CPR2.1");
         const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i);
 
         bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
@@ -676,6 +688,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     }
 
 
+    ROS_INFO("CPR3");
     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);//highest point
     int support_point_1_idx;
     float min_dist=-1.0;
@@ -706,6 +719,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     std::vector<pcl::PointXYZ> convex_hull_points;
 
     int counter = 0;
+
+    ROS_INFO("CPR4");
     while (true){
 
 

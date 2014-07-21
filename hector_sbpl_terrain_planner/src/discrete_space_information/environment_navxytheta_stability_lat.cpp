@@ -30,7 +30,7 @@ static long int checks = 0;
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
   {
-        ROS_INFO("entered callback");
+        ROS_INFO("entered callback...");
 
         if(!receivedWorldmodelPC)
         {
@@ -40,7 +40,11 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
            pcl::PointCloud<pcl::PointXYZ> cloud;
            pcl::fromPCLPointCloud2(pcl_pc, cloud);
            terrainModel = hector_terrain_model::TerrainModel(cloud);
+           ROS_INFO("cloud was just initialized. size = %i", cloud.size());
+           sleep(10);
         }
+        else
+            ROS_INFO("entered Callback, world model was received before");
   }
 
 void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPtr& map)
@@ -62,18 +66,23 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
     ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor");
-    tf_listener_.reset(new tf::TransformListener());
-    ros::Duration(0.1).sleep();
+  //  tf_listener_.reset(new tf::TransformListener());
+    //ros::Duration(0.1).sleep();
+    sleep(0.1);
     int counter=0;
     while(!receivedWorldmodelPC)
     {
         counter++;
         ROS_INFO("Constructor spin %i",counter);
         ros::spinOnce();
-        ros::Duration(0.1).sleep();
+
+        //ros::Duration(0.1).sleep();
+        sleep(0.1);
         ROS_INFO("End dur");
         client.call(srv);
     }
+
+    ROS_INFO(".called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor END");
 
 }
 
@@ -163,15 +172,26 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
   //  int i, levelind = -1;
 
 
+    ROS_INFO("getAddCost");
 
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
 
-    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f-2.f,0.f);
+    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f, 0.f);
+    //Transformation
+ /*   double checkpos_x;
+    double checkpos_y;
+    gridMapToMap(SourceX + action->dX, SourceY + action->dY, checkpos_x, checkpos_y);
+    pcl::PointXYZ checkPos(checkpos_x, checkpos_y, 0.f);*/
+
+
     float positionRating;
     int invalidAxis;
+
+    ROS_INFO("computePositionRating checkpos %f , %f", checkPos.x, checkPos.y);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
 
+    ROS_INFO("computePosRating End");
     if (!positionRatingComputed){
         return INFINITECOST;
     }
@@ -182,7 +202,8 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
     float addCost = positionRating * 100 + invalidAxis * 100;
 
-    ROS_INFO("cost %f", addCost);
+
+    ROS_INFO("addCostEnd");
 
     return addCost;
 

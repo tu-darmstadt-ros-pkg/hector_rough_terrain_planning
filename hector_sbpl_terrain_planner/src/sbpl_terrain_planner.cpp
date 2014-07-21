@@ -119,20 +119,19 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     ROS_DEBUG("SBPL: lethal: %uz, inscribed inflated: %uz, multiplier: %uz",lethal_obstacle,inscribed_inflated_obstacle_,sbpl_cost_multiplier_);
     map_subscriber_=n.subscribe("map", 1000,  &SBPLTerrainPlanner::mapCallback, this);
 
-    if ("XYThetaLattice" == environment_type_ || "testXYThetaLattice" == environment_type_){
-      ROS_DEBUG("Using a 3D costmap for theta lattice\n");
-      env_ = new EnvironmentNAVXYTHETALAT();
-    }
-    else if ("XYThetaStability" == environment_type_){
+//    if ("XYThetaLattice" == environment_type_ || "testXYThetaLattice" == environment_type_){
+//      ROS_DEBUG("Using a 3D costmap for theta lattice\n");
+//      env_ = new EnvironmentNAVXYTHETALAT();
+//    }
+//    else if ("XYThetaStability" == environment_type_){
         ROS_DEBUG("Using a 3D costmap for theta stab\n");
         env_ = new EnvironmentNAVXYTHETASTAB();
-      }
-    else{
-        ROS_ERROR("XYThetaLattice is currently the only supported environment! Type is:\n");
-        ROS_ERROR("%s",environment_type_.c_str());
-      exit(1);
-    }
-
+//      }
+//    else{
+//        ROS_ERROR("XYThetaLattice is currently the only supported environment! Type is:\n");
+//        ROS_ERROR("%s",environment_type_.c_str());
+//      exit(1);
+//
     int obst_cost_thresh = 1;//costMapCostToSBPLCost(costmap_2d::LETHAL_OBSTACLE);
 
     vector<sbpl_2Dpt_t> perimeterptsV;
@@ -223,6 +222,7 @@ void SBPLTerrainPlanner::publishStats(int solution_cost, int solution_size,
 bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
                                  const geometry_msgs::PoseStamped& goal,
                                  std::vector<geometry_msgs::PoseStamped>& plan){
+    ROS_INFO("makePlan start");
   if(!initialized_){
     ROS_ERROR("Global planner is not initialized");
     return false;
@@ -238,7 +238,8 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
 
   //costmap_ros_->getCostmapCopy(cost_map_);
 
-     tf::StampedTransform worldTosensorTf;
+/*     tf::StampedTransform worldTosensorTf;
+
   try{
      tf_listener_->waitForTransform("/map", "/base_link",  t_lastMapPos_, ros::Duration(0.6));
      tf_listener_->lookupTransform("/map", "/base_link", t_lastMapPos_, worldTosensorTf);
@@ -246,7 +247,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
      ROS_INFO("[hector_sbpl_terrain_planner] getting start point (%f,%f)",org.x(),org.y());
    }catch(tf::TransformException& ex){
      ROS_ERROR_STREAM( "[hector_sbpl_terrain_planner] Transform error for map-base_link TF: " << ex.what() << "\n");
-  }
+  }*/
 
   ROS_INFO("[hector_sbpl_terrain_planner] getting start point (%g,%g) goal point (%g,%g)",
            start.pose.position.x, start.pose.position.y,goal.pose.position.x, goal.pose.position.y);
@@ -254,6 +255,10 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   double theta_goal = 2 * atan2(goal.pose.orientation.z, goal.pose.orientation.w);
 
   try{
+ /*     unsigned int startx;
+      unsigned int starty;
+     env_->mapToGridMap(start.pose.position.x, start.pose.position.y, startx, starty);
+     int ret = env_->SetStart(startx, starty, theta_start);*/
     int ret = env_->SetStart(start.pose.position.x  , start.pose.position.y , theta_start);
     if(ret < 0 || planner_->set_start(ret) == 0){
       ROS_ERROR("ERROR: failed to set start state\n");
@@ -266,6 +271,10 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   }
 
   try{
+ /*     unsigned int goalx;
+      unsigned int goaly;
+      env_->mapToGridMap(goal.pose.position.x, goal.pose.position.y, goalx, goaly);
+      int ret = env_->SetGoal(goalx, goaly, theta_goal);*/
     int ret = env_->SetGoal(goal.pose.position.x , goal.pose.position.y , theta_goal);
     if(ret < 0 || planner_->set_goal(ret) == 0){
       ROS_ERROR("ERROR: failed to set goal state\n");
@@ -278,6 +287,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   }
 
 
+  ROS_INFO("makePlan2");
   int offOnCount = 0;
   int onOffCount = 0;
   int allCount = 0;
@@ -304,13 +314,17 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   planner_->set_initialsolution_eps(initial_epsilon_);
   planner_->set_search_mode(false);
 
+
+  ROS_INFO("makePlan3");
   ROS_DEBUG("[sbpl_lattice_planner] run planner");
   vector<int> solution_stateIDs;
   int solution_cost;
   try{
+      ROS_INFO("replan");
     int ret = planner_->replan(allocated_time_, &solution_stateIDs, &solution_cost);
-    if(ret)
-      ROS_DEBUG("Solution is found\n");
+    if(ret){
+        ROS_INFO("Solution is found");
+      ROS_DEBUG("Solution is found\n");}
     else{
       ROS_INFO("Solution not found\n");
       publishStats(solution_cost, 0, start, goal);
@@ -335,6 +349,8 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   ROS_INFO("Plan has %d points.\n", (int)sbpl_path.size());
   ros::Time plan_time = ros::Time::now();
 
+
+  ROS_INFO("makePlan4");
   //create a message for the plan
   nav_msgs::Path gui_path;
   gui_path.poses.resize(sbpl_path.size());
@@ -369,6 +385,8 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   publishStats(solution_cost, sbpl_path.size(), start, goal);
 
 
+
+  ROS_INFO("makePlanEnd");
   return true;
 }
 

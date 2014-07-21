@@ -71,9 +71,14 @@ public:
     start_pose.getOrigin().setY(1.0);
     robot_pose_tf.setData(start_pose);
 
+    ROS_INFO("Goal pose callback1");
     geometry_msgs::PoseStamped pose;
     tf::poseStampedTFToMsg(robot_pose_tf, pose);
+
+    ROS_INFO("Goal pose callback2");
     planner_->makePlan(pose, *msg, path_.poses);
+
+    ROS_INFO("Goal pose callback3");
 
     path_.header.stamp = ros::Time::now();
 
@@ -81,6 +86,8 @@ public:
     {
       exploration_plan_pub_.publish(path_);
     }
+
+    ROS_INFO("Goal pose callbackEND");
   }
 
   /*

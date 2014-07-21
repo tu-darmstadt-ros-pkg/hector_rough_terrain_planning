@@ -73,7 +73,7 @@ private:
   bool initialized_;
 
   SBPLPlanner* planner_;
-  EnvironmentNAVXYTHETALAT* env_;
+  EnvironmentNAVXYTHETASTAB* env_;
   
   std::string planner_type_; /**< sbpl method to use for planning.  choices are ARAPlanner and ADPlanner */
 

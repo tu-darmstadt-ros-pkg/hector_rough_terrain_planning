@@ -86,8 +86,11 @@ void TerrainClassifierNode::loadTestPointCloud()
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/zick_zack.pcd", *cloud_input);
   //pcl::io::loadPCDFile("/home/alex/flor/rosbuild_ws/vigir_perception/vigir_worldmodel/flor_terrain_classifier/pointclouds/new.pcd", *cloud_input);
 
-  pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/ramp2_filtered.pcd", *cloud_input);
-  // add filtered point cloud to classifier
+  //pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/ramp2_filtered.pcd", *cloud_input);
+
+  pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/dach_start_zero.pcd", *cloud_input);
+
+  //add filtered point cloud to classifier
   terrain_classifier->addCloud(cloud_input);
 
   generateTerrainModel();
