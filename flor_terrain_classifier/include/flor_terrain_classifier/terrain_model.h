@@ -76,8 +76,8 @@ public:
 
     bool computePositionRating(const pcl::PointXYZ& checkPos,
                                const float orientation,
-                               float position_rating,
-                               int unstable_axis);
+                               float &position_rating,
+                               int &unstable_axis);
 
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);

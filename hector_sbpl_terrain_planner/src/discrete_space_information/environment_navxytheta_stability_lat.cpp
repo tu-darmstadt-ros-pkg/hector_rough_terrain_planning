@@ -43,7 +43,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
            ROS_INFO("cloud was just initialized. size = %i", cloud.size());
            ROS_INFO("cloud in terrainModel size %i", terrainModel.cloud_processed.size());
            ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
-           //sleep(10);
+           sleep(1);
         }
         else{
             ROS_INFO("entered Callback, world model was received before");
@@ -205,10 +205,8 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
         return INFINITECOST;
     }
 
-    float addCost = positionRating * 100 + invalidAxis * 100;
-
-
-    ROS_INFO("addCostEnd");
+    int addCost = (int) (positionRating * 5000.0 + invalidAxis * 5000.0);
+    ROS_INFO("addcost = %i, positionRating = %f, invalidAxis = %i", addCost, positionRating, invalidAxis);
 
     return addCost;
 
