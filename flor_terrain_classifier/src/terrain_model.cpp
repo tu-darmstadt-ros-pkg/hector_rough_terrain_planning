@@ -735,8 +735,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                 (*cloud_positionRating),
                                                 tip_over_direction,
                                                 support_point_2);
-        if (!point_evaluated)
-            ROS_ERROR("[flor_terrain_classifier::compute_position_rating] no support_point found ");
+        if (!point_evaluated){
+            ROS_INFO("[terrain_model::compute_position_rating] no support_point found ");
+            return false;
+        }
 
         //find third point
         const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
@@ -752,9 +754,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                            (*cloud_positionRating),
                                            tip_over_direction_3,
                                            support_point_3);
-        if (!point_evaluated)
-            ROS_ERROR("[flor_terrain_classifier::compute_position_rating] no support_point found ");
-
+        if (!point_evaluated){
+            ROS_INFO("[terrain_model::compute_position_rating] no support_point found ");
+            return false;
+        }
 
         convex_hull_points = buildConvexHull(cloud_positionRating,
                                              check_pos,
