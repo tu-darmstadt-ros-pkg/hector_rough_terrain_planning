@@ -9,10 +9,8 @@ TerrainModel::TerrainModel()
 
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
-    cloud_processed=cloud;
     ROS_INFO("terrainmodel cloud size = %i", cloud_processed.size());
-    cloud_processed_Ptr= cloud_processed.makeShared();//pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
-
+    cloud_processed_Ptr= cloud.makeShared();//pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
     ROS_INFO("terrainmodel cloudPTR size = %i", cloud_processed_Ptr->size());
 }
 
@@ -23,8 +21,7 @@ TerrainModel::~TerrainModel()
 
 void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
-    cloud_processed=cloud;
-    cloud_processed_Ptr= pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
+    cloud_processed_Ptr= cloud.makeShared();
 }
 
 
