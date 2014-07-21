@@ -201,12 +201,15 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
         return INFINITECOST;
     }
 
-    if (positionRating > 1.0f){
+    if (positionRating < terrainModel.invalid_rating){
         return INFINITECOST;
     }
 
-    int addCost = (int) (positionRating * 5000.0 + invalidAxis * 5000.0);
+
     ROS_INFO("addcost = %i, positionRating = %f, invalidAxis = %i", addCost, positionRating, invalidAxis);
+
+    positionRating = pow((1/positionRating),3); // self invented -> good?
+    int addCost = (int) (positionRating * 10000.0 + invalidAxis * 7500.0);
 
     return addCost;
 

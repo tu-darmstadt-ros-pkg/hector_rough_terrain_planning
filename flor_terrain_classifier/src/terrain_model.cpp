@@ -218,17 +218,28 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
         if((0==i)&&(0==point_on_hull))endpoint=1;
         for(unsigned int j=1; j<cloud_2d.size();++j)
         {
-            pcl::PointXYZ& p0 =cloud_2d.at(convex_hull_indices.at(i));
-            pcl::PointXYZ& p1 =cloud_2d.at(endpoint);
-            pcl::PointXYZ& p2 =cloud_2d.at(j);
-            float ccw_f=ccw(cloud_2d.at(convex_hull_indices.at(i)),cloud_2d.at(endpoint),cloud_2d.at(j));
-            float dist_old=(p0.x-p1.x)*(p0.x-p1.x)+(p0.y-p1.y)*(p0.y-p1.y);
-            float dist_new=(p0.x-p2.x)*(p0.x-p2.x)+(p0.y-p2.y)*(p0.y-p2.y);
-            bool isleft=(ccw_f <0);
-            bool isfurther=(ccw_f<=0.00000 && dist_new>dist_old);
-            if(endpoint==point_on_hull || isleft || isfurther)
+            pcl::PointXYZ& p0 =cloud_2d.at(convex_hull_indices.at(i)); // aktuell letzter hullpoint
+            pcl::PointXYZ& p1 =cloud_2d.at(endpoint); // kandidat ( aktuell bester nächster )
+            pcl::PointXYZ& p2 =cloud_2d.at(j); // verglichen gegen alle (kandidaten gegen endpoint)
+            float ccw_f=ccw(p0,p1,p2);
+            bool isleft=(ccw_f < 0);
+            if(endpoint==point_on_hull // for 2nd point only
+                    || isleft) // candidate is more left
             {
                 endpoint=j;
+            }
+
+            else if(ccw_f == 0){ // straight or backwards
+                pcl::PointXYZ& p_before = cloud_2d.at(convex_hull_indices.at(i));
+                pcl::PointXYZ direction_before = subtractPoints(p0, p_before);
+                pcl::PointXYZ direction_current = subtractPoints(p0, p2);
+                if (dotProduct(direction_before, direction_current) > 0){ // selbe richtung vom kandidat und dem vorhergegangenen
+                    float dist_endpoint = distanceXY(p0, p1);
+                    float dist_j = distanceXY(p0, p2);
+                    if (dist_j < dist_endpoint){
+                        endpoint = j;
+                    }
+                }
             }
         }
 
