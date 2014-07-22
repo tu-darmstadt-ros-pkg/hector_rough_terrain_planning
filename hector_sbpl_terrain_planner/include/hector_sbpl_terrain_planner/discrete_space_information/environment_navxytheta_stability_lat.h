@@ -98,7 +98,7 @@ protected:
     std::vector<geometry_msgs::Point> footprint_;
     boost::shared_ptr<tf::TransformListener> tf_listener_;
     geometry_msgs::Point map_center_map;
-
+    ros::Publisher terrainModelPublisher;
 
 };
 #endif
