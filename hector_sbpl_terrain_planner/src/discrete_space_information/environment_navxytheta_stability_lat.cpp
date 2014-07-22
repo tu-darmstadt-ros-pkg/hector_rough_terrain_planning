@@ -168,11 +168,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
-    float x,y,endtheta;
-    x = (float) action->dX;
-    y = (float) action->dY;
-    endtheta = (float) action->endtheta;
-    ROS_INFO("actionDebug: action char: x = %c ,y= %c ,endtheta = %c \n as float x = %f, y = %f, theta = %f", action->dX, action->dY, action->endtheta, x,y,endtheta);
+    ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
     //sbpl_2Dcell_t cell;
   //  sbpl_xy_theta_cell_t interm3Dcell;
   //  int i, levelind = -1;
@@ -181,7 +177,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
 
-    pcl::PointXYZ checkPos((SourceX+ action->dX)*1.0f,(SourceY+ action->dY)*1.0f, 0.f);
+    pcl::PointXYZ checkPos((SourceX)*0.05f,(SourceY)*0.05f, 0.f);
     //Transformation
  /*   double checkpos_x;
     double checkpos_y;
@@ -193,7 +189,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     int invalidAxis;
 
 
-    ROS_INFO("start computePositionRating with checkpos %f , %f, angle = %c", checkPos.x, checkPos.y, action->endtheta);
+    ROS_INFO("\n start computePositionRating with checkpos %f , %f, angle = %c", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
 
 
@@ -206,7 +202,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     }
 
 
-    ROS_INFO("env_ : positionRating = %f, invalidAxis = %i", positionRating, invalidAxis);
+    ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
     int addCost = (int) (positionRating * 10000.0 + invalidAxis * 7500.0);

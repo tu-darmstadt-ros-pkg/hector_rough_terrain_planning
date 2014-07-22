@@ -330,7 +330,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
 {
 
     // PARAMETER
-    float minimum_distance = 0.15; // minimum distance in which a support point can be found from the last one.
+    float minimum_distance = 0.10; // minimum distance in which a support point can be found from the last one.
 
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
     cloud_projected.resize(pointcloud_robo.size());
@@ -651,10 +651,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 #endif
 
 
-    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.0,0.0,0.15);
+    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.0,0.0,0.015);
 
-    float width=0.50; // y
-    float length=0.70; // x
+    float width=0.30; // y
+    float length=0.41; // x
 
     // Points under robot
     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -755,7 +755,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                 tip_over_direction,
                                                 support_point_2);
         if (!point_evaluated){
-            ROS_INFO("[terrain_model::compute_position_rating] no support_point found ");
+            ROS_INFO("[terrain_model::compute_position_rating] no support_point found 2 ");
             return false;
         }
 
@@ -774,7 +774,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                            tip_over_direction_3,
                                            support_point_3);
         if (!point_evaluated){
-            ROS_INFO("[terrain_model::compute_position_rating] no support_point found ");
+            ROS_INFO("[terrain_model::compute_position_rating] no support_point found 3.");
             return false;
         }
 

@@ -97,14 +97,13 @@ void test_normals()
 
 
   // Position, Orientation (in radiants)
-  pcl::PointXYZ check_pos = pcl::PointXYZ(1.00,-0.85, 0.0);
+  pcl::PointXYZ check_pos = pcl::PointXYZ(2.25,1.55, 0.0);
   float orientation = (0.0)/180.0*3.14;
   float position_rating = 10.0;
   int unstable_axis = 10;
 
   terrain_model.computePositionRating(check_pos, orientation,
-                                            position_rating, unstable_axis);
-                                            //viewer, view_port_4);
+                                            position_rating, unstable_axis);//, viewer, view_port_4);
 
   float x=0.0;
 
