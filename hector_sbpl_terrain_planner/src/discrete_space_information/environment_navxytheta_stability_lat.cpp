@@ -32,6 +32,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
   {
         ROS_INFO("entered callback...");
 
+
         if(!receivedWorldmodelPC)
         {
            receivedWorldmodelPC=true;
@@ -42,6 +43,11 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
            terrainModel = hector_terrain_model::TerrainModel(cloud);
            ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
            sleep(1);
+           sensor_msgs::PointCloud2 cloud_point_msg;
+           pcl::toROSMsg(cloud, cloud_point_msg);
+           cloud_point_msg.header.stamp = ros::Time::now();
+           cloud_point_msg.header.frame_id = "map";
+           terrainModelPublisher.publish(cloud_point_msg);
         }
         else{
             ROS_INFO("entered Callback, world model was received before");
@@ -60,6 +66,9 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 
     receivedWorldmodelPC=false;
     ros::NodeHandle nh_("~");
+
+    terrainModelPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/cloud_input", 1);
+
 
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
@@ -158,7 +167,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     if (basecost >= INFINITECOST) return INFINITECOST;
 
-    int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
+    int addcost =0;// getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
