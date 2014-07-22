@@ -257,6 +257,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
                     current_best++;
                 }
                // ROS_WARN("CH same id %i %i %i .",lastHullElement,current_best,current_candidate);
+
             }
         }
 
@@ -269,7 +270,12 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
             break;
         }
 
+        if (i > 2*cloud_2d.size()){
+            ROS_WARN("convex_hull_comp is in endless loop");
+        }
+
     }
+
 }
 
 //As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube
@@ -453,7 +459,7 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
     }
 
     if (distance_smoothing){
-        ROS_INFO("distance smoothing");
+        //ROS_INFO("distance smoothing");
         // distance smoothing
         for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
             if (i < convex_hull_points.size()-2){
@@ -507,13 +513,13 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
             }
         }
 
-        ROS_INFO("end distance smoothing");
+        //ROS_INFO("end distance smoothing");
     }
 
     // angle smoothing
     if (angle_smoothing){
 
-        ROS_INFO("angle smoothing");
+        //ROS_INFO("angle smoothing");
         for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
             if (i < convex_hull_points.size()-2){
 
@@ -547,7 +553,7 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                 break; // needed because loop is doing i = i // could also be i++
             }
         }
-        ROS_INFO("end angle smoothing");
+        //ROS_INFO("end angle smoothing");
     }
 
 
@@ -673,8 +679,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     bool hull_cpp= (ccw(p0,p1,p2)<0);
 
-
-    ROS_INFO("vor über gesamten PTR gehen zum raussuchen der PCL ROBOT");
     for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
     {
         const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i);
@@ -699,15 +703,13 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         }
     }
 
-    ROS_INFO("done über gesamten PTR gehen zum raussuchen der PCL ROBOT(cloud_position_rating)");
-
     if(cloud_positionRating->size()==0)
     {
         ROS_ERROR("[flor terrain classifier] cloud size is 0");
         return false;
     }
 
-    ROS_INFO("cloud position rating size = %i", cloud_positionRating->size());
+    //ROS_INFO("cloud position rating size = %i", cloud_positionRating->size());
 
     pcl::PointXYZI &p_max= cloud_positionRating->at(highest_Point_idx);//highest point
     int support_point_1_idx;
@@ -790,7 +792,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         bool center_in_hull = true;
 
 
-        ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
+        //ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
         for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
             if (i < convex_hull_points.size() - 1){
                 if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
@@ -802,24 +804,24 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
         if (center_in_hull == true){
-            ROS_INFO("check in hull is true");
+            //ROS_INFO("check in hull is true");
             // The checkpos is in the convex hull. nothing needs to be changed
             break; // endwhile
         }
 
         // find supppolygon, if check_pos not in supppolygon do again with another supp p 1 TODO this is not tested, counter should not be more than 1
         counter++;
-        ROS_INFO("%i iteration while loop", counter);
+        //ROS_INFO("%i iteration while loop", counter);
 
 
         if (counter > 1){
-            ROS_INFO("ERROR -Supporting polygon after %i itereations not found // check_pos not in hull- ERROR", counter);
+            //ROS_INFO("ERROR -Supporting polygon after %i itereations not found // check_pos not in hull- ERROR", counter);
             break;
         }
 
         // checkpos is not in hull
         if (center_in_hull == false){
-            ROS_INFO("check in hull is false");
+            //ROS_INFO("check in hull is false");
             // find closest point to checkpos
             float dist = distanceXY(convex_hull_points.at(0), check_pos);
             int index_of_closest_point = 0;
@@ -881,7 +883,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
         //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
-        ROS_INFO("Rating %f", rating.at(i));
+        //ROS_INFO("Rating %f", rating.at(i));
 #ifdef viewer_on
         if (draw_convex_hull_first_polygon){
             if(c<invalid_rating)
@@ -911,7 +913,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         // iterative checking if still fine after flipping over invalid axis
         for (unsigned int i = 0; i < rating.size(); i++){
             if (rating.at(i) < invalid_rating){ // instabil
-                ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
+                //ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
                 support_point_1 = convex_hull_points.at(i);
                 support_point_2 = convex_hull_points.at(i+1);
 
@@ -949,7 +951,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 for (unsigned int k = 0; k< convex_hull_points_iterative.size()-1; k++){
                     float value = vectorSimilarity(support_point_1, support_point_2,
                                                    convex_hull_points_iterative.at(k), convex_hull_points_iterative.at(k+1));
-                    ROS_INFO("vector_similarity = %f", value);
+                    //ROS_INFO("vector_similarity = %f", value);
                     if (value < min_value){
                         min_value = value;
                         iterator = k;
@@ -1010,7 +1012,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                     const pcl::PointXYZ p2(convex_hull_points_iterative[k+1].x,convex_hull_points_iterative[k+1].y,convex_hull_points_iterative[k+1].z);
 
                     //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
-                    ROS_INFO("Rating %f", rating_iterative.at(k));
+                    //ROS_INFO("Rating %f", rating_iterative.at(k));
 #ifdef viewer_on
 
                     if (draw_convex_hull_iterative){
@@ -1053,7 +1055,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "positionRating" + std::string("_edges"), viewport);
 #endif
     position_rating = *std::min_element(rating.begin(),rating.end());
-    ROS_INFO("position_rating = %f, contact_area not implemented, unstable_axis = %i", position_rating, unstable_axis);
+    //ROS_INFO("CPR done: position_rating = %f, unstable_axis = %i", position_rating, unstable_axis);
 
     return true;
 }
