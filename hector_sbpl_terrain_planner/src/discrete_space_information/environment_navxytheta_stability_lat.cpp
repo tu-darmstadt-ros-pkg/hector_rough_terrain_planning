@@ -40,16 +40,12 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
            pcl::PointCloud<pcl::PointXYZ> cloud;
            pcl::fromPCLPointCloud2(pcl_pc, cloud);
            terrainModel = hector_terrain_model::TerrainModel(cloud);
-           ROS_INFO("cloud was just initialized. size = %i", cloud.size());
-           ROS_INFO("cloud in terrainModel size %i", terrainModel.cloud_processed.size());
            ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
            sleep(1);
         }
         else{
             ROS_INFO("entered Callback, world model was received before");
-            // GEHT NICHT  : terrainModel.cloud_processed_Ptr = pcl::PointCloud<pcl::PointXYZ>::Ptr (&terrainModel.cloud_processed);
-            ROS_INFO("cloud_processed_Ptr in terrainModel: size = %i", terrainModel.cloud_processed_Ptr->size());
-            ROS_INFO("cloud size (von env aus) %i", terrainModel.cloud_processed.size());
+            //ROS_INFO("cloud_processed_Ptr in terrainModel: size = %i", terrainModel.cloud_processed_Ptr->size());
         }
   }
 
@@ -82,12 +78,11 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
         ROS_INFO("Constructor spin %i",counter);
         ros::spinOnce();
         //ros::Duration(0.1).sleep();
-        ROS_INFO("End dur");
         client.call(srv);
 
     }
 
-    ROS_INFO(".called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor END");
+    //ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor END");
 
 }
 
@@ -158,6 +153,7 @@ void EnvironmentNAVXYTHETASTAB::UpdataData()
 int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
                                                 EnvNAVXYTHETALATAction_t* action)
 {
+    ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %c", SourceX, SourceY, SourceTheta, action->endtheta);
     int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
     if (basecost >= INFINITECOST) return INFINITECOST;
@@ -172,17 +168,20 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
+    float x,y,endtheta;
+    x = (float) action->dX;
+    y = (float) action->dY;
+    endtheta = (float) action->endtheta;
+    ROS_INFO("actionDebug: action char: x = %c ,y= %c ,endtheta = %c \n as float x = %f, y = %f, theta = %f", action->dX, action->dY, action->endtheta, x,y,endtheta);
     //sbpl_2Dcell_t cell;
   //  sbpl_xy_theta_cell_t interm3Dcell;
   //  int i, levelind = -1;
 
 
-    ROS_INFO("getAddCost");
-
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
 
-    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f, 0.f);
+    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f, 0.0f);
     //Transformation
  /*   double checkpos_x;
     double checkpos_y;
@@ -193,10 +192,9 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     float positionRating;
     int invalidAxis;
 
-    ROS_INFO("computePositionRating checkpos %f , %f", checkPos.x, checkPos.y);
+    ROS_INFO("start computePositionRating with checkpos %f , %f, angle = %c", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
 
-    ROS_INFO("computePosRating End");
     if (!positionRatingComputed){
         return INFINITECOST;
     }
@@ -206,7 +204,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     }
 
 
-    ROS_INFO("positionRating = %f, invalidAxis = %i", positionRating, invalidAxis);
+    ROS_INFO("env_ : positionRating = %f, invalidAxis = %i", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
     int addCost = (int) (positionRating * 10000.0 + invalidAxis * 7500.0);

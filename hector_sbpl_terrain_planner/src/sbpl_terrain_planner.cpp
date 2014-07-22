@@ -222,7 +222,6 @@ void SBPLTerrainPlanner::publishStats(int solution_cost, int solution_size,
 bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
                                  const geometry_msgs::PoseStamped& goal,
                                  std::vector<geometry_msgs::PoseStamped>& plan){
-    ROS_INFO("makePlan start");
   if(!initialized_){
     ROS_ERROR("Global planner is not initialized");
     return false;
@@ -286,8 +285,6 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
     return false;
   }
 
-
-  ROS_INFO("makePlan2");
   int offOnCount = 0;
   int onOffCount = 0;
   int allCount = 0;
@@ -315,7 +312,6 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   planner_->set_search_mode(false);
 
 
-  ROS_INFO("makePlan3");
   ROS_DEBUG("[sbpl_lattice_planner] run planner");
   vector<int> solution_stateIDs;
   int solution_cost;
@@ -346,11 +342,10 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
     ROS_ERROR("SBPL encountered a fatal exception while reconstructing the path");
     return false;
   }
-  ROS_INFO("Plan has %d points.\n", (int)sbpl_path.size());
   ros::Time plan_time = ros::Time::now();
 
+  ROS_INFO("Plan has %d points.\n", (int)sbpl_path.size());
 
-  ROS_INFO("makePlan4");
   //create a message for the plan
   nav_msgs::Path gui_path;
   gui_path.poses.resize(sbpl_path.size());
@@ -385,8 +380,6 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
   publishStats(solution_cost, sbpl_path.size(), start, goal);
 
 
-
-  ROS_INFO("makePlanEnd");
   return true;
 }
 
