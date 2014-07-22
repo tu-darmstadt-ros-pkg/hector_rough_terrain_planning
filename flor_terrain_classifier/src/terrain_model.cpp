@@ -234,8 +234,8 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
                 pcl::PointXYZ direction_before = subtractPoints(p0, p_before);
                 pcl::PointXYZ direction_current = subtractPoints(p0, p2);
                 if (dotProduct(direction_before, direction_current) > 0){ // selbe richtung vom kandidat und dem vorhergegangenen
-                    float dist_endpoint = distanceXY(p0, p1);
-                    float dist_j = distanceXY(p0, p2);
+                    float dist_endpoint = fabs(distanceXY(p0, p1));
+                    float dist_j = fabs(distanceXY(p0, p2));
                     if (dist_j < dist_endpoint){
                         endpoint = j;
                     }
@@ -252,7 +252,12 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
             break;
         }
 
+        if (i > 2*cloud_2d.size()){
+            ROS_WARN("convex_hull_comp is in endless loop");
+        }
+
     }
+
 }
 
 //As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube

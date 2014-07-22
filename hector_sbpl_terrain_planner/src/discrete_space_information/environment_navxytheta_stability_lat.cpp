@@ -206,7 +206,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     }
 
 
-    ROS_INFO("addcost = %i, positionRating = %f, invalidAxis = %i", addCost, positionRating, invalidAxis);
+    ROS_INFO("positionRating = %f, invalidAxis = %i", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
     int addCost = (int) (positionRating * 10000.0 + invalidAxis * 7500.0);
