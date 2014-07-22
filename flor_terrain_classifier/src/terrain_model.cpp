@@ -210,42 +210,59 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
     }
     //build hull
     int i=0;
-    unsigned int endpoint;
+    unsigned int current_best;
     while (true)
     {
         convex_hull_indices.push_back(point_on_hull);
-        endpoint=0;
-        if((0==i)&&(0==point_on_hull))endpoint=1;
-        for(unsigned int j=1; j<cloud_2d.size();++j)
+        current_best=0;
+        //if((0==i)&&(0==point_on_hull)) current_best=1;
+        for(unsigned int current_candidate=1; current_candidate<cloud_2d.size();++current_candidate)
         {
-            pcl::PointXYZ& p0 =cloud_2d.at(convex_hull_indices.at(i)); // aktuell letzter hullpoint
-            pcl::PointXYZ& p1 =cloud_2d.at(endpoint); // kandidat ( aktuell bester nächster )
-            pcl::PointXYZ& p2 =cloud_2d.at(j); // verglichen gegen alle (kandidaten gegen endpoint)
-            float ccw_f=ccw(p0,p1,p2);
-            bool isleft=(ccw_f < 0);
-            if(endpoint==point_on_hull // for 2nd point only
-                    || isleft) // candidate is more left
+            int lastHullElement=convex_hull_indices.at(i);
+            if(   (lastHullElement != current_best)
+                 && (lastHullElement != current_candidate)
+                 && (current_candidate != current_best))
             {
-                endpoint=j;
-            }
+                pcl::PointXYZ& p0 =cloud_2d.at(convex_hull_indices.at(i)); // aktuell letzter hullpoint
+                pcl::PointXYZ& p1 =cloud_2d.at(current_best); // kandidat ( aktuell bester nächster )
+                pcl::PointXYZ& p2 =cloud_2d.at(current_candidate); // kandidat der gegen den aktuell besten verglichen wird)
+                float ccw_f=ccw(p0,p1,p2);
+                bool isleft=(ccw_f < 0);
+                if(current_best==point_on_hull // for 2nd point only
+                        || isleft) // candidate is more left
+                {
+                    current_best=current_candidate;
+                }
 
-            else if(ccw_f == 0){ // straight or backwards
-                pcl::PointXYZ& p_before = cloud_2d.at(convex_hull_indices.at(i));
-                pcl::PointXYZ direction_before = subtractPoints(p0, p_before);
-                pcl::PointXYZ direction_current = subtractPoints(p0, p2);
-                if (dotProduct(direction_before, direction_current) > 0){ // selbe richtung vom kandidat und dem vorhergegangenen
-                    float dist_endpoint = distanceXY(p0, p1);
-                    float dist_j = distanceXY(p0, p2);
-                    if (dist_j < dist_endpoint){
-                        endpoint = j;
+                else if(ccw_f == 0) // straight or backwards
+                {
+                    pcl::PointXYZ& p_before = cloud_2d.at(convex_hull_indices.at(i));
+                    pcl::PointXYZ direction_before = subtractPoints(p0, p_before);
+                    pcl::PointXYZ direction_current = subtractPoints(p0, p2);
+                    if (dotProduct(direction_before, direction_current) > 0)// selbe richtung vom kandidat und dem vorhergegangenen
+                    {
+                        float dist_endpoint = distanceXY(p0, p1);
+                        float dist_j = distanceXY(p0, p2);
+                        if (dist_j < dist_endpoint)
+                        {
+                            current_best = current_candidate;
+                        }
                     }
                 }
+            }
+            else
+            {
+                if(lastHullElement == current_best)
+                {
+                    current_best++;
+                }
+                ROS_WARN("CH same id %i %i %i .",lastHullElement,current_best,current_candidate);
             }
         }
 
         i++;
-        point_on_hull=endpoint;
-        if(endpoint==convex_hull_indices.at(0))
+        point_on_hull=current_best;
+        if(current_best==convex_hull_indices.at(0))
         {
             // first point is also last point
             convex_hull_indices.push_back(convex_hull_indices.at(0));
@@ -772,6 +789,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         // check if check_pos is in hull
         bool center_in_hull = true;
 
+
+        ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
         for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
             if (i < convex_hull_points.size() - 1){
                 if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
