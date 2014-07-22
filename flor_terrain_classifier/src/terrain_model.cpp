@@ -213,11 +213,19 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
     unsigned int current_best;
     while (true)
     {
-        convex_hull_indices.push_back(point_on_hull);
+       if(std::find(convex_hull_indices.begin(), convex_hull_indices.end(), point_on_hull) != convex_hull_indices.end())
+        {
+           ROS_WARN("convex_hull_comp is in endless loop quickfix");
+           // first point is also last point
+           convex_hull_indices.push_back(convex_hull_indices.at(0));
+           break;
+       }
+           convex_hull_indices.push_back(point_on_hull);
+
         current_best=0;
         //if((0==i)&&(0==point_on_hull)) current_best=1;
         for(unsigned int current_candidate=1; current_candidate<cloud_2d.size();++current_candidate)
-        {
+        {           
             int lastHullElement=convex_hull_indices.at(i);
             if(   (lastHullElement != current_best)
                  && (lastHullElement != current_candidate)

@@ -167,7 +167,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     if (basecost >= INFINITECOST) return INFINITECOST;
 
-    int addcost =0;// getAdditionalCost(SourceX, SourceY, SourceTheta, action);
+    int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
@@ -177,9 +177,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
-
-    return 0;
-
 
     ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
     //sbpl_2Dcell_t cell;
