@@ -256,7 +256,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
                 {
                     current_best++;
                 }
-                ROS_WARN("CH same id %i %i %i .",lastHullElement,current_best,current_candidate);
+               // ROS_WARN("CH same id %i %i %i .",lastHullElement,current_best,current_candidate);
             }
         }
 

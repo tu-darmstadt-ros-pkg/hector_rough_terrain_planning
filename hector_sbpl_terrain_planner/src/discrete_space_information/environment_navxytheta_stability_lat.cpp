@@ -182,7 +182,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
     if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
 
-    pcl::PointXYZ checkPos((SourceX+ action->dX)*0.01f,(SourceY+ action->dY)*0.01f, 0.f);
+    pcl::PointXYZ checkPos((SourceX+ action->dX)*1.0f,(SourceY+ action->dY)*1.0f, 0.f);
     //Transformation
  /*   double checkpos_x;
     double checkpos_y;
@@ -194,7 +194,8 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     int invalidAxis;
 
     ROS_INFO("computePositionRating checkpos %f , %f", checkPos.x, checkPos.y);
-    bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
+    ROS_INFO("computePositionRating checkpos deltas %f , %f, %f",  action->dX,  action->dY, action->endtheta);
+    bool positionRatingComputed = terrainModel.computePositionRating(checkPos, (float)action->endtheta, positionRating, invalidAxis);
 
     ROS_INFO("computePosRating End");
     if (!positionRatingComputed){
