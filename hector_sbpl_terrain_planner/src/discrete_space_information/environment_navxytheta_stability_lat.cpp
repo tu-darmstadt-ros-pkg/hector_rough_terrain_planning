@@ -189,9 +189,11 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     int invalidAxis;
 
 
+    double time_start =ros::Time::now().toNSec();
     ROS_INFO("\n start computePositionRating with checkpos %f , %f, angle = %c", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
-
+    double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
+    ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
     if (!positionRatingComputed){
         return INFINITECOST;
