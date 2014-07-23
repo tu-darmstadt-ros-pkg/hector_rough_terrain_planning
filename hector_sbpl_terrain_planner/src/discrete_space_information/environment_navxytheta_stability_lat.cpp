@@ -179,7 +179,6 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
                                                                EnvNAVXYTHETALATAction_t* action)
 {
 
-
     ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
     //sbpl_2Dcell_t cell;
   //  sbpl_xy_theta_cell_t interm3Dcell;
