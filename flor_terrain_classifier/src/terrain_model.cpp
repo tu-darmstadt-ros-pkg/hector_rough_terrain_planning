@@ -832,7 +832,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         }
 
         time_duration_findSupPoints23 = (ros::Time::now().toNSec() - time_start_findSupPoints23)/1000;
-        ROS_INFO("time for robot cloud compute [mikrosec] = %i", (int)time_duration_findSupPoints23);
+        ROS_INFO("time for finding support Points 2 and 3 compute [mikrosec] = %i", (int)time_duration_findSupPoints23);
 
         time_start_computeHull =ros::Time::now().toNSec();
 
