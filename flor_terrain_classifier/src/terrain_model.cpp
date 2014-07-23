@@ -338,7 +338,8 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
 {
 
     // PARAMETER
-    float minimum_distance = 0.10; // minimum distance in which a support point can be found from the last one.
+    float minimum_distance = 0.0; // minimum distance in which a support point can be found from the last one.
+    // causes problems, might not find supp3 even if it would be a valid polygon
 
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
     cloud_projected.resize(pointcloud_robo.size());
@@ -799,8 +800,24 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         time_start_findSupPoints23 =ros::Time::now().toNSec();
         // find supp P 2
         const pcl::PointXYZ tip_over_axis_point = support_point_1;
-        const pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
-        const pcl::PointXYZ tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
+        pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
+        pcl::PointXYZ tip_over_direction;
+
+        float delta = 0.0000001;
+        if (tip_over_axis_vector.x < delta && tip_over_axis_vector.y < delta && tip_over_axis_vector.z < delta){
+
+            tip_over_axis_vector = pcl::PointXYZ(1.0, 0.0, 0.0); // this is random.
+            tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90° from vector
+
+        }
+        else{
+            tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
+        }
+
+        ROS_INFO("tip_over_direction x,y,z = %f, %f, %f", tip_over_direction.x, tip_over_direction.y, tip_over_direction.z);
+        ROS_INFO("tip_over_axis_vector x,y,z = %f, %f, %f", tip_over_axis_vector.x, tip_over_axis_vector.y, tip_over_axis_vector.z);
+
+
 
         bool point_evaluated = findSupportPoint(tip_over_axis_point,
                                                 tip_over_axis_vector,
@@ -808,7 +825,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                 tip_over_direction,
                                                 support_point_2);
         if (!point_evaluated){
-            ROS_INFO("[terrain_model::compute_position_rating] no support_point found 2 ");
+            ROS_WARN("[terrain_model] no support_point found 2..., counter = %i ", counter);
+            ROS_INFO("checkpos x = %f, y 0 %f, supportPoint1 x = %f, y = %f", check_pos.x, check_pos.y, support_point_1.x, support_point_1.y);
             return false;
         }
 

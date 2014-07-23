@@ -175,8 +175,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
-<<<<<<< HEAD
-=======
     float robotSize=0.3;
     for(unsigned int i=0; i<10; ++i)
     {
@@ -198,6 +196,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     cloud_point_msg.header.stamp = ros::Time::now();
     cloud_point_msg.header.frame_id = "map";
     expandedStatesPublisher.publish(cloud_point_msg);
+
 /**
 
      uint32_t shape = visualization_msgs::Marker::CUBE;
@@ -252,7 +251,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
          // Publish the marker
         expandedStatesPublisher.publish(markers);**/
->>>>>>> 192cef9a214f3e308ed657f795a84e097a050e10
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
@@ -318,11 +316,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
-<<<<<<< HEAD
-    int addCost = (int) (positionRating * 10.0 + invalidAxis * 7.0);
-=======
     int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
->>>>>>> 192cef9a214f3e308ed657f795a84e097a050e10
 
     return addCost;
 
