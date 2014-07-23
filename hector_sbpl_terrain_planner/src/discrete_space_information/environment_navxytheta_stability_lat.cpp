@@ -9,6 +9,7 @@
 #include <ros/ros.h>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <cstdlib>
 
 #include <flor_terrain_classifier/TestModelService.h>
 #include <flor_terrain_classifier/TestModel.h>
@@ -167,7 +168,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     if (basecost >= INFINITECOST) return INFINITECOST;
 
-    int addcost =0;// getAdditionalCost(SourceX, SourceY, SourceTheta, action);
+    int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
@@ -177,8 +178,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
-
-    return 0;
 
 
     ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
@@ -207,6 +206,12 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
     ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
+
+    int rando = (int) ((rand() % 100) / 100.0 *4.0);
+    return rando;
+
+
+
     if (!positionRatingComputed){
         return INFINITECOST;
     }
@@ -219,7 +224,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
-    int addCost = (int) (positionRating * 10000.0 + invalidAxis * 7500.0);
+    int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
 
     return addCost;
 
