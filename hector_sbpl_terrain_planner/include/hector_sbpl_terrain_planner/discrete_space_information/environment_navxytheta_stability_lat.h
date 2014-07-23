@@ -13,6 +13,8 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 
+#include <visualization_msgs/MarkerArray.h>
+
 // these structures contain footprints for the additional levels
 // each of these structures corresponds to one of the EnvNAVXYTHETALATAction_t structures
 typedef struct
@@ -99,6 +101,10 @@ protected:
     boost::shared_ptr<tf::TransformListener> tf_listener_;
     geometry_msgs::Point map_center_map;
     ros::Publisher terrainModelPublisher;
+    ros::Publisher expandedStatesPublisher;
+    pcl::PointCloud<pcl::PointXYZI> expandedStatesCloud;
+    visualization_msgs::MarkerArray markers;
+    int markerID;
 
 };
 #endif

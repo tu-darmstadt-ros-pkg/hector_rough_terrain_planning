@@ -16,6 +16,7 @@
 #include <flor_terrain_classifier/TerrainModel.h>
 #include <flor_terrain_classifier/TerrainModelService.h>
 #include <flor_terrain_classifier/terrain_classifier.h>
+#include <visualization_msgs/Marker.h>
 using namespace std;
 
 #if TIME_DEBUG
@@ -69,8 +70,10 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     ros::NodeHandle nh_("~");
 
     terrainModelPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/cloud_input", 1);
-
-
+    expandedStatesPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/expandedStates", 1);
+    expandedStatesCloud.clear();
+    markers.markers.clear();
+    markerID=0;
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
     params.filter_mask = flor_terrain_classifier::FILTER_PASS_THROUGH | flor_terrain_classifier::FILTER_VOXEL_GRID | flor_terrain_classifier::FILTER_MLS_SMOOTH;
     ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
@@ -172,6 +175,84 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
+<<<<<<< HEAD
+=======
+    float robotSize=0.3;
+    for(unsigned int i=0; i<10; ++i)
+    {
+        for(unsigned int j=0; j<10; ++j)
+        {
+            float costInt=addcost;
+            pcl::PointXYZI p;
+
+            p.x=SourceX*0.05+i*robotSize/20.0;
+            p.y=SourceY*0.05+j*robotSize/20.0;
+            p.z=0.0;
+            p.intensity=(double)addcost;
+            expandedStatesCloud.push_back(p);
+        }
+    }
+
+    sensor_msgs::PointCloud2 cloud_point_msg;
+    pcl::toROSMsg(expandedStatesCloud, cloud_point_msg);
+    cloud_point_msg.header.stamp = ros::Time::now();
+    cloud_point_msg.header.frame_id = "map";
+    expandedStatesPublisher.publish(cloud_point_msg);
+/**
+
+     uint32_t shape = visualization_msgs::Marker::CUBE;
+     visualization_msgs::Marker marker;
+     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+     marker.header.frame_id = "/map";
+     marker.header.stamp = ros::Time::now();
+
+     // Set the namespace and id for this marker.  This serves to create a unique ID
+     // Any marker sent with the same namespace and id will overwrite the old one
+     marker.ns = "basic_shapes"+boost::lexical_cast<std::string>(markerID);
+     marker.id = markerID;
+     markerID++;
+
+
+         // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+         marker.type = shape;
+
+         // Set the marker action.  Options are ADD and DELETE
+         marker.action = visualization_msgs::Marker::ADD;
+
+         // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
+         marker.pose.position.x = SourceX*0.05;
+         marker.pose.position.y = SourceY*0.05;
+         marker.pose.position.z = 0;
+         marker.pose.orientation.x = 0.0;
+         marker.pose.orientation.y = 0.0;
+         marker.pose.orientation.z = 0.0;
+         marker.pose.orientation.w = 1.0;
+
+         // Set the scale of the marker -- 1x1x1 here means 1m on a side
+         marker.scale.x = 0.10;
+         marker.scale.y = 0.10;
+         marker.scale.z = 0.010;
+
+         // Set the color -- be sure to set alpha to something non-zero!
+         if(addcost>10000){
+             marker.color.r = 1.0f;
+         marker.color.g = 0.0f;
+         marker.color.b = 0.0f;}
+         else
+            {
+             marker.color.r = 0.0f;
+             marker.color.g = abs(1-(addcost/100.0));
+             marker.color.b = abs((addcost/100.0));
+         }
+         marker.color.a = 1.0;
+
+         marker.lifetime = ros::Duration();
+
+         markers.markers.push_back(marker);
+
+         // Publish the marker
+        expandedStatesPublisher.publish(markers);**/
+>>>>>>> 192cef9a214f3e308ed657f795a84e097a050e10
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
@@ -237,12 +318,17 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
+<<<<<<< HEAD
     int addCost = (int) (positionRating * 10.0 + invalidAxis * 7.0);
+=======
+    int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
+>>>>>>> 192cef9a214f3e308ed657f795a84e097a050e10
 
     return addCost;
 
 
 }
+
 bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
 {
     return true;
