@@ -104,6 +104,12 @@ EnvironmentNAVXYTHETASTAB::~EnvironmentNAVXYTHETASTAB()
 
 }
 
+pcl::PointXYZ rotatePoint(pcl::PointXYZ p, float degree /*radiants*/){
+    return pcl::PointXYZ(cos(degree)*p.x - sin(degree)*p.y,
+                         sin(degree)*p.x + cos(degree)*p.y,
+                         p.z);
+}
+
 //Map is is the planner grid and world is the normal map
 void EnvironmentNAVXYTHETASTAB::gridMapToMap(unsigned int mx, unsigned int my, double& wx, double& wy)
 {
@@ -176,9 +182,9 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     float robotSize=0.3;
-    for(unsigned int i=0; i<10; ++i)
+    for( int i=0; i<10; ++i)
     {
-        for(unsigned int j=0; j<10; ++j)
+        for( int j=0; j<10; ++j)
         {
             float costInt=addcost;
             pcl::PointXYZI p;
@@ -236,13 +242,13 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     double time_start =ros::Time::now().toNSec();
-    ROS_INFO("\n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
+    ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
     ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
 
-    int rando = (int) ((rand() % 100) / 100.0 *1000.0);
+    //int rando = (int) ((rand() % 100) / 100.0 *1000.0);
     //return rando;
 
 
