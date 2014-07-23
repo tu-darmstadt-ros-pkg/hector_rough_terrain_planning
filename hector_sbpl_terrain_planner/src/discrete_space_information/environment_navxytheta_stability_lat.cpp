@@ -284,6 +284,7 @@ bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
  int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 {
    // UpdataData();
+    expandedStatesCloud.clear();
     EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
 }
 
