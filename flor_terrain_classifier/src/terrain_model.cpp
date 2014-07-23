@@ -646,7 +646,19 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                          int &unstable_axis // of the first polygon
                                          /*pcl::visualization::PCLVisualizer &viewer,
                                          int viewport*/)
-{
+{    
+    double time_start_robotplcfind;
+    double time_start_findSupPoints23;
+    double time_start_computeHull;
+    double time_start_positionRating;
+
+
+    double time_duration_robotpclfind;
+    double time_duration_findSupPoints23;
+    double time_duration_computeHull;
+    double time_duration_positionRating;
+
+
     position_rating = 0.0;
     unstable_axis = 0;
     bool tip_over_active = true;
@@ -685,11 +697,40 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     p3 = rotatePoint(p3, orientation);
     p3 = addPointVector(p3, check_pos);
 
-    bool hull_cpp= (ccw(p0,p1,p2)<0);
 
-    for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++)
+    time_start_robotplcfind =ros::Time::now().toNSec();
+
+    // auslagern!
+    std::vector<pcl::PointXYZ> robot_points;
+    robot_points.push_back(p0);
+    robot_points.push_back(p1);
+    robot_points.push_back(p2);
+    robot_points.push_back(p3);
+
+    float maxX = p0.x;
+    float minX = p0.x;
+    float maxY = p0.y;
+    float minY = p0.y;
+
+    for (unsigned int i = 0; i < robot_points.size(); i++){
+        pcl::PointXYZ cp = robot_points.at(i); // current point
+        if (cp.x > maxX)
+            maxX = cp.x;
+        if (cp.x < minX)
+            minX = cp.x;
+        if (cp.y > maxY)
+            maxY = cp.y;
+        if (cp.y < minY)
+            minY = cp.y;
+    }
+
+    bool hull_cpp= (ccw(p0,p1,p2)<0);
+    for (unsigned int i = 0; i < cloud_processed_Ptr->size(); i++) // for each schleife schneller?
     {
-        const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i);
+        const  pcl::PointXYZ &pp= cloud_processed_Ptr->at(i); // teuer?
+
+        if ((pp.x > minX && pp.x < maxX && pp.y > minY && pp.y < maxY) == false)
+            continue;
 
         bool c0=hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
         bool c1=hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
@@ -713,9 +754,12 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     if(cloud_positionRating->size()==0)
     {
-        ROS_ERROR("[flor terrain classifier] cloud size is 0");
+        ROS_ERROR("[flor terrain classifier] cloud size is 0 this could also be due to planning into space without points.");
         return false;
     }
+
+    time_duration_robotpclfind = (ros::Time::now().toNSec() - time_start_robotplcfind)/1000;
+    ROS_INFO("time for robot cloud compute [mikrosec] = %i", (int)time_duration_robotpclfind);
 
     //ROS_INFO("cloud position rating size = %i", cloud_positionRating->size());
 
@@ -752,6 +796,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     while (true){
 
 
+        time_start_findSupPoints23 =ros::Time::now().toNSec();
         // find supp P 2
         const pcl::PointXYZ tip_over_axis_point = support_point_1;
         const pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
@@ -786,6 +831,11 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
             return false;
         }
 
+        time_duration_findSupPoints23 = (ros::Time::now().toNSec() - time_start_findSupPoints23)/1000;
+        ROS_INFO("time for finding support Points 2 and 3 compute [mikrosec] = %i", (int)time_duration_findSupPoints23);
+
+        time_start_computeHull =ros::Time::now().toNSec();
+
         convex_hull_points = buildConvexHull(cloud_positionRating,
                                              check_pos,
                                              support_point_1,
@@ -794,6 +844,9 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                              false,
                                              convex_hull_indices,
                                              ground_contact_points);
+
+        time_duration_computeHull = (ros::Time::now().toNSec() - time_start_computeHull)/1000;
+        ROS_INFO("time for computeHull [mikrosec] = %i", (int)time_duration_computeHull);
 
 
         // check if check_pos is in hull
@@ -875,11 +928,17 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 #endif
 
     //Compute Force Angle Stability Metric
+    time_start_positionRating =ros::Time::now().toNSec();
 
     std::vector<float> rating =computeForceAngleStabilityMetric(center_of_mass_iterative,convex_hull_points);
     //  std::iterator max_it =std::max_element(rating.begin(),rating.end());
 
+    time_duration_positionRating = (ros::Time::now().toNSec() - time_start_positionRating)/1000;
+    ROS_INFO("time for rating [mikrosec] = %i", (int)time_duration_positionRating);
 
+
+
+#ifdef viewer_on
     for (unsigned int i=0; i<rating.size();++i)
     {
 
@@ -892,7 +951,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
         //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
         //ROS_INFO("Rating %f", rating.at(i));
-#ifdef viewer_on
+
         if (draw_convex_hull_first_polygon){
             if(c<invalid_rating)
                 viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
@@ -903,9 +962,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
             std::string namech ="convexhullstart"+boost::lexical_cast<std::string>(i);
             viewer.addSphere(convex_hull_points[i], 0.025,0,1,0, namech,2 /*viewport*/);
         }
-#endif
     }
-#ifdef viewer_on
     if (draw_convex_hull_first_polygon){
         viewer.addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2 /*viewport*/);
     }
@@ -1064,6 +1121,12 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 #endif
     position_rating = *std::min_element(rating.begin(),rating.end());
     //ROS_INFO("CPR done: position_rating = %f, unstable_axis = %i", position_rating, unstable_axis);
+
+    double time_together = time_duration_robotpclfind +
+            time_duration_findSupPoints23 +
+            time_duration_computeHull +
+            time_duration_positionRating;
+    ROS_INFO("time for evaluated time [mikrosec]", (int)time_together);
 
     return true;
 }
