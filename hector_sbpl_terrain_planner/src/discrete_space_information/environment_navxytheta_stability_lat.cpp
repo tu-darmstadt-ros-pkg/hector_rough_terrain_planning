@@ -170,7 +170,11 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
+
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+
+    if (addcost >= INFINITECOST)
+        return INFINITECOST;
 
     return  addcost + basecost;
 }
