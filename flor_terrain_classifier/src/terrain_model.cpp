@@ -647,6 +647,10 @@ pcl::PointXYZ TerrainModel::computeCenterOfMass(const pcl::PointXYZ &p1_left,
     return center_of_mass;
 }
 
+
+// -----------------------------------------------------------------------------------//
+//-------------------------------------COMPUTE POSITION RATING------------------------//
+//------------------------------------------------------------------------------------//
 // orientation in radiants
 bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                          const float orientation,

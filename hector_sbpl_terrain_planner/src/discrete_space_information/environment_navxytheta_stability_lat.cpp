@@ -261,7 +261,6 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     }
 
     if (positionRating < terrainModel.invalid_rating){
-        ROS_WARN("invalid Rating (< 1)");
         return INFINITECOST;
     }
 
