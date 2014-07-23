@@ -9,6 +9,7 @@
 #include <ros/ros.h>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <cstdlib>
 
 #include <flor_terrain_classifier/TestModelService.h>
 #include <flor_terrain_classifier/TestModel.h>
@@ -168,8 +169,10 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
     int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
-    if (basecost >= INFINITECOST) return INFINITECOST;
-
+    if (basecost >= INFINITECOST){
+        ROS_WARN("basecost was >= INFINITECOST");
+        return INFINITECOST;
+    }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
     float robotSize=0.3;
@@ -180,8 +183,8 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
             float costInt=addcost;
             pcl::PointXYZI p;
 
-            p.x=SourceX*0.05+i*robotSize/20.0;
-            p.y=SourceY*0.05+j*robotSize/20.0;
+            p.x=SourceX*0.05+(i-5)*robotSize/10.0;
+            p.y=SourceY*0.05+(j-5)*robotSize/10.0;
             p.z=0.0;
             p.intensity=(double)addcost;
             expandedStatesCloud.push_back(p);
@@ -193,7 +196,11 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     cloud_point_msg.header.stamp = ros::Time::now();
     cloud_point_msg.header.frame_id = "map";
     expandedStatesPublisher.publish(cloud_point_msg);
+
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+
+    if (addcost + basecost >= INFINITECOST)
+        return INFINITECOST;
 
     return  addcost + basecost;
 }
@@ -207,8 +214,14 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
   //  sbpl_xy_theta_cell_t interm3Dcell;
   //  int i, levelind = -1;
 
-    if (!IsValidCell(SourceX, SourceY)) return INFINITECOST;
-    if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)) return INFINITECOST;
+    if (!IsValidCell(SourceX, SourceY)){
+        ROS_WARN("sourceX, sourceY was not a valid cell");
+        return INFINITECOST;
+    }
+    if (!IsValidCell(SourceX + action->dX, SourceY + action->dY)){
+        ROS_WARN("sourceX, sourceY + delta was not a valid cell");
+        return INFINITECOST;
+    }
 
     pcl::PointXYZ checkPos((SourceX)*0.05f,(SourceY)*0.05f, 0.f);
     //Transformation
@@ -228,11 +241,19 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
     ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
-    if (!positionRatingComputed){
+
+    int rando = (int) ((rand() % 100) / 100.0 *1000.0);
+    //return rando;
+
+
+
+    if (!positionRatingComputed){// || positionRating < terrainModel.invalid_rating){
+        ROS_WARN("no positionRatingComputed");
         return INFINITECOST;
     }
 
     if (positionRating < terrainModel.invalid_rating){
+        ROS_WARN("invalid Rating (< 1)");
         return INFINITECOST;
     }
 
@@ -240,6 +261,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
+
     int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
 
     return addCost;
