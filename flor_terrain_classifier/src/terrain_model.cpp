@@ -84,7 +84,6 @@ pcl::PointXYZ crossProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
 
 // returns angle value in degree
 float angleBetween(Eigen::Vector3f v1, Eigen::Vector3f v2){
-    float PI = 3.14159265;
     float acosvalue = dotproductEigen(v1,v2)/
             (sqrt(dotproductEigen(v1,v1)) * sqrt(dotproductEigen(v2,v2)));
     if (acosvalue > 0.9999999){
@@ -93,7 +92,7 @@ float angleBetween(Eigen::Vector3f v1, Eigen::Vector3f v2){
     if (acosvalue < -0.999999){
         return 180.0;
     }
-    float result = acos(acosvalue) * (180.0 / PI);
+    float result = acos(acosvalue) * (180.0 / M_PI);
 
     return result;
 }
@@ -338,7 +337,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
 {
 
     // PARAMETER
-    float minimum_distance = 0.0; // minimum distance in which a support point can be found from the last one.
+    float minimum_distance = 0.10; // minimum distance in which a support point can be found from the last one.
     // causes problems, might not find supp3 even if it would be a valid polygon
 
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
@@ -360,7 +359,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
     float min_angle=360.0;
 
     int min_angle_idx = -1;
-    const pcl::PointXYZ v1 = tip_over_direction;
+    pcl::PointXYZ v1 = tip_over_direction;
 
 
     //states the direction of the points if on one side of the tip_over_axis, or on the other
@@ -374,12 +373,14 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
     {
         pcl::PointXYZ &p_pro= cloud_projected.at(i);
         const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-tip_over_axis_point.x,p_pro.y-tip_over_axis_point.y,p_pro.z-tip_over_axis_point.z);
-        float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2))); // ERROR???? sqrt(dotproduct) * sqrt(dotproduct)
+        //float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2))); // ERROR???? sqrt(dotproduct) * sqrt(dotproduct)
 
-        const float pi = 3.14159;
-        angle = angle * 360.0/(2.0*pi);
-        if(angle>=180.0)
-            ROS_ERROR("[Terrain_model] angle = %f asdf", angle);
+        Eigen::Vector3f v1e(v1.x,v1.y,v1.z);
+        Eigen::Vector3f v2e(v2.x,v2.y,v2.z);
+
+        float angle = angleBetween(v1e,v2e);// angle * 360.0/(2.0*M_PI);
+        if(angle>180.0)
+            ROS_ERROR("[Terrain_model] angle = %f", angle);
 
         if (angle>90.0) angle=180.0-angle;
         // which side to the axis
@@ -400,7 +401,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
         else
         {
 
-            ROS_INFO("find point angle %f minangle %f side b %b side %i ccw %i", angle, min_angle,(side == directionccw),side,ccw );
+            //ROS_INFO("find point angle %f minangle %f side b %b side %i ccw %i", angle, min_angle,(side == directionccw),side,ccw );
         }
 
     }
