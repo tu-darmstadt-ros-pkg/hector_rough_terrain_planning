@@ -101,7 +101,8 @@ protected:
     boost::shared_ptr<tf::TransformListener> tf_listener_;
     geometry_msgs::Point map_center_map;
     ros::Publisher terrainModelPublisher;
-    ros::Publisher expandedStatePublisher;
+    ros::Publisher expandedStatesPublisher;
+    pcl::PointCloud<pcl::PointXYZI> expandedStatesCloud;
     visualization_msgs::MarkerArray markers;
     int markerID;
 

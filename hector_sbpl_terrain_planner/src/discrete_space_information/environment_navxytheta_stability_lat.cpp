@@ -69,7 +69,8 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     ros::NodeHandle nh_("~");
 
     terrainModelPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/cloud_input", 1);
-    expandedStatePublisher =nh_.advertise<visualization_msgs::MarkerArray>("/hector/hector_sbpl_terrain_planner/expandedStates", 1);
+    expandedStatesPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/expandedStates", 1);
+    expandedStatesCloud.clear();
     markers.markers.clear();
     markerID=0;
     flor_terrain_classifier::TerrainClassifierParams params(nh_);
@@ -171,6 +172,28 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
+    float robotSize=0.3;
+    for(unsigned int i=0; i<10; ++i)
+    {
+        for(unsigned int j=0; j<10; ++j)
+        {
+            float costInt=addcost;
+            pcl::PointXYZI p;
+
+            p.x=SourceX*0.05+i*robotSize/20.0;
+            p.y=SourceY*0.05+j*robotSize/20.0;
+            p.z=0.0;
+            p.intensity=(double)addcost;
+            expandedStatesCloud.push_back(p);
+        }
+    }
+
+    sensor_msgs::PointCloud2 cloud_point_msg;
+    pcl::toROSMsg(expandedStatesCloud, cloud_point_msg);
+    cloud_point_msg.header.stamp = ros::Time::now();
+    cloud_point_msg.header.frame_id = "map";
+    expandedStatesPublisher.publish(cloud_point_msg);
+/**
 
      uint32_t shape = visualization_msgs::Marker::CUBE;
      visualization_msgs::Marker marker;
@@ -203,12 +226,19 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
          // Set the scale of the marker -- 1x1x1 here means 1m on a side
          marker.scale.x = 0.10;
          marker.scale.y = 0.10;
-         marker.scale.z = 0.10;
+         marker.scale.z = 0.010;
 
          // Set the color -- be sure to set alpha to something non-zero!
-         marker.color.r = 0.0f;
-         marker.color.g = 1.0f;
-         marker.color.b = 0.0f;
+         if(addcost>10000){
+             marker.color.r = 1.0f;
+         marker.color.g = 0.0f;
+         marker.color.b = 0.0f;}
+         else
+            {
+             marker.color.r = 0.0f;
+             marker.color.g = abs(1-(addcost/100.0));
+             marker.color.b = abs((addcost/100.0));
+         }
          marker.color.a = 1.0;
 
          marker.lifetime = ros::Duration();
@@ -216,7 +246,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
          markers.markers.push_back(marker);
 
          // Publish the marker
-        expandedStatePublisher.publish(markers);
+        expandedStatesPublisher.publish(markers);**/
 
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
@@ -271,6 +301,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
 }
+
 bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
 {
     return true;
