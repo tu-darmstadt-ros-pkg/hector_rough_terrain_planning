@@ -378,6 +378,8 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
 
         const float pi = 3.14159;
         angle = angle * 360.0/(2.0*pi);
+        if(angle>=180.0)
+            ROS_ERROR("[Terrain_model] angle = %f asdf", angle);
 
         if (angle>90.0) angle=180.0-angle;
         // which side to the axis
@@ -394,6 +396,11 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
                 min_angle=angle;
                 min_angle_idx=i;
             }
+        }
+        else
+        {
+
+            ROS_INFO("find point angle %f minangle %f side b %b side %i ccw %i", angle, min_angle,(side == directionccw),side,ccw );
         }
 
     }
