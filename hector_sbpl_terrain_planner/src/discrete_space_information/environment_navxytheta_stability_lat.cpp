@@ -165,7 +165,7 @@ void EnvironmentNAVXYTHETASTAB::UpdataData()
 int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
                                                 EnvNAVXYTHETALATAction_t* action)
 {
-    ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %c", SourceX, SourceY, SourceTheta, action->endtheta);
+    ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
     int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
     if (basecost >= INFINITECOST) return INFINITECOST;
@@ -193,61 +193,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     cloud_point_msg.header.stamp = ros::Time::now();
     cloud_point_msg.header.frame_id = "map";
     expandedStatesPublisher.publish(cloud_point_msg);
-/**
-
-     uint32_t shape = visualization_msgs::Marker::CUBE;
-     visualization_msgs::Marker marker;
-     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
-     marker.header.frame_id = "/map";
-     marker.header.stamp = ros::Time::now();
-
-     // Set the namespace and id for this marker.  This serves to create a unique ID
-     // Any marker sent with the same namespace and id will overwrite the old one
-     marker.ns = "basic_shapes"+boost::lexical_cast<std::string>(markerID);
-     marker.id = markerID;
-     markerID++;
-
-
-         // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
-         marker.type = shape;
-
-         // Set the marker action.  Options are ADD and DELETE
-         marker.action = visualization_msgs::Marker::ADD;
-
-         // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
-         marker.pose.position.x = SourceX*0.05;
-         marker.pose.position.y = SourceY*0.05;
-         marker.pose.position.z = 0;
-         marker.pose.orientation.x = 0.0;
-         marker.pose.orientation.y = 0.0;
-         marker.pose.orientation.z = 0.0;
-         marker.pose.orientation.w = 1.0;
-
-         // Set the scale of the marker -- 1x1x1 here means 1m on a side
-         marker.scale.x = 0.10;
-         marker.scale.y = 0.10;
-         marker.scale.z = 0.010;
-
-         // Set the color -- be sure to set alpha to something non-zero!
-         if(addcost>10000){
-             marker.color.r = 1.0f;
-         marker.color.g = 0.0f;
-         marker.color.b = 0.0f;}
-         else
-            {
-             marker.color.r = 0.0f;
-             marker.color.g = abs(1-(addcost/100.0));
-             marker.color.b = abs((addcost/100.0));
-         }
-         marker.color.a = 1.0;
-
-         marker.lifetime = ros::Duration();
-
-         markers.markers.push_back(marker);
-
-         // Publish the marker
-        expandedStatesPublisher.publish(markers);**/
-
     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     return  addcost + basecost;
@@ -278,7 +223,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     double time_start =ros::Time::now().toNSec();
-    ROS_INFO("\n start computePositionRating with checkpos %f , %f, angle = %c", checkPos.x, checkPos.y, action->endtheta);
+    ROS_INFO("\n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
     ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);

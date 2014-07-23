@@ -659,10 +659,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 #endif
 
 
-    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.0,0.0,0.015);
+    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.0,0.0,0.15);
 
-    float width=0.30; // y
-    float length=0.41; // x
+    float width=0.50; // y
+    float length=0.50; // x
 
     // Points under robot
     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
