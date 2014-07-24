@@ -79,8 +79,16 @@ public:
                                float &position_rating,
                                int &unstable_axis);
 
+    std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl);
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
+
+    float minPosRating();
+
+    float width; // y
+    float length;  // x
+    Eigen::Vector3f offset_CM;
+
 
 
     //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;

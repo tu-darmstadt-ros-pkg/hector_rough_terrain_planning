@@ -44,6 +44,9 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
            pcl::fromPCLPointCloud2(pcl_pc, cloud);
            terrainModel = hector_terrain_model::TerrainModel(cloud);
            ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
+           flat_position_rating = terrainModel.minPosRating();
+
+           ROS_INFO("min_position_rating = %f", flat_position_rating);
            sleep(1);
            sensor_msgs::PointCloud2 cloud_point_msg;
            pcl::toROSMsg(cloud, cloud_point_msg);
@@ -267,9 +270,18 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
     ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
-    positionRating = pow((1/positionRating),3); // self invented -> good?
 
-    int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
+    if (positionRating <= flat_position_rating){
+        return 0;
+    }
+
+    float rating_inv = flat_position_rating - positionRating; // high value is now bad -> 0 = perfect stable, 2 really bad
+
+
+    /*positionRating = pow((1/positionRating),3); // self invented -> good?
+    int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);*/
+
+    int addCost = (int) (pow(rating_inv, 3) * 100.0 + invalidAxis * 60.0);
 
     return addCost;
 

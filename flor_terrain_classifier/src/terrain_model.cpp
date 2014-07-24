@@ -12,6 +12,13 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
     ROS_INFO("terrainmodel cloud size = %i", cloud_processed.size());
     cloud_processed_Ptr= cloud.makeShared();//pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
     ROS_INFO("terrainmodel cloudPTR size = %i", cloud_processed_Ptr->size());
+
+    width = 0.50; // y
+    length = 0.70; // x
+    Eigen::Vector3f offset_CM;
+
+    offset_CM = Eigen::Vector3f(0.0,0.0,0.15);
+
 }
 
 TerrainModel::~TerrainModel()
@@ -285,9 +292,43 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
 
 }
 
+// computes the minimum Rating if standing flat on the ground
+float TerrainModel::minPosRating(){
+    pcl::PointXYZ p0 = pcl::PointXYZ(0.0, 0.0, 0.0);
+    pcl::PointXYZ p1 = pcl::PointXYZ(length, 0.0, 0.0);
+    pcl::PointXYZ p2 = pcl::PointXYZ(length, width, 0.0);
+    pcl::PointXYZ p3 = pcl::PointXYZ(0.0, width, 0.0);
+
+    pcl::PointXYZ mid = pcl::PointXYZ(length / 2.0, width / 2.0, 0.0);
+    pcl::PointXYZ center_mass = addPointVector(mid, offset_CM);
+
+    std::vector<pcl::PointXYZ> flat_points;
+    flat_points.push_back(p0);
+    flat_points.push_back(p1);
+    flat_points.push_back(p2);
+    flat_points.push_back(p3);
+
+
+
+    std::vector<float> min_pos_rating = computeForceAngleStabilityMetric(center_mass, flat_points);
+    float min = min_pos_rating.at(0);
+
+    if (min_pos_rating.at(1) < min)
+        min = min_pos_rating.at(1);
+
+    if (min_pos_rating.at(2) < min)
+        min = min_pos_rating.at(2);
+
+    if (min_pos_rating.at(3) < min)
+        min = min_pos_rating.at(3);
+
+    return min;
+}
+
+
 //As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube
 // a low number is not stable. a high number is stable.
-std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
+std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
 {
     const Eigen::Vector3f center_of_mass = Eigen::Vector3f(center_of_mass_pcl.x,center_of_mass_pcl.y,center_of_mass_pcl.z);
     std::vector<Eigen::Vector3f> p;
@@ -682,12 +723,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     bool draw_convex_hull_iterative = true;
     bool draw_convex_hull_iterative_ground_points= true;
 #endif
-
-
-    Eigen::Vector3f offset_CM = Eigen::Vector3f(0.0,0.0,0.15);
-
-    float width=0.50; // y
-    float length=0.50; // x
 
     // Points under robot
     cloud_positionRating.reset(new pcl::PointCloud<pcl::PointXYZI>());
