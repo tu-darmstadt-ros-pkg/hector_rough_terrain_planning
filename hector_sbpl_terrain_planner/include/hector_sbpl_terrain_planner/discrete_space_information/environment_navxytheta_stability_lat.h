@@ -41,7 +41,6 @@ class EnvironmentNAVXYTHETASTAB : public EnvironmentNAVXYTHETALAT
 public:
 
 
-
     /**
 * \brief incremental planning not supported
 */
@@ -105,6 +104,9 @@ protected:
     pcl::PointCloud<pcl::PointXYZI> expandedStatesCloud;
     visualization_msgs::MarkerArray markers;
     int markerID;
+
+
+    float flat_position_rating;
 
 };
 #endif
