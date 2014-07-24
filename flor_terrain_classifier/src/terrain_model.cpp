@@ -9,9 +9,9 @@ TerrainModel::TerrainModel()
 
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
-    ROS_INFO("terrainmodel cloud size = %i", cloud_processed.size());
+   ////ROS_INFO("terrainmodel cloud size = %i", cloud_processed.size());
     cloud_processed_Ptr= cloud.makeShared();//pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
-    ROS_INFO("terrainmodel cloudPTR size = %i", cloud_processed_Ptr->size());
+   ////ROS_INFO("terrainmodel cloudPTR size = %i", cloud_processed_Ptr->size());
 }
 
 TerrainModel::~TerrainModel()
@@ -768,7 +768,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     }
 
     time_duration_robotpclfind = (ros::Time::now().toNSec() - time_start_robotplcfind)/1000;
-    ROS_INFO("time for robot cloud compute [mikrosec] = %i", (int)time_duration_robotpclfind);
+   ////ROS_INFO("time for robot cloud compute [mikrosec] = %i", (int)time_duration_robotpclfind);
 
     //ROS_INFO("cloud position rating size = %i", cloud_positionRating->size());
 
@@ -822,8 +822,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
             tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
         }
 
-        ROS_INFO("tip_over_direction x,y,z = %f, %f, %f", tip_over_direction.x, tip_over_direction.y, tip_over_direction.z);
-        ROS_INFO("tip_over_axis_vector x,y,z = %f, %f, %f", tip_over_axis_vector.x, tip_over_axis_vector.y, tip_over_axis_vector.z);
+        //ROS_INFO("tip_over_direction x,y,z = %f, %f, %f", tip_over_direction.x, tip_over_direction.y, tip_over_direction.z);
+       //ROS_INFO("tip_over_axis_vector x,y,z = %f, %f, %f", tip_over_axis_vector.x, tip_over_axis_vector.y, tip_over_axis_vector.z);
 
 
 
@@ -834,7 +834,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                 support_point_2);
         if (!point_evaluated){
             ROS_WARN("[terrain_model] no support_point found 2..., counter = %i ", counter);
-            ROS_INFO("checkpos x = %f, y 0 %f, supportPoint1 x = %f, y = %f", check_pos.x, check_pos.y, support_point_1.x, support_point_1.y);
+            //ROS_INFO("checkpos x = %f, y 0 %f, supportPoint1 x = %f, y = %f", check_pos.x, check_pos.y, support_point_1.x, support_point_1.y);
             return false;
         }
 
@@ -853,12 +853,12 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                            tip_over_direction_3,
                                            support_point_3);
         if (!point_evaluated){
-            ROS_INFO("[terrain_model::compute_position_rating] no support_point found 3.");
+           //ROS_INFO("[terrain_model::compute_position_rating] no support_point found 3.");
             return false;
         }
 
         time_duration_findSupPoints23 = (ros::Time::now().toNSec() - time_start_findSupPoints23)/1000;
-        ROS_INFO("time for finding support Points 2 and 3 compute [mikrosec] = %i", (int)time_duration_findSupPoints23);
+       ////ROS_INFO("time for finding support Points 2 and 3 compute [mikrosec] = %i", (int)time_duration_findSupPoints23);
 
         time_start_computeHull =ros::Time::now().toNSec();
 
@@ -872,7 +872,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                              ground_contact_points);
 
         time_duration_computeHull = (ros::Time::now().toNSec() - time_start_computeHull)/1000;
-        ROS_INFO("time for computeHull [mikrosec] = %i", (int)time_duration_computeHull);
+      // //ROS_INFO("time for computeHull [mikrosec] = %i", (int)time_duration_computeHull);
 
 
         // check if check_pos is in hull
@@ -960,7 +960,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     //  std::iterator max_it =std::max_element(rating.begin(),rating.end());
 
     time_duration_positionRating = (ros::Time::now().toNSec() - time_start_positionRating)/1000;
-    ROS_INFO("time for rating [mikrosec] = %i", (int)time_duration_positionRating);
+   ////ROS_INFO("time for rating [mikrosec] = %i", (int)time_duration_positionRating);
 
 
 
@@ -1152,7 +1152,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
             time_duration_findSupPoints23 +
             time_duration_computeHull +
             time_duration_positionRating;
-    ROS_INFO("time for evaluated time [mikrosec]", (int)time_together);
+   ////ROS_INFO("time for evaluated time [mikrosec]", (int)time_together);
 
     return true;
 }

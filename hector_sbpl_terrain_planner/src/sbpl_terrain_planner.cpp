@@ -100,8 +100,8 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
     tf_listener_.reset(new tf::TransformListener());
 
     private_nh.param("planner_type", planner_type_, string("ARAPlanner"));
-    private_nh.param("allocated_time", allocated_time_, 1000000.0);
-    private_nh.param("initial_epsilon",initial_epsilon_,3.0);
+    private_nh.param("allocated_time", allocated_time_, 30.0);
+    private_nh.param("initial_epsilon",initial_epsilon_,15.0);
     nh.param("environment_type", environment_type_, string("testXYThetaLattice"));
     private_nh.param("forward_search", forward_search_, bool(false));
     private_nh.param("primitive_filename",primitive_filename_,string(""));
@@ -160,6 +160,7 @@ void SBPLTerrainPlanner::initialize(std::string name){//, costmap_2d::Costmap2DR
                                 perimeterptsV, 0.05, nominalvel_mpersecs,
                                 timetoturn45degsinplace_secs, obst_cost_thresh,
                                 primitive_filename_.c_str());
+
     }
     catch(SBPL_Exception e){
       ROS_ERROR("SBPL encountered a fatal exception!");

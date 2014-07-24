@@ -172,16 +172,17 @@ void EnvironmentNAVXYTHETASTAB::UpdataData()
 int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
                                                 EnvNAVXYTHETALATAction_t* action)
 {
-    ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
+   // ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
     int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
     if (basecost >= INFINITECOST){
-        ROS_WARN("basecost was >= INFINITECOST");
+        //ROS_WARN("basecost was >= INFINITECOST");
         return INFINITECOST;
     }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
-
+  //  addcost=0.f;
     float robotSize=0.3;
+/**
     for( int i=0; i<10; ++i)
     {
         for( int j=0; j<10; ++j)
@@ -191,12 +192,18 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
             p.x=SourceX*0.05+(i-5)*robotSize/10.0;
             p.y=SourceY*0.05+(j-5)*robotSize/10.0;
-            p.z=0.0;
+            p.z=(double)addcost/100000000000.0;
             p.intensity=(double)addcost;
             expandedStatesCloud.push_back(p);
         }
-    }
+    }**/
 
+    pcl::PointXYZI p;
+    p.x=SourceX*0.05;
+    p.y=SourceY*0.05;
+    p.z=(double)addcost/100000000000.0;
+    p.intensity=(double)addcost;
+    expandedStatesCloud.push_back(p);
     sensor_msgs::PointCloud2 cloud_point_msg;
     pcl::toROSMsg(expandedStatesCloud, cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
@@ -205,19 +212,21 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
 
 
-    ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+
+
+   //  ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     if (addcost + basecost >= INFINITECOST)
         return INFINITECOST;
 
-    return  addcost + basecost;
+    return  addcost*basecost + basecost;
 }
 
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                                EnvNAVXYTHETALATAction_t* action)
 {
 
-    ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
+   // ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
     //sbpl_2Dcell_t cell;
   //  sbpl_xy_theta_cell_t interm3Dcell;
   //  int i, levelind = -1;
@@ -244,10 +253,10 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     double time_start =ros::Time::now().toNSec();
-    ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
+  //  ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
-    ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
+ //   ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
 
     //int rando = (int) ((rand() % 100) / 100.0 *1000.0);
@@ -256,21 +265,21 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     if (!positionRatingComputed){// || positionRating < terrainModel.invalid_rating){
-        ROS_WARN("no positionRatingComputed");
+    //    ROS_WARN("no positionRatingComputed");
         return INFINITECOST;
     }
 
     if (positionRating < terrainModel.invalid_rating){
-        ROS_WARN("invalid Rating (< 1)");
+     //   ROS_WARN("invalid Rating (< 1)");
         return INFINITECOST;
     }
 
 
-    ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
+ //   ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
     positionRating = pow((1/positionRating),3); // self invented -> good?
 
-    int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
+    int addCost = (int) (positionRating * 10.0 + invalidAxis * 7.5);
 
     return addCost;
 
