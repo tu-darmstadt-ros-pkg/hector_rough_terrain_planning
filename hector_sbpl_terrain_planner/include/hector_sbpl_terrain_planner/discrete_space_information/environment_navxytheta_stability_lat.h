@@ -61,6 +61,22 @@ public:
         throw new SBPL_Exception();
     }
 
+
+    /**
+     * \brief see comments on the same function in the parent class
+     */
+    virtual int GetFromToHeuristic(int FromStateID, int ToStateID);
+
+    /**
+     * \brief see comments on the same function in the parent class
+     */
+    virtual int GetGoalHeuristic(int stateID);
+
+    /**
+     * \brief see comments on the same function in the parent class
+     */
+    virtual int GetStartHeuristic(int stateID);
+
 virtual bool IsValidConfiguration(int X, int Y, int Theta);
 
     EnvironmentNAVXYTHETASTAB();
