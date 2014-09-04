@@ -1,7 +1,7 @@
 #ifndef TERRAIN_MODEL_H__
 #define TERRAIN_MODEL_H__
 
-//#define viewer_on
+#define viewer_on
 
 #include <ros/ros.h>
 
@@ -52,7 +52,7 @@ public:
                           const pcl::PointXYZ& tip_over_direction,
                           pcl::PointXYZ& support_point);
 
-    std::vector<pcl::PointXYZ> buildConvexHull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
+    std::vector<pcl::PointXYZ> buildConvexHull(const pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pcl,
                                                const pcl::PointXYZ& check_pos,
                                                const pcl::PointXYZ& support_point_1,
                                                const pcl::PointXYZ& support_point_2,
@@ -74,10 +74,20 @@ public:
                                       const pcl::PointXYZ &mid,
                                       const Eigen::Vector3f &offset);
 
+    void computeRobotEdgePoints(const pcl::PointXYZ check_pos, float orientation,
+                                pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3);
+
+    void fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3,
+                                           unsigned int& highest_Point_idx);
+
     bool computePositionRating(const pcl::PointXYZ& checkPos,
                                const float orientation,
                                float &position_rating,
-                               int &unstable_axis);
+                               int &unstable_axis
+                           #ifdef viewer_on
+                               , pcl::visualization::PCLVisualizer &viewer, int viewport
+                           #endif
+                               );
 
     std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl);
 
@@ -92,16 +102,16 @@ public:
 
 
     //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_processed_Ptr;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr world_pcl_ptr;
     pcl::PointCloud<pcl::PointXYZ> cloud_processed;
     //pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_outfiltered;
     // pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
     //pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_height;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pcl;
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
 
 
-    static const float invalid_rating = 1.0;
+    static const float invalid_rating = 0.3;
 
 private:
     float planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p);
