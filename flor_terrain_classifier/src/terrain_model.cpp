@@ -46,6 +46,11 @@ bool pointsEqual(pcl::PointXYZ p1, pcl::PointXYZ p2){
     else
         return false;
 }
+
+/*Eigen::Vector3f pointToEigen(pcl::PointXYZ p){
+    return Eigen::Vector3f(p.x, p.y, p.z);
+}*/
+
 // normal adding, subtracting points
 pcl::PointXYZ addPointVector(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
     return pcl::PointXYZ(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
@@ -85,6 +90,13 @@ pcl::PointXYZ crossProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
     float cy=a.z*b.x-a.x*b.z;
     float cz=a.x*b.y-a.y*b.x;
     return pcl::PointXYZ(cx,cy,cz);
+}
+
+Eigen::Vector3f crossProductEigen(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
+    float cx=a.y*b.z-a.z*b.y;
+    float cy=a.z*b.x-a.x*b.z;
+    float cz=a.x*b.y-a.y*b.x;
+    return Eigen::Vector3f(cx,cy,cz);
 }
 
 // returns angle value in degree
@@ -155,6 +167,14 @@ float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ&
     return (p2.x - p1.x)*(p3.y - p1.y) - (p2.y - p1.y)*(p3.x - p1.x);
 }
 
+
+float angleToGround(const pcl::PointXYZ s1, const pcl::PointXYZ s2, const pcl::PointXYZ s3){
+    Eigen::Vector3f normal = crossProductEigen(subtractPoints(s1, s2), subtractPoints(s1, s3));
+    float angle = angleBetween(normal, Eigen::Vector3f(0.0, 0.0, 1.0));
+    if (angle > 90.0)
+        angle = 180.0 - angle;
+    return angle;
+}
 
 /*--------------------------------------------------------------------------------------------*/
 /* --------------Helper Functoins end---------------------------------------------------------*/
@@ -858,7 +878,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     int counter = 0;
 
-    while (true){
+    while (true){ // find SupportPoints ; run only once if center is in hull
 
 
         time_start_findSupPoints23 =ros::Time::now().toNSec();
@@ -983,6 +1003,9 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     } // endwhile
 
+    float angle_of_area = angleToGround(support_point_1, support_point_2, support_point_3);
+    if (angle_of_area > invalid_angle)
+        return false;
 
 
     //Compute and Draw Projected Robot
@@ -1081,6 +1104,12 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
                 if (!point_evaluated){
                     break; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
+                }
+
+                float angle_of_area_it = angleToGround(support_point_1, support_point_2, support_point_3);
+                if (angle_of_area_it > invalid_angle){
+                    ROS_INFO("after tipping over, angle would be too high: %f", angle_of_area_it);
+                    break;
                 }
 
 

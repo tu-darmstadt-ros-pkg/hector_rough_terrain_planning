@@ -111,7 +111,8 @@ public:
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
 
 
-    static const float invalid_rating = 0.3;
+    static const float invalid_rating = 0.3; // actually 0
+    static const float invalid_angle = 40; // degree
 
 private:
     float planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p);
