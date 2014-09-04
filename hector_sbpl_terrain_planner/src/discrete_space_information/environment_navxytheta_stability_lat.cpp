@@ -31,34 +31,34 @@ static long int checks = 0;
 //-----------------constructors/destructors-------------------------------
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
-  {
-        ROS_INFO("entered callback...");
+{
+    ROS_INFO("entered callback...");
 
 
-        if(!receivedWorldmodelPC)
-        {
-           receivedWorldmodelPC=true;
-           pcl::PCLPointCloud2 pcl_pc;
-           pcl_conversions::toPCL(msg, pcl_pc);
-           pcl::PointCloud<pcl::PointXYZ> cloud;
-           pcl::fromPCLPointCloud2(pcl_pc, cloud);
-           terrainModel = hector_terrain_model::TerrainModel(cloud);
-           ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
-           flat_position_rating = terrainModel.minPosRating();
+    if(!receivedWorldmodelPC)
+    {
+        receivedWorldmodelPC=true;
+        pcl::PCLPointCloud2 pcl_pc;
+        pcl_conversions::toPCL(msg, pcl_pc);
+        pcl::PointCloud<pcl::PointXYZ> cloud;
+        pcl::fromPCLPointCloud2(pcl_pc, cloud);
+        terrainModel = hector_terrain_model::TerrainModel(cloud);
+        ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
+        flat_position_rating = terrainModel.minPosRating();
 
-           ROS_INFO("min_position_rating = %f", flat_position_rating);
-           sleep(1);
-           sensor_msgs::PointCloud2 cloud_point_msg;
-           pcl::toROSMsg(cloud, cloud_point_msg);
-           cloud_point_msg.header.stamp = ros::Time::now();
-           cloud_point_msg.header.frame_id = "map";
-           terrainModelPublisher.publish(cloud_point_msg);
-        }
-        else{
-            ROS_INFO("entered Callback, world model was received before");
-            //ROS_INFO("cloud_processed_Ptr in terrainModel: size = %i", terrainModel.cloud_processed_Ptr->size());
-        }
-  }
+        ROS_INFO("min_position_rating = %f", flat_position_rating);
+        sleep(1);
+        sensor_msgs::PointCloud2 cloud_point_msg;
+        pcl::toROSMsg(cloud, cloud_point_msg);
+        cloud_point_msg.header.stamp = ros::Time::now();
+        cloud_point_msg.header.frame_id = "map";
+        terrainModelPublisher.publish(cloud_point_msg);
+    }
+    else{
+        ROS_INFO("entered Callback, world model was received before");
+        //ROS_INFO("cloud_processed_Ptr in terrainModel: size = %i", terrainModel.cloud_processed_Ptr->size());
+    }
+}
 
 void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPtr& map)
 {
@@ -84,7 +84,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     client.call(srv);
     ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor");
-  //  tf_listener_.reset(new tf::TransformListener());
+    //  tf_listener_.reset(new tf::TransformListener());
     //ros::Duration(0.1).sleep();
     int counter=0;
     while(!receivedWorldmodelPC)
@@ -118,13 +118,13 @@ void EnvironmentNAVXYTHETASTAB::gridMapToMap(unsigned int mx, unsigned int my, d
 {
     int *size_x; int *size_y;
     int* num_thetas; double* startx; double* starty;
-                                 double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
-                                 double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
-                                 unsigned char* obsthresh; std::vector<SBPL_xytheta_mprimitive>* motionprimitiveV;
-   GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
-                                   nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
-   wx= -map_center_map.x+(mx+0.5)* *cellsize_m;
-   wy= -map_center_map.y+(my+0.5)* *cellsize_m;
+    double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
+    double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
+    unsigned char* obsthresh; std::vector<SBPL_xytheta_mprimitive>* motionprimitiveV;
+    GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
+                nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
+    wx= -map_center_map.x+(mx+0.5)* *cellsize_m;
+    wy= -map_center_map.y+(my+0.5)* *cellsize_m;
     //wx =  origin_x_ + (mx + 0.5) * resolution_;
     //wy = origin_y_ + (my + 0.5) * resolution_;
 }
@@ -135,26 +135,26 @@ bool EnvironmentNAVXYTHETASTAB::mapToGridMap(double wx, double wy, unsigned int&
         return false;
 
     int *size_x; int *size_y; int* num_thetas; double* startx; double* starty;
-                                 double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
-                                 double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
-                                 unsigned char* obsthresh; std::vector<SBPL_xytheta_mprimitive>* motionprimitiveV;
-   GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
-                                   nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
+    double* starttheta; double* goalx; double* goaly; double* goaltheta; double* cellsize_m;
+    double* nominalvel_mpersecs; double* timetoturn45degsinplace_secs;
+    unsigned char* obsthresh; std::vector<SBPL_xytheta_mprimitive>* motionprimitiveV;
+    GetEnvParms(size_x,  size_y,   num_thetas,   startx,   starty, starttheta,   goalx,   goaly,   goaltheta,   cellsize_m,
+                nominalvel_mpersecs,   timetoturn45degsinplace_secs, obsthresh,  motionprimitiveV);
 
-   mx=(int)((wx + map_center_map.x)) / *cellsize_m;
-   my=(int)((wy + map_center_map.y)) / *cellsize_m;
-   return true;
+    mx=(int)((wx + map_center_map.x)) / *cellsize_m;
+    my=(int)((wy + map_center_map.y)) / *cellsize_m;
+    return true;
 
-//    if (wx < origin_x_ || wy < origin_y_)
-  //      return false;
+    //    if (wx < origin_x_ || wy < origin_y_)
+    //      return false;
 
-  //  mx = (int)((wx - origin_x_) / resolution_);
-  //  my = (int)((wy - origin_y_) / resolution_);
+    //  mx = (int)((wx - origin_x_) / resolution_);
+    //  my = (int)((wy - origin_y_) / resolution_);
 
- //   if (mx < size_x_ && my < size_y_)
-  //      return true;
+    //   if (mx < size_x_ && my < size_y_)
+    //      return true;
 
-  //  return false;
+    //  return false;
 }
 
 
@@ -173,19 +173,23 @@ void EnvironmentNAVXYTHETASTAB::UpdataData()
 
 }
 int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int SourceTheta,
-                                                EnvNAVXYTHETALATAction_t* action)
+                                             EnvNAVXYTHETALATAction_t* action)
 {
-   // ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
+    // ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
     int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
+    float euclidicCost= sqrt(action->dX*action->dX+action->dY*action->dY);
+    float ratio=euclidicCost/(float)basecost;
+    ROS_INFO("Cost Ratio %f euclidic %f base %i",ratio, euclidicCost, basecost);
+    ROS_INFO("dX %i dY %i dT %i ",action->dX,action->dY,(int)action->endtheta-(int)action->starttheta);
     if (basecost >= INFINITECOST){
         //ROS_WARN("basecost was >= INFINITECOST");
         return INFINITECOST;
     }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
-  //  addcost=0.f;
+    //  addcost=0.f;
     float robotSize=0.3;
-/**
+    /**
     for( int i=0; i<10; ++i)
     {
         for( int j=0; j<10; ++j)
@@ -217,7 +221,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
 
 
-   //  ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+    //  ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     if (addcost + basecost >= INFINITECOST)
         return INFINITECOST;
@@ -226,13 +230,13 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 }
 
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
-                                                               EnvNAVXYTHETALATAction_t* action)
+                                                 EnvNAVXYTHETALATAction_t* action)
 {
 
-   // ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
+    // ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
     //sbpl_2Dcell_t cell;
-  //  sbpl_xy_theta_cell_t interm3Dcell;
-  //  int i, levelind = -1;
+    //  sbpl_xy_theta_cell_t interm3Dcell;
+    //  int i, levelind = -1;
 
     if (!IsValidCell(SourceX, SourceY)){
         ROS_WARN("sourceX, sourceY was not a valid cell");
@@ -245,7 +249,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
     pcl::PointXYZ checkPos((SourceX)*0.05f,(SourceY)*0.05f, 0.f);
     //Transformation
- /*   double checkpos_x;
+    /*   double checkpos_x;
     double checkpos_y;
     gridMapToMap(SourceX + action->dX, SourceY + action->dY, checkpos_x, checkpos_y);
     pcl::PointXYZ checkPos(checkpos_x, checkpos_y, 0.f);*/
@@ -256,10 +260,10 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     double time_start =ros::Time::now().toNSec();
-  //  ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
+    //  ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
- //   ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
+    //   ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
 
     //int rando = (int) ((rand() % 100) / 100.0 *1000.0);
@@ -268,17 +272,17 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
 
     if (!positionRatingComputed){// || positionRating < terrainModel.invalid_rating){
-    //    ROS_WARN("no positionRatingComputed");
+        //    ROS_WARN("no positionRatingComputed");
         return INFINITECOST;
     }
 
     if (positionRating < terrainModel.invalid_rating){
-     //   ROS_WARN("invalid Rating (< 1)");
+        //   ROS_WARN("invalid Rating (< 1)");
         return INFINITECOST;
     }
 
 
- //   ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
+    //   ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
 
 
 
@@ -304,10 +308,79 @@ bool EnvironmentNAVXYTHETASTAB::IsValidConfiguration(int X, int Y, int Theta)
 {
     return true;
 }
- int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
+int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 {
-   // UpdataData();
+    // UpdataData();
     expandedStatesCloud.clear();
     EnvironmentNAVXYTHETALAT::SetStart(x,y,theta);
 }
 
+int EnvironmentNAVXYTHETASTAB::GetFromToHeuristic(int FromStateID, int ToStateID)
+{
+
+    ROS_INFO("FromTo!!!!!!!!!!!!!!!!!!!!!!!");
+#if USE_HEUR==0
+    return 0;
+#endif
+#if DEBUG
+    if(FromStateID >= (int)StateID2CoordTable.size()
+            || ToStateID >= (int)StateID2CoordTable.size())
+    {
+        SBPL_ERROR("ERROR in EnvNAVXYTHETALAT... function: stateID illegal\n");
+        throw new SBPL_Exception();
+    }
+#endif
+    //get X, Y for the state
+    EnvNAVXYTHETALATHashEntry_t* FromHashEntry = StateID2CoordTable[FromStateID];
+    EnvNAVXYTHETALATHashEntry_t* ToHashEntry = StateID2CoordTable[ToStateID];
+    //TODO - check if one of the gridsearches already computed and then use it.
+    return (int)(NAVXYTHETALAT_COSTMULT_MTOMM * EuclideanDistance_m(FromHashEntry->X, FromHashEntry->Y, ToHashEntry->X,
+                                                                    ToHashEntry->Y) /
+                 EnvNAVXYTHETALATCfg.nominalvel_mpersecs);
+}
+int EnvironmentNAVXYTHETASTAB::GetGoalHeuristic(int stateID)
+{
+//#if USE_HEUR==0
+//    return 0;
+//#endif
+//#if DEBUG
+//    if (stateID >= (int)StateID2CoordTable.size()) {
+//        SBPL_ERROR("ERROR in EnvNAVXYTHETALAT... function: stateID illegal\n");
+//        throw new SBPL_Exception();
+//    }
+//#endif
+//    EnvNAVXYTHETALATHashEntry_t* HashEntry = StateID2CoordTable[stateID];
+//    //computes distances from start state that is grid2D, so it is EndX_c EndY_c
+//    int h2D = grid2DsearchfromDsearchfromgoal->getlowerboundoncostfromstart_inmm(HashEntry->X, HashEntry->Y);
+//    int hEuclid = (int)(NAVXYTHETALAT_COSTMULT_MTOMM * EuclideanDistance_m(HashEntry->X, HashEntry->Y,
+//                                                                           EnvNAVXYTHETALATCfg.EndX_c,
+//                                                                           EnvNAVXYTHETALATCfg.EndY_c));
+//    //define this function if it is used in the planner (heuristic backward search would use it)
+//    return (int)(((double)__max(h2D, hEuclid)) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs);
+    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
+    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
+    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
+    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
+    return 0;
+}
+int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
+{
+#if USE_HEUR==0
+    return 0;
+#endif
+#if DEBUG
+    if (stateID >= (int)StateID2CoordTable.size()) {
+        SBPL_ERROR("ERROR in EnvNAVXYTHETALAT... function: stateID illegal\n");
+        throw new SBPL_Exception();
+    }
+#endif
+    EnvNAVXYTHETALATHashEntry_t* HashEntry = StateID2CoordTable[stateID];
+//    int h2D = grid2Dsearchfromstart->getlowerboundoncostfromstart_inmm(HashEntry->X, HashEntry->Y);
+    int hEuclid = (int)(NAVXYTHETALAT_COSTMULT_MTOMM * EuclideanDistance_m(EnvNAVXYTHETALATCfg.StartX_c,
+                                                                           EnvNAVXYTHETALATCfg.StartY_c, HashEntry->X,
+                                                                           HashEntry->Y));
+    int hAngle = (int) abs(EnvNAVXYTHETALATCfg.StartTheta-HashEntry->Theta);
+    ROS_INFO("hEuclid %i hAngle %i",hEuclid,hAngle);
+    //define this function if it is used in the planner (heuristic backward search would use it)
+    return (int)(((double)hEuclid) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs+hAngle*0);
+}
