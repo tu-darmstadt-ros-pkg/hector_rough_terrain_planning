@@ -101,9 +101,10 @@ void test_normals()
   float orientation = (90.0)/180.0*3.14;
   float position_rating = 10.0;
   int unstable_axis = 10;
-
+#ifdef viewer_on
   terrain_model.computePositionRating(check_pos, orientation,
                                             position_rating, unstable_axis, viewer, view_port_4);
+#endif
 
   float x=0.0;
 
