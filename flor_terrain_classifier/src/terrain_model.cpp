@@ -489,8 +489,8 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
 
     float delta_for_contact = 0.015; //  +- in m
     // PARAMETER smoothing
-    bool distance_smoothing = true;
-    bool angle_smoothing = true;
+    bool distance_smoothing = false;
+    bool angle_smoothing = false;
     float smooth_max_angle = 20.0;
     float smooth_max_distance = 0.05;
 

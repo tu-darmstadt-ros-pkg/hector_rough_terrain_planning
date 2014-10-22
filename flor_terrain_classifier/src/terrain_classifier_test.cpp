@@ -53,10 +53,11 @@ void test_normals()
 
   ROS_INFO("Load point cloud");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::io::loadPCDFile("../pointclouds/left_obstacle_start_zero.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/left_obstacle_start_zero.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
- // pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
+  pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
 
 
   hector_terrain_model::TerrainModel terrain_model(*cloud_original);
@@ -97,13 +98,13 @@ void test_normals()
 
 
   // Position, Orientation (in radiants)
-  pcl::PointXYZ check_pos = pcl::PointXYZ(1.0,3.1, 0.0);
+  pcl::PointXYZ check_pos = pcl::PointXYZ(0.0,-1.1, 0.0);
   float orientation = (90.0)/180.0*3.14;
   float position_rating = 10.0;
   int unstable_axis = 10;
 
   terrain_model.computePositionRating(check_pos, orientation,
-                                            position_rating, unstable_axis, viewer, view_port_4);
+                                            position_rating, unstable_axis);//, viewer, view_port_4);
 
   float x=0.0;
 

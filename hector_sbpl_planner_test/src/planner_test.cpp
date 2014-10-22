@@ -25,6 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
+//
+// planner_test lets one test the sbpl_terrain_planner und publishes the path if any is found.
+// Topic name of the path: "/planner_test/hector_sbpl_terrain_planner/plan"
+//
+// planner_test initializes a sbpl_terrain_planner.
+// planner_test listens to the goal pose which can be set for example in rviz by a 2D nav goal.
+// A pointcloud must be pusblished already.
+//
+// ================================================================================================
 
 
 #include "ros/ros.h"
