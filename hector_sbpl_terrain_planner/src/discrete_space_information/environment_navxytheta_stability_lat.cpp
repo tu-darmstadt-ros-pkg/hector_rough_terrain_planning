@@ -43,8 +43,8 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::PointCloud<pcl::PointXYZ> cloud;
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
-        ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed_Ptr->size());
-        flat_position_rating = terrainModel.minPosRating();
+        ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed.size());
+        flat_position_rating = terrainModel.minPosRating()*0.95;
 
         ROS_INFO("min_position_rating = %f", flat_position_rating);
         sleep(1);
@@ -180,7 +180,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 
     float euclidicCost= sqrt(action->dX*action->dX+action->dY*action->dY);
     float ratio=euclidicCost/(float)basecost;
-    ROS_INFO("Cost Ratio %f euclidic %f base %i",ratio, euclidicCost, basecost);
+  //  ROS_INFO("Cost Ratio %f euclidic %f base %i",ratio, euclidicCost, basecost);
     ROS_INFO("dX %i dY %i dT %i ",action->dX,action->dY,(int)action->endtheta-(int)action->starttheta);
     if (basecost >= INFINITECOST){
         //ROS_WARN("basecost was >= INFINITECOST");
@@ -296,7 +296,7 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     /*positionRating = pow((1/positionRating),3); // self invented -> good?
     int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);*/
 
-    int addCost = (int) (pow(rating_inv, 3) * 100.0 + invalidAxis * 60.0);
+    int addCost = (int)(pow(rating_inv, 2) * 20.0);// (pow(rating_inv, 3) * 100.0 + invalidAxis * 60.0);
 
 
     return addCost;
@@ -318,7 +318,8 @@ int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 int EnvironmentNAVXYTHETASTAB::GetFromToHeuristic(int FromStateID, int ToStateID)
 {
 
-    ROS_INFO("FromTo!!!!!!!!!!!!!!!!!!!!!!!");
+    ROS_INFO("FromTo!!!!!!!!!!!!!!!!!!!!!!!");    
+    assert(0);
 #if USE_HEUR==0
     return 0;
 #endif
@@ -361,6 +362,7 @@ int EnvironmentNAVXYTHETASTAB::GetGoalHeuristic(int stateID)
     ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
     ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
     ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
+    assert(0);
     return 0;
 }
 int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
@@ -379,8 +381,8 @@ int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
     int hEuclid = (int)(NAVXYTHETALAT_COSTMULT_MTOMM * EuclideanDistance_m(EnvNAVXYTHETALATCfg.StartX_c,
                                                                            EnvNAVXYTHETALATCfg.StartY_c, HashEntry->X,
                                                                            HashEntry->Y));
-    int hAngle = (int) abs(EnvNAVXYTHETALATCfg.StartTheta-HashEntry->Theta);
+    int hAngle = (int) (abs(EnvNAVXYTHETALATCfg.StartTheta-HashEntry->Theta)*40);
     ROS_INFO("hEuclid %i hAngle %i",hEuclid,hAngle);
     //define this function if it is used in the planner (heuristic backward search would use it)
-    return (int)(((double)hEuclid) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs+hAngle*0);
+    return (int)((double)(hEuclid+hAngle) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs);
 }
