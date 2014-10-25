@@ -4,9 +4,13 @@
 #include <cstdio>
 #include <ctime>
 #include <sbpl/utils/key.h>
-//#include <geometry_msgs/pos>
 //#include <flor_terrain_classifier/terrain_classifier.h>
 #include <ros/ros.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <cstdlib>
@@ -32,7 +36,7 @@ static long int checks = 0;
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
 {
-    ROS_INFO("entered callback...");
+    ROS_INFO("entered terrainModelCallback...");
 
 
     if(!receivedWorldmodelPC)
@@ -43,7 +47,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::PointCloud<pcl::PointXYZ> cloud;
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
-        ROS_INFO("cloudPTR in terrainModel size %i", terrainModel.cloud_processed.size());
+        ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
         flat_position_rating = terrainModel.minPosRating()*0.95;
 
         ROS_INFO("min_position_rating = %f", flat_position_rating);
@@ -66,6 +70,131 @@ void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPt
     map_center_map=map->info.origin.position;
 }
 
+// for path checking receive path and pcl
+void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const sensor_msgs::PointCloud2 msg){
+    ROS_INFO("environment entered octomap_callback...");
+    if(!receivedWorldmodelPC)
+    {
+        receivedWorldmodelPC=true;
+        pcl::PCLPointCloud2 pcl_pc;
+        pcl_conversions::toPCL(msg, pcl_pc);
+        pcl::PointCloud<pcl::PointXYZ> cloud;
+        pcl::fromPCLPointCloud2(pcl_pc, cloud);
+        terrainModel = hector_terrain_model::TerrainModel(cloud);
+        ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
+        flat_position_rating = terrainModel.minPosRating()*0.95;
+
+        //ROS_INFO("min_position_rating = %f", flat_position_rating);
+        //sleep(1);
+        //sensor_msgs::PointCloud2 cloud_point_msg;
+        //pcl::toROSMsg(cloud, cloud_point_msg);
+        //cloud_point_msg.header.stamp = ros::Time::now();
+        //cloud_point_msg.header.frame_id = "map";
+        //terrainModelPublisher.publish(cloud_point_msg);
+    }
+    else{
+        pcl::PCLPointCloud2 pcl_pc;
+        pcl_conversions::toPCL(msg, pcl_pc);
+        pcl::PointCloud<pcl::PointXYZ> cloud;
+        pcl::fromPCLPointCloud2(pcl_pc, cloud);
+        terrainModel.updateCloud(cloud);
+        ROS_INFO("TerrainModel cloud updated");
+    }
+}
+
+void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
+
+    ROS_INFO("environment entered pathCallback");
+
+    if (msg.poses.empty()) return;
+    geometry_msgs::PoseStamped poseStamped = msg.poses[0];
+    geometry_msgs::Pose pose = poseStamped.pose;
+    float px = pose.position.x;
+    float py = pose.position.y;
+    float pz = pose.position.z;
+    pcl::PointXYZ checkpos = pcl::PointXYZ(px, py, pz);
+    // conversion from Quaternion to yaw (en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
+    geometry_msgs::Quaternion q = pose.orientation;
+    float q0 = q.w, q1 = q.x, q2 = q.y, q3 = q.z;
+   // float roll = atan2(2*(q0*q1 + q2*q3), 1 - 2*(pow(q1,2)+pow(q2,2)));
+   // float pitch = asin(2*(q0*q2 - q3*q1));
+
+    float yaw = atan2(2*(q0*q3 + q1*q2), 1 - 2*(pow(q2,2)+pow(q3,2))); // TODO check
+    float orientation = yaw;
+
+    ROS_INFO("PATH HASS %lu POSES", msg.poses.size());
+    ROS_INFO("FIRST POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f", px, py, pz, orientation);
+
+    if (receivedWorldmodelPC){
+
+        int display_every_x_poses = 10; // display every x poses from the path.
+        visualization_msgs::MarkerArray marker_array;
+
+        for(unsigned int i = 0; i < msg.poses.size(); i = i + display_every_x_poses){
+            geometry_msgs::PoseStamped poseStamped = msg.poses[i];
+            geometry_msgs::Pose pose = poseStamped.pose;
+            float px = -pose.position.x; // TODO transformation?
+            float py = -pose.position.y;
+            float pz = pose.position.z;
+            ROS_INFO("POSE IS %f, %f, %f,", px, py, pz);
+            pcl::PointXYZ checkpos = pcl::PointXYZ(px, py, pz);
+            // conversion from Quaternion to yaw (en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
+            geometry_msgs::Quaternion q = pose.orientation;
+            float q0 = q.w, q1 = q.x, q2 = q.y, q3 = q.z;
+           // float roll = atan2(2*(q0*q1 + q2*q3), 1 - 2*(pow(q1,2)+pow(q2,2)));
+           // float pitch = asin(2*(q0*q2 - q3*q1));
+
+            float yaw = atan2(2*(q0*q3 + q1*q2), 1 - 2*(pow(q2,2)+pow(q3,2))); // TODO check
+            float orientation = yaw;
+
+            float position_rating;
+            int instable_axis_unused;
+            terrainModel.computePositionRating(checkpos, orientation, position_rating, instable_axis_unused);
+            ROS_INFO("POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f, POSITION RATING %f", px, py, pz, orientation, position_rating);
+
+            visualization_msgs::Marker marker_cube;
+            marker_cube.header.frame_id = "base_link";
+            marker_cube.header.stamp = ros::Time();
+            marker_cube.ns = "cube";
+            marker_cube.id = i;
+            marker_cube.type = visualization_msgs::Marker::CUBE;
+            marker_cube.action = visualization_msgs::Marker::ADD;
+            marker_cube.pose.position.x = px; //1; // px
+            marker_cube.pose.position.y = py; // 1; // py
+            marker_cube.pose.position.z = pz; // 1; // pz
+            marker_cube.pose.orientation.x = 0.0;
+            marker_cube.pose.orientation.y = 0.0;
+            marker_cube.pose.orientation.z = orientation; // 0.0; //TODO
+            marker_cube.pose.orientation.w = 1.0;
+            marker_cube.scale.x = 0.35; //width
+            marker_cube.scale.y = 0.25; //length
+            marker_cube.scale.z = 0.01;
+            marker_cube.color.a = 1.0;
+            marker_cube.color.r = 0.0; //TODO
+            marker_cube.color.g = 1.0;
+            marker_cube.color.b = 0.0;
+
+            marker_array.markers.push_back(marker_cube);
+        }
+
+        pathRatingStatesPublisher.publish(marker_array);
+        marker_array.markers.clear();
+
+    }
+    else{
+        ROS_INFO("but no pointcloud exists yet");
+        return;
+    }
+
+    // pathRatingStatesPublisher.
+
+}
+
+void EnvironmentNAVXYTHETASTAB::tfCallback(const tf2_msgs::TFMessage msg){
+    // TODO get the current pose
+}
+
+
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 {
 
@@ -74,6 +203,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
 
     terrainModelPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/cloud_input", 1);
     expandedStatesPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/expandedStates", 1);
+    pathRatingStatesPublisher =nh_.advertise<visualization_msgs::MarkerArray>("/hector/sbpl_terrain_planner/path_rating_rectangles", 1);
     expandedStatesCloud.clear();
     markers.markers.clear();
     markerID=0;
@@ -82,6 +212,10 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     ros::ServiceClient client = nh_.serviceClient<flor_terrain_classifier::TerrainModelService>("/flor/terrain_classifier/generate_terrain_model");
     flor_terrain_classifier::TerrainModelService srv;
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
+    subOctomap = nh_.subscribe("/hector_octomap_server/octomap_point_cloud_centers", 1000,  &EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback, this);
+    subPath = nh_.subscribe("/drivepath", 1000,  &EnvironmentNAVXYTHETASTAB::pathCallback, this);
+  //  subTF = nh_.subscribe("/tf", 1000, EnvironmentNAVXYTHETASTAB::tfCallback, this);
+
     client.call(srv);
     ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor");
     //  tf_listener_.reset(new tf::TransformListener());
@@ -91,14 +225,14 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     {
         sleep(1);
         counter++;
-        ROS_INFO("Constructor spin %i",counter);
+        ROS_INFO("[sbpl_terrain_planner: environment_navxytheta_stability_lat] Constructor spin %i - waiting for pointcloud to build environment.",counter);
         ros::spinOnce();
         //ros::Duration(0.1).sleep();
         client.call(srv);
 
     }
 
-    //ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor END");
+    ROS_INFO("environment built successfully");
 
 }
 
@@ -188,8 +322,9 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
     //  addcost=0.f;
-    float robotSize=0.3;
     /**
+    float robotSize=0.3;
+
     for( int i=0; i<10; ++i)
     {
         for( int j=0; j<10; ++j)

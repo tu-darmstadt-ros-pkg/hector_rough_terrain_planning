@@ -10,6 +10,7 @@
 #include <sbpl/utils/utils.h>
 #include <flor_terrain_classifier/terrain_model.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <nav_msgs/Path.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 
@@ -84,6 +85,9 @@ virtual bool IsValidConfiguration(int X, int Y, int Theta);
 
     // bool IsWithinMapCell(int X,int Y);
 
+    void octomap_point_cloud_centers_Callback(const sensor_msgs::PointCloud2 msg);
+    void pathCallback(const nav_msgs::Path msg);
+    void tfCallback(const tf2_msgs::TFMessage msg);
     void terrainModelCallback(const sensor_msgs::PointCloud2 msg);
     void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
     void UpdataData();
@@ -108,6 +112,10 @@ protected:
    // void tfToMap(double tx, double ty, double& mx, double& my);
 
     ros::Subscriber subTerrainModel;
+    ros::Subscriber subOctomap;
+    ros::Subscriber subPath;
+    ros::Subscriber subTF;
+
     bool receivedWorldmodelPC;
 
     ros::Time t_lastMapPos_;
@@ -117,8 +125,12 @@ protected:
     geometry_msgs::Point map_center_map;
     ros::Publisher terrainModelPublisher;
     ros::Publisher expandedStatesPublisher;
+    ros::Publisher pathRatingStatesPublisher;
     pcl::PointCloud<pcl::PointXYZI> expandedStatesCloud;
     visualization_msgs::MarkerArray markers;
+    pcl::PointXYZ current_robot_pose;
+    float current_robot_orientation;
+
     int markerID;
 
 

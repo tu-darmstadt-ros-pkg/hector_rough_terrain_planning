@@ -88,8 +88,8 @@ void TerrainClassifierNode::loadTestPointCloud()
 
   //pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/ramp2_filtered.pcd", *cloud_input);
 
- // pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/left_obstacle_start_zero.pcd", *cloud_input);
-pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/simple_ramp_obstacle.pcd", *cloud_input);
+  pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/left_obstacle_start_zero.pcd", *cloud_input);
+ // pcl::io::loadPCDFile("/opt/hector/hydro/stacks/hector_rough_terrain_planning/flor_terrain_classifier/pointclouds/simple_ramp_obstacle.pcd", *cloud_input);
 
   //add filtered point cloud to classifier
   terrain_classifier->addCloud(cloud_input);
