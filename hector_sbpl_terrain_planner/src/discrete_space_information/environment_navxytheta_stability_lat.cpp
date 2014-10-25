@@ -105,25 +105,7 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
 void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
     ROS_INFO("environment entered pathCallback");
-
-    if (msg.poses.empty()) return;
-    geometry_msgs::PoseStamped poseStamped = msg.poses[0];
-    geometry_msgs::Pose pose = poseStamped.pose;
-    float px = pose.position.x;
-    float py = pose.position.y;
-    float pz = pose.position.z;
-    pcl::PointXYZ checkpos = pcl::PointXYZ(px, py, pz);
-    // conversion from Quaternion to yaw (en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
-    geometry_msgs::Quaternion q = pose.orientation;
-    float q0 = q.w, q1 = q.x, q2 = q.y, q3 = q.z;
-   // float roll = atan2(2*(q0*q1 + q2*q3), 1 - 2*(pow(q1,2)+pow(q2,2)));
-   // float pitch = asin(2*(q0*q2 - q3*q1));
-
-    float yaw = atan2(2*(q0*q3 + q1*q2), 1 - 2*(pow(q2,2)+pow(q3,2))); // TODO check
-    float orientation = yaw;
-
-    ROS_INFO("PATH HASS %lu POSES", msg.poses.size());
-    ROS_INFO("FIRST POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f", px, py, pz, orientation);
+    ROS_INFO("PATH HAS %lu POSES", msg.poses.size());
 
     if (receivedWorldmodelPC){
 
@@ -133,11 +115,12 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
         for(unsigned int i = 0; i < msg.poses.size(); i = i + display_every_x_poses){
             geometry_msgs::PoseStamped poseStamped = msg.poses[i];
             geometry_msgs::Pose pose = poseStamped.pose;
-            float px = -pose.position.x; // TODO transformation?
-            float py = -pose.position.y;
+            float px = pose.position.x; // TODO transformation?
+            float py = pose.position.y;
             float pz = pose.position.z;
             ROS_INFO("POSE IS %f, %f, %f,", px, py, pz);
             pcl::PointXYZ checkpos = pcl::PointXYZ(px, py, pz);
+
             // conversion from Quaternion to yaw (en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
             geometry_msgs::Quaternion q = pose.orientation;
             float q0 = q.w, q1 = q.x, q2 = q.y, q3 = q.z;
@@ -170,7 +153,7 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             marker_cube.scale.y = 0.25; //length
             marker_cube.scale.z = 0.01;
             marker_cube.color.a = 1.0;
-            marker_cube.color.r = 0.0; //TODO
+            marker_cube.color.r = 0.0; //TODO anpassung ans position rating
             marker_cube.color.g = 1.0;
             marker_cube.color.b = 0.0;
 
