@@ -102,6 +102,13 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
     }
 }
 
+void rotatePoint(geometry_msgs::Point& p, float degree /*radiants*/){
+    float px = cos(degree)*p.x - sin(degree)*p.y;
+    float py = sin(degree)*p.x + cos(degree)*p.y;
+    float pz = p.z;
+    p.x = px; p.y = py; p.z= pz;
+}
+
 void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
     ROS_INFO("environment entered pathCallback");
@@ -111,6 +118,16 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
         int display_every_x_poses = 10; // display every x poses from the path.
         visualization_msgs::MarkerArray marker_array;
+        float l = 0.5 / 2.0; // length of rectangle (x) is 0.5cm
+        float w = 0.35 / 2.0; // width of rectangle (y) is 0.35cm
+
+        visualization_msgs::Marker marker_linelist;
+        marker_linelist.header.frame_id = "base_link";
+        marker_linelist.header.stamp = ros::Time();
+        marker_linelist.ns = "rectangles";
+        marker_linelist.id = 0;
+        marker_linelist.type = visualization_msgs::Marker::LINE_LIST;
+        marker_linelist.action = visualization_msgs::Marker::ADD;
 
         for(unsigned int i = 0; i < msg.poses.size(); i = i + display_every_x_poses){
             geometry_msgs::PoseStamped poseStamped = msg.poses[i];
@@ -135,6 +152,48 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             terrainModel.computePositionRating(checkpos, orientation, position_rating, instable_axis_unused);
             ROS_INFO("POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f, POSITION RATING %f", px, py, pz, orientation, position_rating);
 
+
+            marker_linelist.pose.position.x = px; //1; // px
+            marker_linelist.pose.position.y = py; // 1; // py
+            marker_linelist.pose.position.z = pz; // 1; // pz
+            marker_linelist.pose.orientation.x = 0.0;
+            marker_linelist.pose.orientation.y = 0.0;
+            marker_linelist.pose.orientation.z = 0.0; // orientation? //TODO
+            marker_linelist.pose.orientation.w = 1.0;
+            marker_linelist.scale.x = 0.03; //width
+            marker_linelist.scale.y = 0.25; //length
+            marker_linelist.scale.z = 0.01;
+            marker_linelist.color.a = 1.0;
+            marker_linelist.color.r = 0.0; //TODO anpassung ans position rating
+            marker_linelist.color.g = 1.0;
+            marker_linelist.color.b = 0.0;
+            geometry_msgs::Point pc, p0, p1, p2, p3;
+            /*pc.x = cos(orientation)*l - sin(orientation)*w;
+            pc.y = sin(orientation)*l + cos(orientation)*w;
+            pc.z = 0;*/
+            p0.x = l; p0.y = w; p0.z = 0;
+            p1.x = -l; p1.y = w; p1.z = 0;
+            p2.x = -l; p2.y = -w; p2.z = 0;
+            p3.x = l; p3.y = -w; p3.z = 0;
+            rotatePoint(p0, orientation);
+            rotatePoint(p1, orientation);
+            rotatePoint(p2, orientation);
+            rotatePoint(p3, orientation);
+            p0.x = p0.x + px; p0.y = p0.y + py; p0.z = p0.z + pz;
+            p1.x = p1.x + px; p1.y = p1.y + py; p1.z = p1.z + pz;
+            p2.x = p2.x + px; p2.y = p2.y + py; p2.z = p2.z + pz;
+            p3.x = p3.x + px; p3.y = p3.y + py; p3.z = p3.z + pz;
+
+            marker_linelist.points.push_back(p0);
+            marker_linelist.points.push_back(p1);
+            marker_linelist.points.push_back(p1);
+            marker_linelist.points.push_back(p2);
+            marker_linelist.points.push_back(p2);
+            marker_linelist.points.push_back(p3);
+            marker_linelist.points.push_back(p3);
+            marker_linelist.points.push_back(p0);
+
+            /*
             visualization_msgs::Marker marker_cube;
             marker_cube.header.frame_id = "base_link";
             marker_cube.header.stamp = ros::Time();
@@ -156,10 +215,10 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             marker_cube.color.r = 0.0; //TODO anpassung ans position rating
             marker_cube.color.g = 1.0;
             marker_cube.color.b = 0.0;
-
-            marker_array.markers.push_back(marker_cube);
+            marker_array.markers.push_back(marker_cube);*/
         }
 
+        marker_array.markers.push_back(marker_linelist);
         pathRatingStatesPublisher.publish(marker_array);
         marker_array.markers.clear();
 
@@ -168,8 +227,6 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
         ROS_INFO("but no pointcloud exists yet");
         return;
     }
-
-    // pathRatingStatesPublisher.
 
 }
 
