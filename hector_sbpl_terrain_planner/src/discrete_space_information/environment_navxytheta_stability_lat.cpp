@@ -4,14 +4,14 @@
 #include <cstdio>
 #include <ctime>
 #include <sbpl/utils/key.h>
-//#include <flor_terrain_classifier/terrain_classifier.h>
 #include <ros/ros.h>
+#include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
-
+#include <geometry_msgs/TransformStamped.h>
+#include <std_msgs/ColorRGBA.h>
+#include <tf2_msgs/TFMessage.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <cstdlib>
 
@@ -20,7 +20,8 @@
 #include <flor_terrain_classifier/TerrainModel.h>
 #include <flor_terrain_classifier/TerrainModelService.h>
 #include <flor_terrain_classifier/terrain_classifier.h>
-#include <visualization_msgs/Marker.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 using namespace std;
 
 #if TIME_DEBUG
@@ -36,9 +37,6 @@ static long int checks = 0;
 
 void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointCloud2 msg)
 {
-    ROS_INFO("entered terrainModelCallback...");
-
-
     if(!receivedWorldmodelPC)
     {
         receivedWorldmodelPC=true;
@@ -56,7 +54,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::toROSMsg(cloud, cloud_point_msg);
         cloud_point_msg.header.stamp = ros::Time::now();
         cloud_point_msg.header.frame_id = "map";
-        terrainModelPublisher.publish(cloud_point_msg);
+        pubTerrainModel.publish(cloud_point_msg);
     }
     else{
         ROS_INFO("entered Callback, world model was received before");
@@ -70,9 +68,19 @@ void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPt
     map_center_map=map->info.origin.position;
 }
 
+
+void EnvironmentNAVXYTHETASTAB::tfCallback(const tf2_msgs::TFMessage& msg){
+    // TODO get the current pose
+    unsigned int s = msg.transforms.size();
+    geometry_msgs::TransformStamped msgtf = msg.transforms[0];
+    /*ROS_INFO("tfCallback: size = %i, msg.transforms[0] x y z = %f %f %f", s,
+             msgtf.transform.translation.x,
+             msgtf.transform.translation.y,
+             msgtf.transform.translation.z);*/
+}
+
 // for path checking receive path and pcl
 void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const sensor_msgs::PointCloud2 msg){
-    ROS_INFO("environment entered octomap_callback...");
     if(!receivedWorldmodelPC)
     {
         receivedWorldmodelPC=true;
@@ -111,12 +119,11 @@ void rotatePoint(geometry_msgs::Point& p, float degree /*radiants*/){
 
 void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
-    ROS_INFO("environment entered pathCallback");
-    ROS_INFO("PATH HAS %lu POSES", msg.poses.size());
+    ROS_INFO("pathcallback, %lu poses", msg.poses.size());
 
     if (receivedWorldmodelPC){
 
-        int display_every_x_poses = 10; // display every x poses from the path.
+        int display_every_x_poses = 15; // display every x poses from the path.
         visualization_msgs::MarkerArray marker_array;
         float l = 0.5 / 2.0; // length of rectangle (x) is 0.5cm
         float w = 0.35 / 2.0; // width of rectangle (y) is 0.35cm
@@ -132,10 +139,35 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
         for(unsigned int i = 0; i < msg.poses.size(); i = i + display_every_x_poses){
             geometry_msgs::PoseStamped poseStamped = msg.poses[i];
             geometry_msgs::Pose pose = poseStamped.pose;
-            float px = pose.position.x; // TODO transformation?
+            float px = pose.position.x;
             float py = pose.position.y;
             float pz = pose.position.z;
-            ROS_INFO("POSE IS %f, %f, %f,", px, py, pz);
+            if (i == 0){ // publish robot marker on its spot
+                visualization_msgs::Marker robot_pose_msg;
+                robot_pose_msg.header.frame_id = "base_link";
+                robot_pose_msg.header.stamp = ros::Time();
+                robot_pose_msg.id = 0;
+                robot_pose_msg. type = visualization_msgs::Marker::CUBE;
+                robot_pose_msg.action = visualization_msgs::Marker::ADD;
+                robot_pose_msg.pose.position.x = px; //1; // px
+                robot_pose_msg.pose.position.y = py; // 1; // py
+                robot_pose_msg.pose.position.z = pz + 0.1;
+                robot_pose_msg.pose.orientation.x = 0.0; //TODO
+                robot_pose_msg.pose.orientation.y = 0.0;
+                robot_pose_msg.pose.orientation.z = 0.0;
+                robot_pose_msg.pose.orientation.w = 1.0;
+                robot_pose_msg.scale.x = 0.2; //width
+                robot_pose_msg.scale.y = 0.25; //length
+                robot_pose_msg.scale.z = 0.2;
+                robot_pose_msg.color.a = 1;
+                robot_pose_msg.color.r = 1.0;
+                robot_pose_msg.color.g = 1.0;
+                robot_pose_msg.color.b = 1.0;
+
+                pubRobotMarker.publish(robot_pose_msg);
+
+            }
+            ROS_INFO("pose %f, %f, %f,", px, py, pz);
             pcl::PointXYZ checkpos = pcl::PointXYZ(px, py, pz);
 
             // conversion from Quaternion to yaw (en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
@@ -149,13 +181,16 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
             float position_rating;
             int instable_axis_unused;
-            terrainModel.computePositionRating(checkpos, orientation, position_rating, instable_axis_unused);
+            if (false == terrainModel.computePositionRating(checkpos, orientation, position_rating, instable_axis_unused)){
+                position_rating = 0.0;
+                instable_axis_unused = 0;
+            }
             ROS_INFO("POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f, POSITION RATING %f", px, py, pz, orientation, position_rating);
 
 
-            marker_linelist.pose.position.x = px; //1; // px
-            marker_linelist.pose.position.y = py; // 1; // py
-            marker_linelist.pose.position.z = pz; // 1; // pz
+            marker_linelist.pose.position.x = 0; //1; // px
+            marker_linelist.pose.position.y = 0; // 1; // py
+            marker_linelist.pose.position.z = 0; // 1; // pz
             marker_linelist.pose.orientation.x = 0.0;
             marker_linelist.pose.orientation.y = 0.0;
             marker_linelist.pose.orientation.z = 0.0; // orientation? //TODO
@@ -164,9 +199,25 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             marker_linelist.scale.y = 0.25; //length
             marker_linelist.scale.z = 0.01;
             marker_linelist.color.a = 1.0;
-            marker_linelist.color.r = 0.0; //TODO anpassung ans position rating
+            marker_linelist.color.r = 1.0;
             marker_linelist.color.g = 1.0;
-            marker_linelist.color.b = 0.0;
+            marker_linelist.color.b = 1.0;
+            std_msgs::ColorRGBA rating_color;
+
+            float iv = 0.3; // invalid rating
+            if(position_rating<iv){
+                rating_color.a = 1.0;
+                rating_color.r = 1.0;
+                rating_color.g = 0.0;
+                rating_color.b = position_rating/iv;
+            }
+            else{
+                rating_color.a = 1.0;
+                rating_color.r = 0;
+                rating_color.g = (position_rating-iv)/iv;
+                rating_color.b = (iv*3.0-position_rating)/iv;
+            }
+
             geometry_msgs::Point pc, p0, p1, p2, p3;
             /*pc.x = cos(orientation)*l - sin(orientation)*w;
             pc.y = sin(orientation)*l + cos(orientation)*w;
@@ -179,19 +230,39 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             rotatePoint(p1, orientation);
             rotatePoint(p2, orientation);
             rotatePoint(p3, orientation);
-            p0.x = p0.x + px; p0.y = p0.y + py; p0.z = p0.z + pz;
+            p0.x = p0.x + px; p0.y = p0.y + py; p0.z = p0.z + pz;  // TODO transformation?
             p1.x = p1.x + px; p1.y = p1.y + py; p1.z = p1.z + pz;
             p2.x = p2.x + px; p2.y = p2.y + py; p2.z = p2.z + pz;
             p3.x = p3.x + px; p3.y = p3.y + py; p3.z = p3.z + pz;
 
+            // following should be a real (not estimated) transformation
+            rotatePoint(p0, M_PI);
+            rotatePoint(p1, M_PI);
+            rotatePoint(p2, M_PI);
+            rotatePoint(p3, M_PI);
+            float dx = 4.4;
+            float dy = 1.0;
+            p0.x = p0.x +dx; p0.y = p0.y + dy; p0.z = p0.z + 0;
+            p1.x = p1.x +dx; p1.y = p1.y + dy; p1.z = p1.z + 0;
+            p2.x = p2.x +dx; p2.y = p2.y + dy; p2.z = p2.z + 0;
+            p3.x = p3.x +dx; p3.y = p3.y + dy; p3.z = p3.z + 0;
+
             marker_linelist.points.push_back(p0);
             marker_linelist.points.push_back(p1);
+            marker_linelist.colors.push_back(rating_color);
             marker_linelist.points.push_back(p1);
             marker_linelist.points.push_back(p2);
+            marker_linelist.colors.push_back(rating_color);
             marker_linelist.points.push_back(p2);
             marker_linelist.points.push_back(p3);
+            marker_linelist.colors.push_back(rating_color);
             marker_linelist.points.push_back(p3);
             marker_linelist.points.push_back(p0);
+            marker_linelist.colors.push_back(rating_color);
+            marker_linelist.colors.push_back(rating_color);
+            marker_linelist.colors.push_back(rating_color);
+            marker_linelist.colors.push_back(rating_color);
+            marker_linelist.colors.push_back(rating_color);
 
             /*
             visualization_msgs::Marker marker_cube;
@@ -219,7 +290,7 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
         }
 
         marker_array.markers.push_back(marker_linelist);
-        pathRatingStatesPublisher.publish(marker_array);
+        pubPathRatingStates.publish(marker_array);
         marker_array.markers.clear();
 
     }
@@ -230,9 +301,6 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
 }
 
-void EnvironmentNAVXYTHETASTAB::tfCallback(const tf2_msgs::TFMessage msg){
-    // TODO get the current pose
-}
 
 
 EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
@@ -241,9 +309,10 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     receivedWorldmodelPC=false;
     ros::NodeHandle nh_("~");
 
-    terrainModelPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/cloud_input", 1);
-    expandedStatesPublisher =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/expandedStates", 1);
-    pathRatingStatesPublisher =nh_.advertise<visualization_msgs::MarkerArray>("/hector/sbpl_terrain_planner/path_rating_rectangles", 1);
+    pubTerrainModel =nh_.advertise<sensor_msgs::PointCloud2>("/hector/hector_sbpl_terrain_planner/cloud_input", 1);
+    pubexpandedStates =nh_.advertise<sensor_msgs::PointCloud2>("/hector_sbpl_terrain_planner/expandedStates", 1);
+    pubPathRatingStates =nh_.advertise<visualization_msgs::MarkerArray>("/hector_sbpl_terrain_planner/path_rating_rectangles", 1);
+    pubRobotMarker =nh_.advertise<visualization_msgs::Marker>("/hector_sbpl_terrain_planner/robot_position", 1);
     expandedStatesCloud.clear();
     markers.markers.clear();
     markerID=0;
@@ -254,7 +323,7 @@ EnvironmentNAVXYTHETASTAB::EnvironmentNAVXYTHETASTAB()
     subTerrainModel= nh_.subscribe("/flor/terrain_classifier/cloud_input", 1000,  &EnvironmentNAVXYTHETASTAB::terrainModelCallback, this);
     subOctomap = nh_.subscribe("/hector_octomap_server/octomap_point_cloud_centers", 1000,  &EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback, this);
     subPath = nh_.subscribe("/drivepath", 1000,  &EnvironmentNAVXYTHETASTAB::pathCallback, this);
-  //  subTF = nh_.subscribe("/tf", 1000, EnvironmentNAVXYTHETASTAB::tfCallback, this);
+    subTF = nh_.subscribe("/tf", 1000, &EnvironmentNAVXYTHETASTAB::tfCallback, this);
 
     client.call(srv);
     ROS_INFO("called terrain_classifier/cloud_input service in EnvironmentNAVXYTHETASTAB constructor");
@@ -390,7 +459,7 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     pcl::toROSMsg(expandedStatesCloud, cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
     cloud_point_msg.header.frame_id = "map";
-    expandedStatesPublisher.publish(cloud_point_msg);
+    pubexpandedStates.publish(cloud_point_msg);
 
 
 

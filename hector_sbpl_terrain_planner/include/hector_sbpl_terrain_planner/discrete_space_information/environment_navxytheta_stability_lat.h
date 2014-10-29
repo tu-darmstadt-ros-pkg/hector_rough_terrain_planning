@@ -87,7 +87,7 @@ virtual bool IsValidConfiguration(int X, int Y, int Theta);
 
     void octomap_point_cloud_centers_Callback(const sensor_msgs::PointCloud2 msg);
     void pathCallback(const nav_msgs::Path msg);
-    void tfCallback(const tf2_msgs::TFMessage msg);
+    void tfCallback(const tf2_msgs::TFMessage &msg);
     void terrainModelCallback(const sensor_msgs::PointCloud2 msg);
     void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
     void UpdataData();
@@ -123,9 +123,10 @@ protected:
     std::vector<geometry_msgs::Point> footprint_;
     boost::shared_ptr<tf::TransformListener> tf_listener_;
     geometry_msgs::Point map_center_map;
-    ros::Publisher terrainModelPublisher;
-    ros::Publisher expandedStatesPublisher;
-    ros::Publisher pathRatingStatesPublisher;
+    ros::Publisher pubTerrainModel;
+    ros::Publisher pubexpandedStates;
+    ros::Publisher pubPathRatingStates;
+    ros::Publisher pubRobotMarker;
     pcl::PointCloud<pcl::PointXYZI> expandedStatesCloud;
     visualization_msgs::MarkerArray markers;
     pcl::PointXYZ current_robot_pose;

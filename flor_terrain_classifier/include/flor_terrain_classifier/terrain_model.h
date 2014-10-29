@@ -95,10 +95,25 @@ public:
 
     float minPosRating();
 
-    float width; // y
-    float length;  // x
+    // Parameter initialized in contructor
+    float robot_length;  // x
+    float robot_width; // y
     Eigen::Vector3f offset_CM;
-
+    float minimum_distance;
+    float invalid_rating; // actually 0
+    float invalid_angle; // degree
+    float delta_for_contact;
+    bool distance_smoothing;
+    bool angle_smoothing;
+    float smooth_max_angle;
+    float smooth_max_distance;
+    bool tip_over;
+#ifdef viewer_on
+    bool draw_convex_hull_first_polygon;
+    bool draw_convex_hull_ground_points;
+    bool draw_convex_hull_iterative;
+    bool draw_convex_hull_iterative_ground_points;
+#endif
 
 
     //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;
@@ -110,9 +125,6 @@ public:
     pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pcl;
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
 
-
-    static const float invalid_rating = 0.3; // actually 0
-    static const float invalid_angle = 40; // degree
 
 private:
     float planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p);

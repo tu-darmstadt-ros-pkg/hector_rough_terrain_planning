@@ -9,14 +9,28 @@ TerrainModel::TerrainModel()
 
 TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
-   ////ROS_INFO("terrainmodel cloud size = %i", cloud_processed.size());
-    world_pcl_ptr= cloud.makeShared();//pcl::PointCloud<pcl::PointXYZ>::Ptr (&cloud_processed);
-   ////ROS_INFO("terrainmodel cloudPTR size = %i", cloud_processed_Ptr->size());
+    world_pcl_ptr= cloud.makeShared();
 
-    // Parameter Scale
-    width = 0.50; // y
-    length = 0.70; // x
-    offset_CM = Eigen::Vector3f(0.0,0.0,0.20);
+    // PARAMETER
+    robot_length = 0.50; // [m] x for Obelix 0.54
+    robot_width = 0.50; // [m] y for Obelix 0.56
+    offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
+    minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
+    invalid_rating = 0.3; // default: 0.3 theoretically 0
+    invalid_angle = 40; // [degree] highest considered stable angle
+    delta_for_contact = 0.015; //  [m] +- delta for considering a ground point touching the robot
+    tip_over = true;
+    //smoothing the supporting polygon - important if tip_over is active.
+    distance_smoothing = true;
+    angle_smoothing = true;
+    smooth_max_angle = 20.0;
+    smooth_max_distance = 0.05;
+#ifdef viewer_on
+    draw_convex_hull_first_polygon = true;
+    draw_convex_hull_ground_points = true;
+    draw_convex_hull_iterative = true;
+    draw_convex_hull_iterative_ground_points= true;
+#endif
 }
 
 TerrainModel::~TerrainModel()
@@ -313,11 +327,11 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
 // computes the minimum Rating if standing flat on the ground
 float TerrainModel::minPosRating(){
     pcl::PointXYZ p0 = pcl::PointXYZ(0.0, 0.0, 0.0);
-    pcl::PointXYZ p1 = pcl::PointXYZ(length, 0.0, 0.0);
-    pcl::PointXYZ p2 = pcl::PointXYZ(length, width, 0.0);
-    pcl::PointXYZ p3 = pcl::PointXYZ(0.0, width, 0.0);
+    pcl::PointXYZ p1 = pcl::PointXYZ(robot_length, 0.0, 0.0);
+    pcl::PointXYZ p2 = pcl::PointXYZ(robot_length, robot_width, 0.0);
+    pcl::PointXYZ p3 = pcl::PointXYZ(0.0, robot_width, 0.0);
 
-    pcl::PointXYZ mid = pcl::PointXYZ(length / 2.0, width / 2.0, 0.0);
+    pcl::PointXYZ mid = pcl::PointXYZ(robot_length / 2.0, robot_width / 2.0, 0.0);
     pcl::PointXYZ center_mass = addPointVector(mid, offset_CM);
 
     std::vector<pcl::PointXYZ> flat_points;
@@ -393,12 +407,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
                                     const pcl::PointXYZ& tip_over_axis_vector,
                                     const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
                                     const pcl::PointXYZ& tip_over_direction,
-                                    pcl::PointXYZ& support_point)
-{
-
-    // PARAMETER
-    float minimum_distance = 0.10; // minimum distance in which a support point can be found from the last one.
-    // causes problems, might not find supp3 even if it would be a valid polygon
+                                    pcl::PointXYZ& support_point){
 
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
     cloud_projected.resize(pointcloud_robo.size());
@@ -487,12 +496,6 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                                                           std::vector<unsigned int>& convex_hull_indices, // empty before call
                                                           pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points){ // empty before call
 
-    float delta_for_contact = 0.015; //  +- in m
-    // PARAMETER smoothing
-    bool distance_smoothing = false;
-    bool angle_smoothing = false;
-    float smooth_max_angle = 20.0;
-    float smooth_max_distance = 0.05;
 
 
     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
@@ -506,7 +509,7 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
         const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
         if(fabs(dist) < delta_for_contact)
         {
-            if (!iterative){
+            if (iterative == false){
                 ground_contact_points->push_back(pcl::PointXYZ(p.x,p.y,p.z));
             }
             else {
@@ -710,19 +713,19 @@ pcl::PointXYZ TerrainModel::computeCenterOfMass(const pcl::PointXYZ &p1_left,
 void TerrainModel::computeRobotEdgePoints(const pcl::PointXYZ check_pos, const float orientation,
                             pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3){
 
-    p0=pcl::PointXYZ(+ 0.5*length, + 0.5*width, 0);
+    p0=pcl::PointXYZ(+ 0.5*robot_length, + 0.5*robot_width, 0);
     p0 = rotatePoint(p0, orientation);
     p0 = addPointVector(p0, check_pos);
 
-    p1=pcl::PointXYZ(- 0.5*length, + 0.5*width, 0);
+    p1=pcl::PointXYZ(- 0.5*robot_length, + 0.5*robot_width, 0);
     p1 = rotatePoint(p1, orientation);
     p1 = addPointVector(p1, check_pos);
 
-    p2=pcl::PointXYZ(- 0.5*length, - 0.5*width, 0);
+    p2=pcl::PointXYZ(- 0.5*robot_length, - 0.5*robot_width, 0);
     p2 = rotatePoint(p2, orientation);
     p2 = addPointVector(p2, check_pos);
 
-    p3=pcl::PointXYZ(+ 0.5*length, - 0.5*width, 0);
+    p3=pcl::PointXYZ(+ 0.5*robot_length, - 0.5*robot_width, 0);
     p3 = rotatePoint(p3, orientation);
     p3 = addPointVector(p3, check_pos);
 }
@@ -818,14 +821,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     position_rating = 0.0;
     unstable_axis = 0;
-
-    // Parameter tip_over and drawbools
-    bool tip_over_active = true;
-#ifdef viewer_on
-    bool draw_convex_hull_first_polygon = true;
-    bool draw_convex_hull_iterative = true;
-    bool draw_convex_hull_iterative_ground_points= true;
-#endif
 
     // Points at the edges of the robot (flat ground)
     pcl::PointXYZ p0, p1, p2, p3; // Edge Points
@@ -951,6 +946,15 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
       // //ROS_INFO("time for computeHull [mikrosec] = %i", (int)time_duration_computeHull);
 
 
+#ifdef viewer_on // draw ground contact
+        if (draw_convex_hull_ground_points){
+            for (unsigned int j = 0; j < ground_contact_points->size(); ++j){
+                std::string name ="groundContactArea"+boost::lexical_cast<std::string>(j);
+                viewer.addSphere(ground_contact_points->at(j), 0.01,0,1,1, name, viewport);
+            }
+        }
+#endif
+
         // check if check_pos is in hull
         bool center_in_hull = true;
 
@@ -1068,10 +1072,13 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
             viewer.addSphere(convex_hull_points[i], 0.025,0,1,0, namech,2 /*viewport*/);
         }
     }
+
         viewer.addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2 /*viewport*/);
         viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
         viewer.addSphere(robot_point_mid, 0.05,0,1,0, "proMidx", viewport);
         viewer.addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport);
+
+
 #endif
 
     for (unsigned int j = 0; j < rating.size(); j++){
@@ -1081,8 +1088,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     }
 
     // -------------------------------------------------------------------------//
+    // -----------------------TIP OVER------------------------------------------//
+    // -------------------------------------------------------------------------//
 
-    if (tip_over_active){
+    if (tip_over){
         // iterative checking if still fine after flipping over invalid axis
         for (unsigned int i = 0; i < rating.size(); i++){
             if (rating.at(i) < invalid_rating){ // instabil
