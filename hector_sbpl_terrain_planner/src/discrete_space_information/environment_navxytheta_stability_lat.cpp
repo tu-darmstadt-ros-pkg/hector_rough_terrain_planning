@@ -70,13 +70,6 @@ void EnvironmentNAVXYTHETASTAB::mapCallback(const nav_msgs::OccupancyGridConstPt
 
 
 void EnvironmentNAVXYTHETASTAB::tfCallback(const tf2_msgs::TFMessage& msg){
-    // TODO get the current pose
-    unsigned int s = msg.transforms.size();
-    geometry_msgs::TransformStamped msgtf = msg.transforms[0];
-    /*ROS_INFO("tfCallback: size = %i, msg.transforms[0] x y z = %f %f %f", s,
-             msgtf.transform.translation.x,
-             msgtf.transform.translation.y,
-             msgtf.transform.translation.z);*/
 }
 
 // for path checking receive path and pcl
@@ -106,7 +99,6 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
         pcl::PointCloud<pcl::PointXYZ> cloud;
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel.updateCloud(cloud);
-        ROS_INFO("TerrainModel cloud updated");
     }
 }
 
@@ -119,8 +111,7 @@ void rotatePoint(pcl::PointXYZ& p, float degree /*radiants*/){
 
 void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
-    ROS_INFO("pathcallback, %lu poses", msg.poses.size());
-
+    ROS_INFO("New path with %lu poses", msg.poses.size());
     if (receivedWorldmodelPC){
 
         int display_every_x_poses = 10; // display every x poses from the path.
@@ -168,7 +159,6 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
                 pubRobotMarker.publish(robot_pose_msg);
 
             }
-            ROS_INFO("pose %f, %f, %f,", px, py, pz);
             pcl::PointXYZ checkpos = pcl::PointXYZ(px, py, pz);
 
             // conversion from Quaternion to yaw (en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
@@ -199,7 +189,7 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
                 p2.x = p2.x + px; p2.y = p2.y + py; p2.z = p2.z + pz;
                 p3.x = p3.x + px; p3.y = p3.y + py; p3.z = p3.z + pz;
             }
-            ROS_INFO("POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f, POSITION RATING %f", px, py, pz, orientation, position_rating);
+            ROS_INFO("POSITION RATING %f", position_rating);
 
 
             marker_linelist.pose.position.x = 0; //1; // px
@@ -227,9 +217,11 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             }
             else{
                 rating_color.a = 1.0;
-                rating_color.r = 0;
+                rating_color.r = 0.0;
                 rating_color.g = (position_rating-iv)/iv;
                 rating_color.b = (iv*3.0-position_rating)/iv;
+                if (rating_color.b < 0.0)
+                    rating_color.b = 0.0;
             }
 
             geometry_msgs::Point gp0, gp1, gp2, gp3;
@@ -239,18 +231,6 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             gp3.x = p3.x; gp3.y = p3.y; gp3.z = p3.z + tfz;
 
 
-            // following should be a real (not estimated) transformation
-            /*rotatePoint(p0, M_PI);
-            rotatePoint(p1, M_PI);
-            rotatePoint(p2, M_PI);
-            rotatePoint(p3, M_PI);
-            float dx = 4.4;
-            float dy = 1.0;
-            p0.x = p0.x +dx; p0.y = p0.y + dy; p0.z = p0.z + 0;
-            p1.x = p1.x +dx; p1.y = p1.y + dy; p1.z = p1.z + 0;
-            p2.x = p2.x +dx; p2.y = p2.y + dy; p2.z = p2.z + 0;
-            p3.x = p3.x +dx; p3.y = p3.y + dy; p3.z = p3.z + 0;*/
-
             marker_linelist.points.push_back(gp0);
             marker_linelist.points.push_back(gp1);
             marker_linelist.colors.push_back(rating_color);
@@ -267,40 +247,12 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             marker_linelist.colors.push_back(rating_color);
             marker_linelist.colors.push_back(rating_color);
             marker_linelist.colors.push_back(rating_color);
-
-            /*
-            visualization_msgs::Marker marker_cube;
-            marker_cube.header.frame_id = "base_link";
-            marker_cube.header.stamp = ros::Time();
-            marker_cube.ns = "cube";
-            marker_cube.id = i;
-            marker_cube.type = visualization_msgs::Marker::CUBE;
-            marker_cube.action = visualization_msgs::Marker::ADD;
-            marker_cube.pose.position.x = px; //1; // px
-            marker_cube.pose.position.y = py; // 1; // py
-            marker_cube.pose.position.z = pz; // 1; // pz
-            marker_cube.pose.orientation.x = 0.0;
-            marker_cube.pose.orientation.y = 0.0;
-            marker_cube.pose.orientation.z = orientation; // 0.0; //TODO
-            marker_cube.pose.orientation.w = 1.0;
-            marker_cube.scale.x = 0.35; //width
-            marker_cube.scale.y = 0.25; //length
-            marker_cube.scale.z = 0.01;
-            marker_cube.color.a = 1.0;
-            marker_cube.color.r = 0.0; //TODO anpassung ans position rating
-            marker_cube.color.g = 1.0;
-            marker_cube.color.b = 0.0;
-            marker_array.markers.push_back(marker_cube);*/
         }
 
         marker_array.markers.push_back(marker_linelist);
         pubPathRatingStates.publish(marker_array);
         marker_array.markers.clear();
 
-    }
-    else{
-        ROS_INFO("but no pointcloud exists yet");
-        return;
     }
 
 }
@@ -391,17 +343,6 @@ bool EnvironmentNAVXYTHETASTAB::mapToGridMap(double wx, double wy, unsigned int&
     mx=(int)((wx + map_center_map.x)) / *cellsize_m;
     my=(int)((wy + map_center_map.y)) / *cellsize_m;
     return true;
-
-    //    if (wx < origin_x_ || wy < origin_y_)
-    //      return false;
-
-    //  mx = (int)((wx - origin_x_) / resolution_);
-    //  my = (int)((wy - origin_y_) / resolution_);
-
-    //   if (mx < size_x_ && my < size_y_)
-    //      return true;
-
-    //  return false;
 }
 
 
@@ -425,33 +366,16 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     // ROS_INFO("GetActionCost: SourceX %i, SourceY %i, SourceTheta %i, actionEndTheta %i", SourceX, SourceY, SourceTheta, action->endtheta);
     int basecost = EnvironmentNAVXYTHETALAT::GetActionCost(SourceX, SourceY, SourceTheta, action);
 
-    float euclidicCost= sqrt(action->dX*action->dX+action->dY*action->dY);
-    float ratio=euclidicCost/(float)basecost;
-  //  ROS_INFO("Cost Ratio %f euclidic %f base %i",ratio, euclidicCost, basecost);
-    ROS_INFO("dX %i dY %i dT %i ",action->dX,action->dY,(int)action->endtheta-(int)action->starttheta);
+    //float euclidicCost= sqrt(action->dX*action->dX+action->dY*action->dY);
+    //float ratio=euclidicCost/(float)basecost;
+    //ROS_INFO("Cost Ratio %f euclidic %f base %i",ratio, euclidicCost, basecost);
+    //ROS_INFO("action: dX %i dY %i dT %i ",action->dX,action->dY,(int)action->endtheta-(int)action->starttheta);
     if (basecost >= INFINITECOST){
-        //ROS_WARN("basecost was >= INFINITECOST");
+        ROS_WARN("basecost was >= INFINITECOST");
         return INFINITECOST;
     }
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
-    //  addcost=0.f;
-    /**
-    float robotSize=0.3;
 
-    for( int i=0; i<10; ++i)
-    {
-        for( int j=0; j<10; ++j)
-        {
-            float costInt=addcost;
-            pcl::PointXYZI p;
-
-            p.x=SourceX*0.05+(i-5)*robotSize/10.0;
-            p.y=SourceY*0.05+(j-5)*robotSize/10.0;
-            p.z=(double)addcost/100000000000.0;
-            p.intensity=(double)addcost;
-            expandedStatesCloud.push_back(p);
-        }
-    }**/
 
     pcl::PointXYZI p;
     p.x=SourceX*0.05;
@@ -465,13 +389,9 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     cloud_point_msg.header.frame_id = "map";
     pubexpandedStates.publish(cloud_point_msg);
 
-
-
-
-
     //  ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
-    if (addcost + basecost >= INFINITECOST)
+    if (addcost*basecost + basecost >= INFINITECOST)
         return INFINITECOST;
 
     return  addcost*basecost + basecost;
@@ -480,11 +400,6 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
 int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int SourceTheta,
                                                  EnvNAVXYTHETALATAction_t* action)
 {
-
-    // ROS_INFO("actionDebug: action char: x = %i ,y= %i ,endtheta = %i ", action->dX, action->dY, action->endtheta);
-    //sbpl_2Dcell_t cell;
-    //  sbpl_xy_theta_cell_t interm3Dcell;
-    //  int i, levelind = -1;
 
     if (!IsValidCell(SourceX, SourceY)){
         ROS_WARN("sourceX, sourceY was not a valid cell");
@@ -507,44 +422,32 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     int invalidAxis;
     pcl::PointXYZ pc, p0, p1, p2, p3;
 
-    double time_start =ros::Time::now().toNSec();
+    //double time_start =ros::Time::now().toNSec();
     //  ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, pc, p0, p1, p2, p3, positionRating, invalidAxis);
-    double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
+    //double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
     //   ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
-
-    //int rando = (int) ((rand() % 100) / 100.0 *1000.0);
-    //return rando;
-
-
-
-    if (!positionRatingComputed){// || positionRating < terrainModel.invalid_rating){
-        //    ROS_WARN("no positionRatingComputed");
+    if (!positionRatingComputed){
+        ROS_INFO("no positionRatingComputed for x = %f, y = %f", checkPos.x, checkPos.y);
         return INFINITECOST;
     }
 
     if (positionRating < terrainModel.invalid_rating){
-        //   ROS_WARN("invalid Rating (< 1)");
         return INFINITECOST;
     }
 
-
-    //   ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
-
-
-
     if (positionRating >= flat_position_rating){
-        return 0;
+        return 0; // no additional costs
     }
 
-    float rating_inv = flat_position_rating - positionRating; // high value is now bad -> 0 = perfect stable, 2 really bad
+    float rating_inv = flat_position_rating - positionRating; // high value is now bad -> 0 = perfect stable
 
 
-    /*positionRating = pow((1/positionRating),3); // self invented -> good?
-    int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);*/
+    // positionRating = pow((1/positionRating),3);
+    //int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
 
-    int addCost = (int)(pow(rating_inv, 2) * 20.0);// (pow(rating_inv, 3) * 100.0 + invalidAxis * 60.0);
+    int addCost = (int)(pow(rating_inv, 2) * 20.0);
 
 
     return addCost;
@@ -566,7 +469,7 @@ int EnvironmentNAVXYTHETASTAB::SetStart(double x, double y, double theta)
 int EnvironmentNAVXYTHETASTAB::GetFromToHeuristic(int FromStateID, int ToStateID)
 {
 
-    ROS_INFO("FromTo!!!!!!!!!!!!!!!!!!!!!!!");    
+    ROS_INFO("GetFromToHeuristic");
     assert(0);
 #if USE_HEUR==0
     return 0;
@@ -606,10 +509,7 @@ int EnvironmentNAVXYTHETASTAB::GetGoalHeuristic(int stateID)
 //                                                                           EnvNAVXYTHETALATCfg.EndY_c));
 //    //define this function if it is used in the planner (heuristic backward search would use it)
 //    return (int)(((double)__max(h2D, hEuclid)) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs);
-    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
-    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
-    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
-    ROS_ERROR("GetGoalHeuristic!!!!!!!!!!!!!!!!!!!!!!!");
+    ROS_ERROR("GetGoalHeuristic!");
     assert(0);
     return 0;
 }
