@@ -110,7 +110,7 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
     }
 }
 
-void rotatePoint(geometry_msgs::Point& p, float degree /*radiants*/){
+void rotatePoint(pcl::PointXYZ& p, float degree /*radiants*/){
     float px = cos(degree)*p.x - sin(degree)*p.y;
     float py = sin(degree)*p.x + cos(degree)*p.y;
     float pz = p.z;
@@ -123,13 +123,14 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
     if (receivedWorldmodelPC){
 
-        int display_every_x_poses = 15; // display every x poses from the path.
+        int display_every_x_poses = 10; // display every x poses from the path.
         visualization_msgs::MarkerArray marker_array;
         float l = 0.5 / 2.0; // length of rectangle (x) is 0.5cm
-        float w = 0.35 / 2.0; // width of rectangle (y) is 0.35cm
+        float w = 0.5 / 2.0; // width of rectangle (y) is 0.5cm / check this to be the same as the robot in the model
+        float tfz = 0.3; // transformation from world to fixframe
 
         visualization_msgs::Marker marker_linelist;
-        marker_linelist.header.frame_id = "base_link";
+        marker_linelist.header.frame_id = "world";
         marker_linelist.header.stamp = ros::Time();
         marker_linelist.ns = "rectangles";
         marker_linelist.id = 0;
@@ -144,20 +145,20 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             float pz = pose.position.z;
             if (i == 0){ // publish robot marker on its spot
                 visualization_msgs::Marker robot_pose_msg;
-                robot_pose_msg.header.frame_id = "base_link";
+                robot_pose_msg.header.frame_id = "world";
                 robot_pose_msg.header.stamp = ros::Time();
                 robot_pose_msg.id = 0;
-                robot_pose_msg. type = visualization_msgs::Marker::CUBE;
+                robot_pose_msg. type = visualization_msgs::Marker::SPHERE;
                 robot_pose_msg.action = visualization_msgs::Marker::ADD;
                 robot_pose_msg.pose.position.x = px; //1; // px
                 robot_pose_msg.pose.position.y = py; // 1; // py
-                robot_pose_msg.pose.position.z = pz + 0.1;
+                robot_pose_msg.pose.position.z = pz + 0.45;
                 robot_pose_msg.pose.orientation.x = 0.0; //TODO
                 robot_pose_msg.pose.orientation.y = 0.0;
                 robot_pose_msg.pose.orientation.z = 0.0;
                 robot_pose_msg.pose.orientation.w = 1.0;
-                robot_pose_msg.scale.x = 0.2; //width
-                robot_pose_msg.scale.y = 0.25; //length
+                robot_pose_msg.scale.x = 0.2;
+                robot_pose_msg.scale.y = 0.2;
                 robot_pose_msg.scale.z = 0.2;
                 robot_pose_msg.color.a = 1;
                 robot_pose_msg.color.r = 1.0;
@@ -181,9 +182,22 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
             float position_rating;
             int instable_axis_unused;
-            if (false == terrainModel.computePositionRating(checkpos, orientation, position_rating, instable_axis_unused)){
+            pcl::PointXYZ pc, p0, p1, p2, p3;
+            if (false == terrainModel.computePositionRating(checkpos, orientation, pc, p0, p1, p2, p3, position_rating, instable_axis_unused)){
                 position_rating = 0.0;
                 instable_axis_unused = 0;
+                p0.x = l; p0.y = w; p0.z = tfz;
+                p1.x = -l; p1.y = w; p1.z = tfz;
+                p2.x = -l; p2.y = -w; p2.z = tfz;
+                p3.x = l; p3.y = -w; p3.z = tfz;
+                rotatePoint(p0, orientation);
+                rotatePoint(p1, orientation);
+                rotatePoint(p2, orientation);
+                rotatePoint(p3, orientation);
+                p0.x = p0.x + px; p0.y = p0.y + py; p0.z = p0.z + pz;
+                p1.x = p1.x + px; p1.y = p1.y + py; p1.z = p1.z + pz;
+                p2.x = p2.x + px; p2.y = p2.y + py; p2.z = p2.z + pz;
+                p3.x = p3.x + px; p3.y = p3.y + py; p3.z = p3.z + pz;
             }
             ROS_INFO("POINT IN PATH IS xyz %f, %f, %f WITH ORIENTATION %f, POSITION RATING %f", px, py, pz, orientation, position_rating);
 
@@ -218,25 +232,15 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
                 rating_color.b = (iv*3.0-position_rating)/iv;
             }
 
-            geometry_msgs::Point pc, p0, p1, p2, p3;
-            /*pc.x = cos(orientation)*l - sin(orientation)*w;
-            pc.y = sin(orientation)*l + cos(orientation)*w;
-            pc.z = 0;*/
-            p0.x = l; p0.y = w; p0.z = 0;
-            p1.x = -l; p1.y = w; p1.z = 0;
-            p2.x = -l; p2.y = -w; p2.z = 0;
-            p3.x = l; p3.y = -w; p3.z = 0;
-            rotatePoint(p0, orientation);
-            rotatePoint(p1, orientation);
-            rotatePoint(p2, orientation);
-            rotatePoint(p3, orientation);
-            p0.x = p0.x + px; p0.y = p0.y + py; p0.z = p0.z + pz;  // TODO transformation?
-            p1.x = p1.x + px; p1.y = p1.y + py; p1.z = p1.z + pz;
-            p2.x = p2.x + px; p2.y = p2.y + py; p2.z = p2.z + pz;
-            p3.x = p3.x + px; p3.y = p3.y + py; p3.z = p3.z + pz;
+            geometry_msgs::Point gp0, gp1, gp2, gp3;
+            gp0.x = p0.x; gp0.y = p0.y; gp0.z = p0.z + tfz;
+            gp1.x = p1.x; gp1.y = p1.y; gp1.z = p1.z + tfz;
+            gp2.x = p2.x; gp2.y = p2.y; gp2.z = p2.z + tfz;
+            gp3.x = p3.x; gp3.y = p3.y; gp3.z = p3.z + tfz;
+
 
             // following should be a real (not estimated) transformation
-            rotatePoint(p0, M_PI);
+            /*rotatePoint(p0, M_PI);
             rotatePoint(p1, M_PI);
             rotatePoint(p2, M_PI);
             rotatePoint(p3, M_PI);
@@ -245,19 +249,19 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             p0.x = p0.x +dx; p0.y = p0.y + dy; p0.z = p0.z + 0;
             p1.x = p1.x +dx; p1.y = p1.y + dy; p1.z = p1.z + 0;
             p2.x = p2.x +dx; p2.y = p2.y + dy; p2.z = p2.z + 0;
-            p3.x = p3.x +dx; p3.y = p3.y + dy; p3.z = p3.z + 0;
+            p3.x = p3.x +dx; p3.y = p3.y + dy; p3.z = p3.z + 0;*/
 
-            marker_linelist.points.push_back(p0);
-            marker_linelist.points.push_back(p1);
+            marker_linelist.points.push_back(gp0);
+            marker_linelist.points.push_back(gp1);
             marker_linelist.colors.push_back(rating_color);
-            marker_linelist.points.push_back(p1);
-            marker_linelist.points.push_back(p2);
+            marker_linelist.points.push_back(gp1);
+            marker_linelist.points.push_back(gp2);
             marker_linelist.colors.push_back(rating_color);
-            marker_linelist.points.push_back(p2);
-            marker_linelist.points.push_back(p3);
+            marker_linelist.points.push_back(gp2);
+            marker_linelist.points.push_back(gp3);
             marker_linelist.colors.push_back(rating_color);
-            marker_linelist.points.push_back(p3);
-            marker_linelist.points.push_back(p0);
+            marker_linelist.points.push_back(gp3);
+            marker_linelist.points.push_back(gp0);
             marker_linelist.colors.push_back(rating_color);
             marker_linelist.colors.push_back(rating_color);
             marker_linelist.colors.push_back(rating_color);
@@ -501,11 +505,11 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
     float positionRating;
     int invalidAxis;
-
+    pcl::PointXYZ pc, p0, p1, p2, p3;
 
     double time_start =ros::Time::now().toNSec();
     //  ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
-    bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, positionRating, invalidAxis);
+    bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, pc, p0, p1, p2, p3, positionRating, invalidAxis);
     double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
     //   ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 

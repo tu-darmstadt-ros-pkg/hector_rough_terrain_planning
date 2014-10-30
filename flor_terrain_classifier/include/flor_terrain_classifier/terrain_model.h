@@ -82,8 +82,8 @@ public:
 
     bool computePositionRating(const pcl::PointXYZ& checkPos,
                                const float orientation,
-                               float &position_rating,
-                               int &unstable_axis
+                               pcl::PointXYZ &robot_point_center,
+                               pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
                            #ifdef viewer_on
                                , pcl::visualization::PCLVisualizer &viewer, int viewport
                            #endif

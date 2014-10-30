@@ -800,6 +800,11 @@ void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::Point
 // orientation in radiants
 bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                          const float orientation,
+                                         pcl::PointXYZ& robot_point_center,
+                                         pcl::PointXYZ& robot_point_0,
+                                         pcl::PointXYZ& robot_point_1,
+                                         pcl::PointXYZ& robot_point_2,
+                                         pcl::PointXYZ& robot_point_3,
                                          float &position_rating, // after tipping over
                                          //float contact_area, // of the first polygon // TODO
                                          int &unstable_axis // of the first polygon
@@ -1016,18 +1021,13 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     //Compute points and normal of robot
     pcl::PointXYZ normal;
-    pcl::PointXYZ robot_point_0;
-    pcl::PointXYZ robot_point_1;
-    pcl::PointXYZ robot_point_2;
-    pcl::PointXYZ robot_point_3;
-    pcl::PointXYZ robot_point_mid;
     pcl::PointXYZ center_of_mass;
 
     computeRobotPosition(support_point_1, support_point_2, support_point_3, p0, p1, p2, p3,
                          offset_CM,
                          normal,
                          robot_point_0, robot_point_1, robot_point_2, robot_point_3,
-                         robot_point_mid, center_of_mass);
+                         robot_point_center, center_of_mass);
 #ifdef viewer_on
     // draw robot lines
     viewer.addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0");
