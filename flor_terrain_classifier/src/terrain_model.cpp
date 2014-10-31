@@ -18,10 +18,11 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
     robot_width = 0.50; // [m] y for Obelix 0.56
     offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
     minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
-    //invalid_rating = 0.3; // default: 0.3 theoretically 0
-    //invalid_angle = 40; // [degree] highest considered stable angle
+    invalid_rating = 0.2; // default: 0.3 theoretically 0
+    invalid_angle = 35; // [degree] highest considered stable angle
     delta_for_contact = 0.015; //  [m] +- delta for considering a ground point touching the robot
     tip_over = true;
+    check_each_axis = true;
     //smoothing the supporting polygon - important if tip_over is active.
     distance_smoothing = true;
     angle_smoothing = true;
@@ -915,7 +916,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                            tip_over_direction_3,
                                            support_point_3);
         if (!point_evaluated){
-           //ROS_INFO("[terrain_model::compute_position_rating] no support_point found 3.");
+            ROS_WARN("[terrain_model::compute_position_rating] no support_point found 3 before tip over.");
             return false;
         }
 #ifdef time_debug
@@ -953,13 +954,11 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
         //ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
-        for (unsigned int i = 0; i < convex_hull_points.size(); ++i){
-            if (i < convex_hull_points.size() - 1){
-                if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
-                    center_in_hull = false;
-                }
+        for (unsigned int i = 0; i < convex_hull_points.size() -1; ++i){
+            if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
+                center_in_hull = false;
             }
-        } // end for
+        }
 
 
 
@@ -974,7 +973,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         // this can be expanded to an iterative process if iterations takes a higher value than 1.
         // Normally the check_pos is directly in the supporting polygon.
         // If not after the first iteration, it most likely is.
-        int iterations = 5;
+        int iterations = 15;
         if (counter > iterations){
             ROS_WARN("After %i iterations, the position to check is not in the supportiny polygon, computing rating continues.", iterations);
             break;
@@ -1003,8 +1002,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     // check if the position is instable due to an invalid steap angle
     float angle_of_area = angleToGround(support_point_1, support_point_2, support_point_3);
-    if (angle_of_area > invalid_angle)
+    if (angle_of_area > invalid_angle){
+        ROS_INFO("the angle of the position is over %f degree, computePositionRating returned false", invalid_angle);
         return false;
+    }
 
     //Compute points and normal of robot
     pcl::PointXYZ normal;
@@ -1061,14 +1062,14 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
         viewer.addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2);
         viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
-        viewer.addSphere(robot_point_mid, 0.05,0,1,0, "proMidx", viewport);
+        viewer.addSphere(robot_point_center, 0.05,0,1,0, "proMidx", viewport);
         viewer.addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport);
 
 
 #endif
 
     for (unsigned int j = 0; j < rating.size(); j++){
-        if (rating.at(j) < 1.0){
+        if (rating.at(j) < invalid_rating){
             unstable_axis += 1;
         }
     }
@@ -1080,7 +1081,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     if (tip_over){
         // iterative checking if still fine after flipping over invalid axis
         for (unsigned int i = 0; i < rating.size(); i++){
-            if (rating.at(i) < invalid_rating){ // instabil
+            if (check_each_axis || rating.at(i) < invalid_rating){ // instabil
                 #ifdef viewer_on
                     ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
                 #endif
@@ -1098,13 +1099,14 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                         support_point_3);
 
                 if (!point_evaluated){
-                    break; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
+                    ROS_INFO("after tipping over: S1 and S2 lie at the aend of area, not S3 could be found");
+                    continue; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
                 }
 
                 float angle_of_area_it = angleToGround(support_point_1, support_point_2, support_point_3);
                 if (angle_of_area_it > invalid_angle){
                     ROS_INFO("after tipping over, angle would be too high: %f", angle_of_area_it);
-                    break;
+                    continue;
                 }
 
 
@@ -1181,8 +1183,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                     viewer.addSphere(robot_point_mid_it, 0.04,0,1,0, "proMidxit", viewport);
                     viewer.addSphere(center_of_mass_it, 0.04,0,0,1, "CMit", viewport);
                     // draw normal
-                    const pcl::PointXYZ p_uff(addPointVector(robot_point_mid, normal));
-                    viewer.addLine(robot_point_mid,p_uff,1.0,1.0,1.0,"fnormalit");
+                    const pcl::PointXYZ p_uff(addPointVector(robot_point_center, normal));
+                    viewer.addLine(robot_point_center,p_uff,1.0,1.0,1.0,"fnormalit");
                 }
 #endif
 
@@ -1195,7 +1197,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 {
 
                     // rating between convex_hull_point (i and i+1)
-                    //float c =rating_iterative.at(k);
+                    float c =rating_iterative.at(k);
 
                     std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(convex_hull_indices_iterative[k])+"tippedOver"+boost::lexical_cast<std::string>(i);
                     const pcl::PointXYZ p1(convex_hull_points_it[k].x,convex_hull_points_it[k].y,convex_hull_points_it[k].z);

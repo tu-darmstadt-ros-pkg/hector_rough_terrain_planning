@@ -99,6 +99,8 @@ public:
     float robot_length;  // x
     float robot_width; // y
     Eigen::Vector3f offset_CM;
+    float invalid_rating;
+    float invalid_angle;
     float minimum_distance;
     float delta_for_contact;
     bool distance_smoothing;
@@ -106,6 +108,7 @@ public:
     float smooth_max_angle;
     float smooth_max_distance;
     bool tip_over;
+    bool check_each_axis;
 #ifdef viewer_on
     bool draw_convex_hull_first_polygon;
     bool draw_convex_hull_ground_points;
@@ -124,8 +127,8 @@ public:
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
 
 
-    static const float invalid_rating = 0.1; // actually 0
-    static const float invalid_angle = 40; // degree
+  //  static const float invalid_rating = 0.1; // actually 0
+  //  static const float invalid_angle = 40; // degree
 
 
 private:

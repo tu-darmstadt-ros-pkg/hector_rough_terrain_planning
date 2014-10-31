@@ -46,7 +46,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
         ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
-        flat_position_rating = terrainModel.minPosRating()*0.70;
+        flat_position_rating = terrainModel.bestPosRating()*0.70;
 
         ROS_INFO("min_position_rating = %f", flat_position_rating);
         sleep(1);
@@ -177,6 +177,7 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             pcl::PointXYZ pc, p0, p1, p2, p3;
             if (false == terrainModel.computePositionRating(checkpos, orientation, pc, p0, p1, p2, p3, position_rating, instable_axis_unused)){
                 position_rating = 0.0;
+                ROS_INFO("computePositionRating returned FALSE for the next shown position");
                 instable_axis_unused = 0;
                 p0.x = l; p0.y = w; p0.z = tfz;
                 p1.x = -l; p1.y = w; p1.z = tfz;
