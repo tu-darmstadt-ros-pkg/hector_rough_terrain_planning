@@ -46,7 +46,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
         ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
-        flat_position_rating = terrainModel.bestPosRating()*0.95;
+        flat_position_rating = terrainModel.minPosRating()*0.70;
 
         ROS_INFO("min_position_rating = %f", flat_position_rating);
         sleep(1);
@@ -377,10 +377,10 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     int addcost = getAdditionalCost(SourceX, SourceY, SourceTheta, action);
 
 
-    pcl::PointXYZI p;
+  pcl::PointXYZI p;
     p.x=SourceX*0.05;
     p.y=SourceY*0.05;
-    p.z=(double)addcost/100000000000.0;
+    p.z=(double)addcost/100000.0;
     p.intensity=(double)addcost;
     expandedStatesCloud.push_back(p);
     sensor_msgs::PointCloud2 cloud_point_msg;
@@ -424,9 +424,11 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
     //double time_start =ros::Time::now().toNSec();
     //  ROS_INFO("\n \n start computePositionRating with checkpos %f , %f, angle = %f", checkPos.x, checkPos.y, action->endtheta);
+
     bool positionRatingComputed = terrainModel.computePositionRating(checkPos, action->endtheta, pc, p0, p1, p2, p3, positionRating, invalidAxis);
+
     //double time_duration = (ros::Time::now().toNSec() - time_start)/1000;
-    //   ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
+    //ROS_INFO("time for CPR[mikrosec] = %i", (int)time_duration);
 
     if (!positionRatingComputed){
         ROS_INFO("no positionRatingComputed for x = %f, y = %f", checkPos.x, checkPos.y);
@@ -434,8 +436,12 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
     }
 
     if (positionRating < terrainModel.invalid_rating){
+        ROS_INFO("invalid Rating %f",positionRating);
         return INFINITECOST;
     }
+   // ROS_INFO("env_ : positionRating = %f, invalidAxis = %i ", positionRating, invalidAxis);
+   // ROS_INFO("Position Rating %f /t %f x stable /t Orient %f /t Pos %f %f",positionRating,positionRating/flat_position_rating,action->endtheta,checkPos.x,checkPos.y);
+   // ROS_INFO("Position Rating %f %f/t Orient %f /t Pos %f %f",positionRating,flat_position_rating,action->endtheta,checkPos.x,checkPos.y);
 
     if (positionRating >= flat_position_rating){
         return 0; // no additional costs
@@ -443,11 +449,10 @@ int EnvironmentNAVXYTHETASTAB::getAdditionalCost(int SourceX, int SourceY, int S
 
     float rating_inv = flat_position_rating - positionRating; // high value is now bad -> 0 = perfect stable
 
-
-    // positionRating = pow((1/positionRating),3);
-    //int addCost = (int) (positionRating * 100.0 + invalidAxis * 75.0);
+   // float rating_inv = 1.0/positionRating-1.0/flat_position_rating;
 
     int addCost = (int)(pow(rating_inv, 2) * 20.0);
+   // int addCost = (int)(rating_inv * 5.0);// (pow(rating_inv, 3) * 100.0 + invalidAxis * 60.0);
 
 
     return addCost;
@@ -530,7 +535,12 @@ int EnvironmentNAVXYTHETASTAB::GetStartHeuristic(int stateID)
                                                                            EnvNAVXYTHETALATCfg.StartY_c, HashEntry->X,
                                                                            HashEntry->Y));
     int hAngle = (int) (abs(EnvNAVXYTHETALATCfg.StartTheta-HashEntry->Theta)*40);
-    ROS_INFO("hEuclid %i hAngle %i",hEuclid,hAngle);
+    //hAngle is only relevant if we are clos to the target
+    if(hEuclid<1000)
+        hAngle= (int)hAngle* (1000-hEuclid)/1000;
+    else
+        hAngle=0;
+  //  ROS_INFO("hEuclid %i hAngle %i",hEuclid,hAngle);
     //define this function if it is used in the planner (heuristic backward search would use it)
     return (int)((double)(hEuclid+hAngle) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs);
 }

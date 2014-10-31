@@ -100,8 +100,6 @@ public:
     float robot_width; // y
     Eigen::Vector3f offset_CM;
     float minimum_distance;
-    float invalid_rating; // actually 0
-    float invalid_angle; // degree
     float delta_for_contact;
     bool distance_smoothing;
     bool angle_smoothing;
@@ -120,10 +118,14 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr world_pcl_ptr;
     pcl::PointCloud<pcl::PointXYZ> cloud_processed;
     //pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_outfiltered;
-    // pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
+    //pcl::PointCloud<pcl::PointNormal>::Ptr cloud_points_with_normals;
     //pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_height;
     pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pcl;
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
+
+
+    static const float invalid_rating = 0.1; // actually 0
+    static const float invalid_angle = 40; // degree
 
 
 private:
