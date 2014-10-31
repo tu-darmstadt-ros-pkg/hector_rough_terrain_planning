@@ -93,7 +93,7 @@ public:
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
 
-    float minPosRating();
+    float bestPosRating();
 
     // Parameter initialized in contructor
     float robot_length;  // x

@@ -308,7 +308,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
 }
 
 // computes the minimum Rating if standing flat on the ground
-float TerrainModel::minPosRating(){
+float TerrainModel::bestPosRating(){
     pcl::PointXYZ p0 = pcl::PointXYZ(0.0, 0.0, 0.0);
     pcl::PointXYZ p1 = pcl::PointXYZ(robot_length, 0.0, 0.0);
     pcl::PointXYZ p2 = pcl::PointXYZ(robot_length, robot_width, 0.0);

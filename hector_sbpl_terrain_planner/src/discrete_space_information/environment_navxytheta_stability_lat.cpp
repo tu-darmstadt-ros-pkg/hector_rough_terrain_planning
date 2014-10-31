@@ -46,7 +46,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
         ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
-        flat_position_rating = terrainModel.minPosRating()*0.95;
+        flat_position_rating = terrainModel.bestPosRating()*0.95;
 
         ROS_INFO("min_position_rating = %f", flat_position_rating);
         sleep(1);
@@ -83,7 +83,7 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
         ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
-        flat_position_rating = terrainModel.minPosRating()*0.95;
+        flat_position_rating = terrainModel.bestPosRating()*0.95;
 
         //ROS_INFO("min_position_rating = %f", flat_position_rating);
         //sleep(1);
@@ -111,7 +111,7 @@ void rotatePoint(pcl::PointXYZ& p, float degree /*radiants*/){
 
 void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
-    ROS_INFO("New path with %lu poses", msg.poses.size());
+    ROS_INFO("New path with %lu poses, bpr = %f", msg.poses.size(), terrainModel.bestPosRating());
     if (receivedWorldmodelPC){
 
         int display_every_x_poses = 10; // display every x poses from the path.
@@ -119,6 +119,8 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
         float l = 0.5 / 2.0; // length of rectangle (x) is 0.5cm
         float w = 0.5 / 2.0; // width of rectangle (y) is 0.5cm / check this to be the same as the robot in the model
         float tfz = 0.3; // transformation from world to fixframe
+        float ivr = terrainModel.invalid_rating; // between 0 and 0.4
+        float br = terrainModel.bestPosRating();
 
         visualization_msgs::Marker marker_linelist;
         marker_linelist.header.frame_id = "world";
@@ -208,20 +210,18 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
             marker_linelist.color.b = 1.0;
             std_msgs::ColorRGBA rating_color;
 
-            float iv = 0.3; // invalid rating
-            if(position_rating<iv){
+
+            if(position_rating<ivr){
                 rating_color.a = 1.0;
                 rating_color.r = 1.0;
                 rating_color.g = 0.0;
-                rating_color.b = position_rating/iv;
+                rating_color.b = position_rating/ivr;
             }
             else{
                 rating_color.a = 1.0;
                 rating_color.r = 0.0;
-                rating_color.g = (position_rating-iv)/iv;
-                rating_color.b = (iv*3.0-position_rating)/iv;
-                if (rating_color.b < 0.0)
-                    rating_color.b = 0.0;
+                rating_color.g = position_rating/br;
+                rating_color.b = 1 - position_rating/br;
             }
 
             geometry_msgs::Point gp0, gp1, gp2, gp3;
