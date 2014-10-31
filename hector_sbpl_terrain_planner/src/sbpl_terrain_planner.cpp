@@ -259,7 +259,7 @@ bool SBPLTerrainPlanner::makePlan(const geometry_msgs::PoseStamped& start,
       unsigned int starty;
      env_->mapToGridMap(start.pose.position.x, start.pose.position.y, startx, starty);
      int ret = env_->SetStart(startx, starty, theta_start);*/
-    int ret = env_->SetStart(start.pose.position.x  , start.pose.position.y , theta_start);
+    int ret = env_->SetStart(2.5,1.0,0.0);//start.pose.position.x  , start.pose.position.y , theta_start);
     if(ret < 0 || planner_->set_start(ret) == 0){
       ROS_ERROR("ERROR: failed to set start state\n");
       return false;

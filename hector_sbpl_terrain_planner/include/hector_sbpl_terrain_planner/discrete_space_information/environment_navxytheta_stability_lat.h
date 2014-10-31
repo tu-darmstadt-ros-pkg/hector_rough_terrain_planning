@@ -133,8 +133,6 @@ protected:
     float current_robot_orientation;
 
     int markerID;
-
-
     float flat_position_rating;
 
 };

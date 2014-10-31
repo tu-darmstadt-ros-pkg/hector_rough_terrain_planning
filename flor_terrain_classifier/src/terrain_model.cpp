@@ -16,8 +16,8 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
     robot_width = 0.50; // [m] y for Obelix 0.56
     offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
     minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
-    invalid_rating = 0.3; // default: 0.3 theoretically 0
-    invalid_angle = 40; // [degree] highest considered stable angle
+    //invalid_rating = 0.3; // default: 0.3 theoretically 0
+    //invalid_angle = 40; // [degree] highest considered stable angle
     delta_for_contact = 0.015; //  [m] +- delta for considering a ground point touching the robot
     tip_over = true;
     //smoothing the supporting polygon - important if tip_over is active.
@@ -247,7 +247,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
 
     }
     //build hull
-    int i=0;
+    unsigned int i=0;
     unsigned int current_best;
     while (true)
     {
@@ -264,7 +264,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
         //if((0==i)&&(0==point_on_hull)) current_best=1;
         for(unsigned int current_candidate=1; current_candidate<cloud_2d.size();++current_candidate)
         {           
-            int lastHullElement=convex_hull_indices.at(i);
+            unsigned int lastHullElement=convex_hull_indices.at(i);
             if(   (lastHullElement != current_best)
                  && (lastHullElement != current_candidate)
                  && (current_candidate != current_best))
@@ -1207,7 +1207,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 {
 
                     // rating between convex_hull_point (i and i+1)
-                    float c =rating_iterative.at(k);
+                    //float c =rating_iterative.at(k);
 
                     std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(convex_hull_indices_iterative[k])+"tippedOver"+boost::lexical_cast<std::string>(i);
                     const pcl::PointXYZ p1(convex_hull_points_it[k].x,convex_hull_points_it[k].y,convex_hull_points_it[k].z);
