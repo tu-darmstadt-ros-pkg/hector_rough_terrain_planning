@@ -1099,13 +1099,13 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                         support_point_3);
 
                 if (!point_evaluated){
-                    ROS_INFO("after tipping over: S1 and S2 lie at the aend of area, not S3 could be found");
+                    //ROS_INFO("after tipping over: S1 and S2 lie at the aend of area, no S3 could be found");
                     continue; // supp1 and 2 lie at the end of the area, no suppP3 could be found, invalide state, break for-loop and return initial max rating value
                 }
 
                 float angle_of_area_it = angleToGround(support_point_1, support_point_2, support_point_3);
                 if (angle_of_area_it > invalid_angle){
-                    ROS_INFO("after tipping over, angle would be too high: %f", angle_of_area_it);
+                    //ROS_INFO("after tipping over, angle would be too high: %f", angle_of_area_it);
                     continue;
                 }
 

@@ -116,8 +116,8 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
         int display_every_x_poses = 10; // display every x poses from the path.
         visualization_msgs::MarkerArray marker_array;
-        float l = 0.5 / 2.0; // length of rectangle (x) is 0.5cm
-        float w = 0.5 / 2.0; // width of rectangle (y) is 0.5cm / check this to be the same as the robot in the model
+        float l = terrainModel.robot_length /2.0; // length of rectangle (x) / 2
+        float w = terrainModel.robot_width / 2.0; // width of rectangle (y) / 2
         float tfz = 0.3; // transformation from world to fixframe
         float ivr = terrainModel.invalid_rating; // between 0 and 0.4
         float br = terrainModel.bestPosRating();
@@ -218,11 +218,17 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
                 rating_color.g = 0.0;
                 rating_color.b = position_rating/ivr;
             }
+            else if (position_rating > br/2){
+                rating_color.a = 1.0;
+                rating_color.r = 0.0;
+                rating_color.g = 1.0;
+                rating_color.b = 0.0;
+            }
             else{
                 rating_color.a = 1.0;
                 rating_color.r = 0.0;
-                rating_color.g = position_rating/br;
-                rating_color.b = 1 - position_rating/br;
+                rating_color.g = position_rating/(br/2);
+                rating_color.b = 1 - position_rating/(br/2);
             }
 
             geometry_msgs::Point gp0, gp1, gp2, gp3;
