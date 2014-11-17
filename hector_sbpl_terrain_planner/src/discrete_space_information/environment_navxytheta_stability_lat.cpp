@@ -32,6 +32,7 @@ static clock_t time_getsuccs = 0;
 #endif
 
 static long int checks = 0;
+static int temp = 0;
 
 //-----------------constructors/destructors-------------------------------
 
@@ -74,6 +75,11 @@ void EnvironmentNAVXYTHETASTAB::tfCallback(const tf2_msgs::TFMessage& msg){
 
 // for path checking receive path and pcl
 void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const sensor_msgs::PointCloud2 msg){
+
+    bool writepcl = false;
+    temp = temp + 1;
+    //ROS_INFO("temp = %i", temp);
+
     if(!receivedWorldmodelPC)
     {
         receivedWorldmodelPC=true;
@@ -98,6 +104,11 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
         pcl_conversions::toPCL(msg, pcl_pc);
         pcl::PointCloud<pcl::PointXYZ> cloud;
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
+        if (temp == 40 && writepcl){
+            ROS_INFO("write plc");
+            pcl::io::savePCDFile("test_pcl.pcd", cloud, false);
+            ROS_INFO("writing done");
+        }
         terrainModel.updateCloud(cloud);
     }
 }
@@ -192,7 +203,7 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
                 p2.x = p2.x + px; p2.y = p2.y + py; p2.z = p2.z + pz;
                 p3.x = p3.x + px; p3.y = p3.y + py; p3.z = p3.z + pz;
             }
-            ROS_INFO("POSITION RATING %f", position_rating);
+            ROS_INFO("POSITION RATING = %f, x = %f, y = %f, angle = %f", position_rating, px, py, orientation);
 
 
             marker_linelist.pose.position.x = 0; //1; // px

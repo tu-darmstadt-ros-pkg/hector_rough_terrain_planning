@@ -18,21 +18,22 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
     robot_width = 0.50; // [m] y for Obelix 0.56
     offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
     minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
-    invalid_rating = 0.2; // default: 0.3 theoretically 0
+    invalid_rating = 0.3; // default: 0.3 theoretically 0
     invalid_angle = 35; // [degree] highest considered stable angle
     delta_for_contact = 0.015; //  [m] +- delta for considering a ground point touching the robot
+    first_SP_around_mid = false; // true means first polygon must contain the checkpos in it
     tip_over = true;
-    check_each_axis = true;
+    check_each_axis = true; // check each axis after tipping over to maybe improve the rating value
     //smoothing the supporting polygon - important if tip_over is active.
     distance_smoothing = true;
     angle_smoothing = true;
     smooth_max_angle = 20.0;
-    smooth_max_distance = 0.05;
+    smooth_max_distance = 0.045; // not needed for octomap with gridsize 5 cm
 #ifdef viewer_on
     draw_convex_hull_first_polygon = true;
     draw_convex_hull_ground_points = true;
-    draw_convex_hull_iterative = true;
-    draw_convex_hull_iterative_ground_points= true;
+    draw_convex_hull_iterative = false;
+    draw_convex_hull_iterative_ground_points= false;
 #endif
 }
 
@@ -52,6 +53,33 @@ void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
 /*--------------------------------------------------------------------------------------------*/
 
 // normal adding, subtracting points
+
+bool  pointsEqual(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2, float delta){
+    if (fabs(p1.x - p2.x) > delta)
+        return false;
+    if (fabs(p1.y - p2.y) > delta)
+        return false;
+    if (fabs(p1.z - p2.z) > delta)
+        return false;
+    return true;
+}
+
+bool  pointsEqualxy(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2, float delta){
+    if (fabs(p1.x - p2.x) > delta)
+        return false;
+    if (fabs(p1.y - p2.y) > delta)
+        return false;
+    return true;
+}
+
+bool  pointsEqualxy(const pcl::PointXYZI& p1,const  pcl::PointXYZI& p2, float delta){
+    if (fabs(p1.x - p2.x) > delta)
+        return false;
+    if (fabs(p1.y - p2.y) > delta)
+        return false;
+    return true;
+}
+
 pcl::PointXYZ addPointVector(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
     return pcl::PointXYZ(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
 }
@@ -180,7 +208,7 @@ float TerrainModel::planeDistance(const pcl::PointXYZ& testpoint, const pcl::Poi
 {
     float d=dotProduct(pcl::PointXYZ(testpoint.x-plane_p.x, testpoint.y-plane_p.y, testpoint.z-plane_p.z), plane_n) /
             sqrt(plane_n.x*plane_n.x+plane_n.y*plane_n.y+plane_n.z*plane_n.z);
-    return d;
+    return fabs(d);
 }
 
 pcl::PointXYZ TerrainModel::planeProjection(const pcl::PointXYZ& projection_p, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p)
@@ -208,20 +236,37 @@ bool TerrainModel::atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointX
 /*--------------------------------------------------------------------------------------------*/
 
 
+void convex_hull_comp_pcl(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& fill){
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    for (unsigned int i = 0; i < ground_contact_pcl.size(); i++){
+        cloud->push_back(ground_contact_pcl.at(i));
+    }
+
+    pcl::ConvexHull<pcl::PointXYZ> cHull;
+    pcl::PointCloud<pcl::PointXYZ> cHull_points;
+    cHull.setInputCloud(cloud);
+    cHull.reconstruct (cHull_points);
+
+    for (unsigned int i = 0; i < cHull_points.size(); i++){
+        fill.push_back(cHull_points.at(i));
+    }
+}
+
 //convex hull computation
 //  http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
 // first point is also last point
-void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned int>& convex_hull_indices)
+void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& convex_hull_points)
 {
-    float x_min=cloud.at(0).x;
+
+    float x_min=ground_contact_pcl.at(0).x;
     unsigned int point_on_hull=0;
     pcl::PointCloud<pcl::PointXYZ> cloud_2d;
     cloud_2d.resize(0);
 
     //find minx
-    for (unsigned int i = 0; i < cloud.size(); i++)
+    for (unsigned int i = 0; i < ground_contact_pcl.size(); i++)
     {
-        pcl::PointXYZ p = cloud.at(i);
+        pcl::PointXYZ p = ground_contact_pcl.at(i);
         cloud_2d.push_back(pcl::PointXYZ(p.x,p.y,0.0));
         if (p.x<x_min)
         {
@@ -230,6 +275,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
         }
 
     }
+    std::vector<unsigned int>convex_hull_indices;
     //build hull
     unsigned int i=0;
     unsigned int current_best;
@@ -246,7 +292,7 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
 
         current_best=0;
         //if((0==i)&&(0==point_on_hull)) current_best=1;
-        for(unsigned int current_candidate=1; current_candidate<cloud_2d.size();++current_candidate)
+        for(unsigned int current_candidate=1; current_candidate<cloud_2d.size();++current_candidate) //TODO: Why current = 1 not = 0?
         {           
             unsigned int lastHullElement=convex_hull_indices.at(i);
             if(   (lastHullElement != current_best)
@@ -257,14 +303,14 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
                 pcl::PointXYZ& p1 =cloud_2d.at(current_best); // kandidat ( aktuell bester nächster )
                 pcl::PointXYZ& p2 =cloud_2d.at(current_candidate); // kandidat der gegen den aktuell besten verglichen wird)
                 float ccw_f=ccw(p0,p1,p2);
-                bool isleft=(ccw_f < 0);
+                bool isleft=(ccw_f < 0.000); // < 0 did not work. this means this could also be an slightly unconvex hull see below
                 if(current_best==point_on_hull // for 2nd point only
                         || isleft) // candidate is more left
                 {
                     current_best=current_candidate;
                 }
 
-                else if(ccw_f == 0) // straight or backwards
+                else if(ccw_f < 0.00002) // straight or backwards or slightly right
                 {
                     pcl::PointXYZ& p_before = cloud_2d.at(convex_hull_indices.at(i));
                     pcl::PointXYZ direction_before = subtractPoints(p0, p_before);
@@ -304,6 +350,11 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& cloud,std::vector<unsigned
             ROS_WARN("convex_hull_comp is in endless loop");
         }
 
+    }
+    // add points to the list
+    for(int i=0; i<(convex_hull_indices.size()); ++i)
+    {
+        convex_hull_points.push_back(ground_contact_pcl.at(convex_hull_indices.at(i)));
     }
 
 }
@@ -477,14 +528,12 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                                                           const pcl::PointXYZ& support_point_2,
                                                           const pcl::PointXYZ& support_point_3,
                                                           const bool iterative, // if this is true, points on one side of supp1, supp2 will not be considerred
-                                                          std::vector<unsigned int>& convex_hull_indices, // empty before call
                                                           pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points){ // empty before call
 
 
 
     const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
-
 
     //Find ground contact points
     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
@@ -500,7 +549,10 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                 pcl::PointXYZ pointXYZ = pcl::PointXYZ(p.x, p.y, p.z);
                 // only add points on the right side of the supporting points 1 and 2
                 if (sign(ccw(support_point_1, support_point_2, support_point_3)) == sign(ccw(support_point_1, support_point_2, pointXYZ))
-                        || ccw(support_point_1, support_point_2, pointXYZ) == 0){
+                        || ccw(support_point_1, support_point_2, pointXYZ) == 0
+                        //|| pointsEqual(support_point_1, pointXYZ, 0.0002)// should not be neccessary but due to floating numbers it is
+                        //|| pointsEqual(support_point_2, pointXYZ, 0.0002)
+                        ){
                     ground_contact_points->push_back(pointXYZ);
                 }
             }
@@ -508,23 +560,30 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
         p.intensity=p.z;
     }
 
+    ROS_INFO("ground_contact points.size = %i", ground_contact_points->size());
+    for (unsigned int i = 0; i < ground_contact_points->size(); i++){
+        pcl::PointXYZ p = ground_contact_points->at(i);
+        ROS_INFO("P%i x = %f, y = %f, z = %f", i, p.x, p.y, p.z);
+    }
+
+
     // convex hull build here
     // first point is also last point
-    convex_hull_comp(*ground_contact_points, convex_hull_indices);
-
     std::vector<pcl::PointXYZ> convex_hull_points;
+    convex_hull_comp(*ground_contact_points, convex_hull_points);
 
-    // add points to the list
-    for(int i=0; i<(convex_hull_indices.size()); ++i)
-    {
-        const pcl::PointXYZ p1(ground_contact_points->at(convex_hull_indices[i]).x,ground_contact_points->at(convex_hull_indices[i]).y,ground_contact_points->at(convex_hull_indices[i]).z);
-        convex_hull_points.push_back(p1);
+    ROS_INFO("convex_hull_points.size = %i , this should at least be 4 to have 3 points which is a valid triangle as area.", convex_hull_points.size());
+    for (unsigned int i = 0; i < convex_hull_points.size(); i++){
+        pcl::PointXYZ p = convex_hull_points.at(i);
+        ROS_INFO("P%i x = %f, y = %f, z = %f", i, p.x, p.y, p.z);
     }
+
 
     if (distance_smoothing){
         //ROS_INFO("distance smoothing");
         // distance smoothing
         for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
+   //         if (convex_hull_points.size() <= 4) break; // area needs to have 3 points
             if (i < convex_hull_points.size()-2){
                 if (distanceXYZ(convex_hull_points.at(i), convex_hull_points.at(i+1)) < smooth_max_distance){
                     // keep the point which is further away from the others (try not make area smaller)
@@ -541,8 +600,10 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                     if (dist_p_i > dist_p_next){
                         offset = 1;
                     }
+                    if (i == 0){ // do not delete first point
+                        offset = 1;
+                    }
                     convex_hull_points.erase(convex_hull_points.begin()+(i+offset));
-                    convex_hull_indices.erase(convex_hull_indices.begin()+(i+offset));
                 }
                 else {
                     i++;
@@ -558,19 +619,19 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                         dist_p_i = dist_p_i + pow(distanceXYZ(convex_hull_points.at(i), convex_hull_points.at(k)),2);
                         dist_p_next = dist_p_next + pow(distanceXYZ(convex_hull_points.at(i+1), convex_hull_points.at(k)),2);
                     }
-                    if (dist_p_i < dist_p_next){
+                    //if (dist_p_i < dist_p_next){ // delete the second last point not the last
                         /*if (distanceXYZ(convex_hull_points.at(i), check_pos) < distanceXYZ(convex_hull_points.at(i+1), check_pos)){*/
                         // second last must be removed
                         convex_hull_points.erase(convex_hull_points.begin()+(i));
-                        convex_hull_indices.erase(convex_hull_indices.begin()+(i));
-                    }
-                    else{
+                    //}
+                    /*else{
                         // last = first must be removed
                         convex_hull_points.erase(convex_hull_points.begin()+(i+1));
                         convex_hull_points.at(0) = convex_hull_points.at(i);
                         convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
                         convex_hull_indices.at(0) = convex_hull_indices.at(i);
-                    }
+                        // ERROR: another point (first one must be pusheback to have enough points
+                    }*/
                 }
                 break; // needed because loop is doing i = i // could also be i++
             }
@@ -579,11 +640,18 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
         //ROS_INFO("end distance smoothing");
     }
 
+   //ROS_INFO("convex_hull_points.size = %i after distance smoothing, this should at least be 4 to have 3 points which is a valid triangle as area.", convex_hull_points.size());
+   /* for (unsigned int i = 0; i < convex_hull_points.size(); i++){
+        pcl::PointXYZ p = convex_hull_points.at(i);
+        ROS_INFO("P%i x = %f, y = %f, z = %f", i, p.x, p.y, p.z);
+    }*/
+
     // angle smoothing
     if (angle_smoothing){
 
         //ROS_INFO("angle smoothing");
         for (unsigned int i = 0; i < convex_hull_points.size() - 1; i = i){
+    //        if (convex_hull_points.size() <= 4) break; // area needs to have 3 points
             if (i < convex_hull_points.size()-2){
 
                 Eigen::Vector3f direction1 = subtractPointsEigen(convex_hull_points.at(i + 1),convex_hull_points.at(i));
@@ -593,7 +661,6 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                 // delete the point if angle is very low
                 if (angle < smooth_max_angle){
                     convex_hull_points.erase(convex_hull_points.begin()+(i+1));
-                    convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
                 }
 
                 else {
@@ -610,8 +677,6 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                     //delete last ( = first) point
                     convex_hull_points.erase(convex_hull_points.begin()+(i+1));
                     convex_hull_points.at(0) = convex_hull_points.at(i);
-                    convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
-                    convex_hull_indices.at(0) = convex_hull_indices.at(i);
                 }
                 break; // needed because loop is doing i = i // could also be i++
             }
@@ -620,6 +685,11 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
     }
 
 
+    //ROS_INFO("convex_hull_points.size = %i after angle smoothing, this should at least be 4 to have 3 points which is a valid triangle as area.", convex_hull_points.size());
+    /*for (unsigned int i = 0; i < convex_hull_points.size(); i++){
+        pcl::PointXYZ p = convex_hull_points.at(i);
+        ROS_INFO("P%i x = %f, y = %f, z = %f", i, p.x, p.y, p.z);
+    }*/
 
     return convex_hull_points;
 }
@@ -755,13 +825,35 @@ void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::Point
         bool c2=hull_cpp ? (ccw(p2,p3,pp)<0) : (ccw(p2,p3,pp)>0);
         bool c3=hull_cpp ? (ccw(p3,p0,pp)<0) : (ccw(p3,p0,pp)>0);
 
-        if(c0&&c1&&c2&&c3)
+        if(c0&&c1&&c2&&c3) // point is in area of robot
         {
             pcl::PointXYZI p= pcl::PointXYZI();
             p.x=pp.x;
             p.y=pp.y;
             p.z=pp.z;
             p.intensity=0.0;
+
+            // ONE LINE NOT WORKING HELP
+            /*bool xysame = false;
+            unsigned int i = 0;
+            while (i < robot_pcl->size()){ // doublepoints right on top of each other remove
+                if (pointsEqualxy(p, robot_pcl->at(i), 0.00005)){ // doublepoints found
+                    xysame = true;
+                    if (p.z > robot_pcl->at(i).z){
+                        //robot_pcl->erase(robot_pcl->begin()+i); // TODO why not working?
+                        del = true;
+                        iterator_delete = i;
+                        robot_pcl->push_back(p);
+                        break;
+                    }
+                }
+                i++;
+            }
+
+            if (xysame == false){
+                robot_pcl->push_back(p);
+            }*/
+
             robot_pcl->push_back(p);
 
             if(n_counter==0) highest_Point_idx=1;
@@ -859,7 +951,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     pcl::PointXYZ support_point_2;
     pcl::PointXYZ support_point_3;
     pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points(new pcl::PointCloud<pcl::PointXYZ>());
-    std::vector<unsigned int> convex_hull_indices;
     std::vector<pcl::PointXYZ> convex_hull_points;
 
     int counter = 0;
@@ -932,7 +1023,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                              support_point_2,
                                              support_point_3,
                                              false,
-                                             convex_hull_indices,
                                              ground_contact_points);
 #ifdef time_debug
         time_duration_computeHull = (ros::Time::now().toNSec() - time_start_computeHull)/1000;
@@ -944,7 +1034,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         if (draw_convex_hull_ground_points){
             for (unsigned int j = 0; j < ground_contact_points->size(); ++j){
                 std::string name ="groundContactArea"+boost::lexical_cast<std::string>(j);
-                viewer.addSphere(ground_contact_points->at(j), 0.01,0,1,1, name, viewport);
+                viewer.addSphere(ground_contact_points->at(j), 0.015,0,1,1, name, viewport);
             }
         }
 #endif
@@ -961,8 +1051,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         }
 
 
-
-        if (center_in_hull == true){
+        if (center_in_hull == true || first_SP_around_mid == false){
             //ROS_INFO("check in hull is true");
             // The checkpos is in the convex hull. nothing needs to be changed
             break; // endwhile
@@ -993,7 +1082,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 }
             }
             support_point_1 = convex_hull_points.at(index_of_closest_point);
-            convex_hull_indices.clear();
             ground_contact_points->clear();
         }
 
@@ -1041,12 +1129,12 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     {
         // rating between convex_hull_point (i and i+1)
         float c =rating.at(i);
-        std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(convex_hull_indices[i]);
+        std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(i);
         const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
         const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
-        ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
-        //ROS_INFO("Rating %f", rating.at(i));
+        //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+        ROS_INFO("Rating num %i = %f", i, rating.at(i));
 
         if (draw_convex_hull_first_polygon){
             if(c<invalid_rating)
@@ -1110,8 +1198,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 }
 
 
-
-                std::vector<unsigned int> convex_hull_indices_iterative;
                 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating_iterative(new pcl::PointCloud<pcl::PointXYZ>());
 
                 std::vector<pcl::PointXYZ> convex_hull_points_it = buildConvexHull(robot_pcl,
@@ -1120,7 +1206,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                                                                           support_point_2,
                                                                                           support_point_3,
                                                                                           true,
-                                                                                          convex_hull_indices_iterative,
                                                                                           cloud_positionRating_iterative);
 
                 pcl::PointXYZ normal_it;
@@ -1154,17 +1239,11 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 // edge that must be removed is at position k in the vector
 
                 convex_hull_points_it.erase(convex_hull_points_it.begin()+ convex_hull_points_it.size()-1);
-                convex_hull_indices_iterative.erase(convex_hull_indices_iterative.begin() + convex_hull_indices_iterative.size() -1);
                 for (unsigned int l = 0; l < iterator+1; l++){ //TODO looks right, maybe double check
                     // shift first of list to last of list
                     pcl::PointXYZ temp = convex_hull_points_it.at(0);
                     convex_hull_points_it.erase(convex_hull_points_it.begin()+0);
                     convex_hull_points_it.push_back(temp);
-
-                    unsigned int temp_index = convex_hull_indices_iterative.at(0);
-                    convex_hull_indices_iterative.erase((convex_hull_indices_iterative.begin() + 0));
-                    convex_hull_indices_iterative.push_back(temp_index);
-
                 }
 #ifdef viewer_on
                 // draw supporting points
@@ -1199,7 +1278,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                     // rating between convex_hull_point (i and i+1)
                     float c =rating_iterative.at(k);
 
-                    std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(convex_hull_indices_iterative[k])+"tippedOver"+boost::lexical_cast<std::string>(i);
+                    std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(k)+"tippedOver"+boost::lexical_cast<std::string>(i);
                     const pcl::PointXYZ p1(convex_hull_points_it[k].x,convex_hull_points_it[k].y,convex_hull_points_it[k].z);
                     const pcl::PointXYZ p2(convex_hull_points_it[k+1].x,convex_hull_points_it[k+1].y,convex_hull_points_it[k+1].z);
 

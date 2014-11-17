@@ -57,8 +57,9 @@ void test_normals()
   //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
-  pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/pc_small_step.pcd", *cloud_original);
+  pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
 
 
 
@@ -71,7 +72,7 @@ void test_normals()
 
   // detect edges
   ROS_INFO("Compute HeightRating...");
-  terrain_classifier->computeHeight();
+  //terrain_classifier->computeHeight();
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");
@@ -100,8 +101,18 @@ void test_normals()
 
 
   // Position, Orientation (in radiants)
-  pcl::PointXYZ check_pos = pcl::PointXYZ(-1.0,-2.25, 0.0); // 2.5 , -5.0
-  float orientation = (0.0)/180.0*3.14;
+  float x, y, orientation;
+  //DEBUG for Simulation (file: big_sim.pcd)
+  x  = 1.511102; y = 1.011102; orientation = 0.7854; // bpr is 2.80 this is a normal position
+  //x = 1.400002; y = 0.900002; orientation = 0.7854; // convex_hull_quickfix
+  //x = 2.450002; y = 2.038902; orientation = 1.5708; // after 15 iterations position to check not in supporting polygon TOO STEEP
+  //x = 2.4; y = 1.55; orientation = 1.570796; // too low pos rating
+  //x = 3.600002; y = 3.000002; orientation = 1.570796; // posrating = 0.0 should not be!
+  //x = 3.500002; y = 3.500002; orientation = 3.141593; // pos rating too low
+
+
+  pcl::PointXYZ check_pos = pcl::PointXYZ(x, y, 0.0);
+  //float orientation = (0.0)/180.0*3.14;
   float position_rating = 10.0;
   int unstable_axis = 10;
   pcl::PointXYZ pc, p0, p1, p2, p3;
@@ -110,13 +121,13 @@ void test_normals()
                                             position_rating, unstable_axis, viewer, view_port_4);
 #endif
 
-  float x=0.0;
+  float xx=0.0;
 
   while (!viewer.wasStopped())
   {
    //   viewer.removeAllPointClouds(4);
      // viewer.removeAllShapes(4);
-      x=x+0.03;
+      xx=xx+0.03;
     viewer.spinOnce(100);
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));

@@ -1,7 +1,7 @@
 #ifndef TERRAIN_MODEL_H__
 #define TERRAIN_MODEL_H__
 
-//#define viewer_on
+#define viewer_on
 
 #include <ros/ros.h>
 
@@ -9,6 +9,7 @@
 
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/point_cloud.h>
+#include <pcl/surface/convex_hull.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
@@ -58,7 +59,6 @@ public:
                                                const pcl::PointXYZ& support_point_2,
                                                const pcl::PointXYZ& support_point_3,
                                                const bool iterative,
-                                               std::vector<unsigned int>& convex_hull_indices,
                                                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating2);
 
     void computeRobotPosition(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
@@ -107,6 +107,7 @@ public:
     bool angle_smoothing;
     float smooth_max_angle;
     float smooth_max_distance;
+    bool first_SP_around_mid;
     bool tip_over;
     bool check_each_axis;
 #ifdef viewer_on
