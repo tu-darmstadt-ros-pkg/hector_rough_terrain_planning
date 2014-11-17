@@ -103,12 +103,12 @@ void test_normals()
   // Position, Orientation (in radiants)
   float x, y, orientation;
   //DEBUG for Simulation (file: big_sim.pcd)
-  x  = 1.511102; y = 1.011102; orientation = 0.7854; // bpr is 2.80 this is a normal position
+  //x  = 1.511102; y = 1.011102; orientation = 0.7854; // bpr is 2.80 this is a normal position
   //x = 1.400002; y = 0.900002; orientation = 0.7854; // convex_hull_quickfix
   //x = 2.450002; y = 2.038902; orientation = 1.5708; // after 15 iterations position to check not in supporting polygon TOO STEEP
   //x = 2.4; y = 1.55; orientation = 1.570796; // too low pos rating
   //x = 3.600002; y = 3.000002; orientation = 1.570796; // posrating = 0.0 should not be!
-  //x = 3.500002; y = 3.500002; orientation = 3.141593; // pos rating too low
+  x = 3.500002; y = 3.500002; orientation = 3.141593; // pos rating too low
 
 
   pcl::PointXYZ check_pos = pcl::PointXYZ(x, y, 0.0);

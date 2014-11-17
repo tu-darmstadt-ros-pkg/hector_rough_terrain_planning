@@ -32,8 +32,8 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 #ifdef viewer_on
     draw_convex_hull_first_polygon = true;
     draw_convex_hull_ground_points = true;
-    draw_convex_hull_iterative = false;
-    draw_convex_hull_iterative_ground_points= false;
+    draw_convex_hull_iterative = true;
+    draw_convex_hull_iterative_ground_points= true;
 #endif
 }
 
@@ -236,6 +236,7 @@ bool TerrainModel::atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointX
 /*--------------------------------------------------------------------------------------------*/
 
 
+// not working properly
 void convex_hull_comp_pcl(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& fill){
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     for (unsigned int i = 0; i < ground_contact_pcl.size(); i++){
@@ -250,6 +251,7 @@ void convex_hull_comp_pcl(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, st
     for (unsigned int i = 0; i < cHull_points.size(); i++){
         fill.push_back(cHull_points.at(i));
     }
+    fill.push_back(cHull_points.at(0));
 }
 
 //convex hull computation
@@ -258,12 +260,17 @@ void convex_hull_comp_pcl(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, st
 void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& convex_hull_points)
 {
 
-    float x_min=ground_contact_pcl.at(0).x;
-    unsigned int point_on_hull=0;
+    convex_hull_points.clear();
+
     pcl::PointCloud<pcl::PointXYZ> cloud_2d;
     cloud_2d.resize(0);
 
-    //find minx
+    float x_min=ground_contact_pcl.at(0).x;
+    float y_min=ground_contact_pcl.at(0).y;
+    unsigned int point_on_hull=0;
+    pcl::PointXYZ& cur_hull_point = ground_contact_pcl.at(0);
+
+    //find minx and fill cloud2D
     for (unsigned int i = 0; i < ground_contact_pcl.size(); i++)
     {
         pcl::PointXYZ p = ground_contact_pcl.at(i);
@@ -271,7 +278,16 @@ void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::v
         if (p.x<x_min)
         {
             x_min=p.x;
+            y_min=p.y;
             point_on_hull=i;
+            cur_hull_point = ground_contact_pcl.at(i);
+        }
+        if (p.x == x_min && p.y < y_min)
+        {
+            x_min=p.x;
+            y_min=p.y;
+            point_on_hull=i;
+            cur_hull_point = ground_contact_pcl.at(i);
         }
 
     }
@@ -628,8 +644,6 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                         // last = first must be removed
                         convex_hull_points.erase(convex_hull_points.begin()+(i+1));
                         convex_hull_points.at(0) = convex_hull_points.at(i);
-                        convex_hull_indices.erase(convex_hull_indices.begin()+(i+1));
-                        convex_hull_indices.at(0) = convex_hull_indices.at(i);
                         // ERROR: another point (first one must be pusheback to have enough points
                     }*/
                 }
@@ -1034,7 +1048,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         if (draw_convex_hull_ground_points){
             for (unsigned int j = 0; j < ground_contact_points->size(); ++j){
                 std::string name ="groundContactArea"+boost::lexical_cast<std::string>(j);
-                viewer.addSphere(ground_contact_points->at(j), 0.015,0,1,1, name, viewport);
+                viewer.addSphere(ground_contact_points->at(j), 0.015,0.1 ,0.9,0.9, name, viewport);
             }
         }
 #endif
@@ -1239,7 +1253,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 // edge that must be removed is at position k in the vector
 
                 convex_hull_points_it.erase(convex_hull_points_it.begin()+ convex_hull_points_it.size()-1);
-                for (unsigned int l = 0; l < iterator+1; l++){ //TODO looks right, maybe double check
+                for (unsigned int l = 0; l < iterator+1; l++){
                     // shift first of list to last of list
                     pcl::PointXYZ temp = convex_hull_points_it.at(0);
                     convex_hull_points_it.erase(convex_hull_points_it.begin()+0);
