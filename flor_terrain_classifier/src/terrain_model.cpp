@@ -254,6 +254,12 @@ void convex_hull_comp_pcl(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, st
     fill.push_back(cHull_points.at(0));
 }
 
+void convex_hull_comp_naiv_positivelist(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& fill){
+
+
+
+}
+
 //convex hull computation
 //  http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
 // first point is also last point
