@@ -58,8 +58,8 @@ void test_normals()
   //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
   //pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
-  //pcl::io::loadPCDFile("../pointclouds/pc_small_step.pcd", *cloud_original);
-  pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
+  pcl::io::loadPCDFile("../pointclouds/pc_small_step.pcd", *cloud_original);
+  //pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
 
 
 
@@ -72,7 +72,7 @@ void test_normals()
 
   // detect edges
   ROS_INFO("Compute HeightRating...");
-  //terrain_classifier->computeHeight();
+  terrain_classifier->computeHeight();
 
   // visualization
   pcl::visualization::PCLVisualizer viewer("Terrain classifier");
@@ -108,7 +108,7 @@ void test_normals()
   //x = 2.450002; y = 2.038902; orientation = 1.5708; // after 15 iterations position to check not in supporting polygon TOO STEEP
   //x = 2.4; y = 1.55; orientation = 1.570796; // too low pos rating
   //x = 3.600002; y = 3.000002; orientation = 1.570796; // posrating = 0.0 should not be!
-  x = 3.500002; y = 3.500002; orientation = 3.141593; // pos rating too low
+  x = 0.500002; y = 0.500002; orientation = 3.141593; // pos rating too low
 
 
   pcl::PointXYZ check_pos = pcl::PointXYZ(x, y, 0.0);

@@ -1,7 +1,7 @@
 #ifndef TERRAIN_MODEL_H__
 #define TERRAIN_MODEL_H__
 
-#define viewer_on
+//#define viewer_on
 
 #include <ros/ros.h>
 

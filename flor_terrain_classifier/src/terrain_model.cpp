@@ -582,23 +582,23 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
         p.intensity=p.z;
     }
 
-    ROS_INFO("ground_contact points.size = %i", ground_contact_points->size());
+  /**   ROS_INFO("ground_contact points.size = %i", ground_contact_points->size());
     for (unsigned int i = 0; i < ground_contact_points->size(); i++){
         pcl::PointXYZ p = ground_contact_points->at(i);
         ROS_INFO("P%i x = %f, y = %f, z = %f", i, p.x, p.y, p.z);
-    }
+    }**/
 
 
     // convex hull build here
     // first point is also last point
     std::vector<pcl::PointXYZ> convex_hull_points;
     convex_hull_comp(*ground_contact_points, convex_hull_points);
-
+/**
     ROS_INFO("convex_hull_points.size = %i , this should at least be 4 to have 3 points which is a valid triangle as area.", convex_hull_points.size());
-    for (unsigned int i = 0; i < convex_hull_points.size(); i++){
+   for (unsigned int i = 0; i < convex_hull_points.size(); i++){
         pcl::PointXYZ p = convex_hull_points.at(i);
         ROS_INFO("P%i x = %f, y = %f, z = %f", i, p.x, p.y, p.z);
-    }
+    }**/
 
 
     if (distance_smoothing){
