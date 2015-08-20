@@ -1,7 +1,11 @@
 #include <flor_terrain_classifier/terrain_model.h>
+#include <flor_terrain_classifier/pcl_math_utils.h>
 
+#include <pcl/surface/convex_hull.h>
 //#define time_debug;
 
+
+#define MY_EPS 1e-6
 namespace hector_terrain_model
 {
 
@@ -52,123 +56,6 @@ void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
 /* ---------------Helper Functions for Eigen Vector3 and PointXYZ ----------------------------*/
 /*--------------------------------------------------------------------------------------------*/
 
-// normal adding, subtracting points
-
-bool  pointsEqual(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2, float delta){
-    if (fabs(p1.x - p2.x) > delta)
-        return false;
-    if (fabs(p1.y - p2.y) > delta)
-        return false;
-    if (fabs(p1.z - p2.z) > delta)
-        return false;
-    return true;
-}
-
-bool  pointsEqualxy(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2, float delta){
-    if (fabs(p1.x - p2.x) > delta)
-        return false;
-    if (fabs(p1.y - p2.y) > delta)
-        return false;
-    return true;
-}
-
-bool  pointsEqualxy(const pcl::PointXYZI& p1,const  pcl::PointXYZI& p2, float delta){
-    if (fabs(p1.x - p2.x) > delta)
-        return false;
-    if (fabs(p1.y - p2.y) > delta)
-        return false;
-    return true;
-}
-
-pcl::PointXYZ addPointVector(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2){
-    return pcl::PointXYZ(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
-}
-
-pcl::PointXYZ addPointVector(const pcl::PointXYZ& p1,const  Eigen::Vector3f& vector){
-    return pcl::PointXYZ(p1.x + vector.x(), p1.y + vector.y(), p1.z + vector.z());
-}
-
-pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
-    return pcl::PointXYZ(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
-}
-
-Eigen::Vector3f subtractPointsEigen(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2){
-    return Eigen::Vector3f(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
-}
-
-// z stays
-pcl::PointXYZ rotatePoint(pcl::PointXYZ p, float degree /*radiants*/){
-    return pcl::PointXYZ(cos(degree)*p.x - sin(degree)*p.y,
-                         sin(degree)*p.x + cos(degree)*p.y,
-                         p.z);
-}
-
-float dotproductEigen(Eigen::Vector3f v1, Eigen::Vector3f v2){
-    return (v1.x() * v2.x() +
-            v1.y() * v2.y() +
-            v1.z() * v2.z());
-}
-
-float dotProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
-    return a.x*b.x+a.y*b.y+a.z*b.z;
-}
-
-pcl::PointXYZ crossProduct(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
-    float cx=a.y*b.z-a.z*b.y;
-    float cy=a.z*b.x-a.x*b.z;
-    float cz=a.x*b.y-a.y*b.x;
-    return pcl::PointXYZ(cx,cy,cz);
-}
-
-Eigen::Vector3f crossProductEigen(const pcl::PointXYZ& a,const  pcl::PointXYZ& b){
-    float cx=a.y*b.z-a.z*b.y;
-    float cy=a.z*b.x-a.x*b.z;
-    float cz=a.x*b.y-a.y*b.x;
-    return Eigen::Vector3f(cx,cy,cz);
-}
-
-// returns angle value in degree
-float angleBetween(Eigen::Vector3f v1, Eigen::Vector3f v2){
-    float acosvalue = dotproductEigen(v1,v2)/
-            (sqrt(dotproductEigen(v1,v1)) * sqrt(dotproductEigen(v2,v2)));
-    if (acosvalue > 0.9999999){
-        return 0.0;
-    }
-    if (acosvalue < -0.999999){
-        return 180.0;
-    }
-    float result = acos(acosvalue) * (180.0 / M_PI);
-
-    return result;
-}
-
-// distance between 2 points (only seen in Z = 0 plane)
-float distanceXY(const pcl::PointXYZ p1, const pcl::PointXYZ p2){
-    return sqrt((p1.x-p2.x)*(p1.x-p2.x)+
-                (p1.y-p2.y)*(p1.y-p2.y));
-}
-
-// distance between 2 points - 3D
-float distanceXYZ(const pcl::PointXYZ p1, const pcl::PointXYZ p2){
-    return sqrt((p1.x-p2.x)*(p1.x-p2.x)+
-                (p1.y-p2.y)*(p1.y-p2.y)+
-                (p1.z-p2.z)*(p1.z-p2.z));
-}
-
-// computes distance between straight / axis (ps, vector) and the point p
-float distancePointStraight(pcl::PointXYZ ps, pcl::PointXYZ vector, pcl::PointXYZ p){
-    pcl::PointXYZ perpendicular = crossProduct((subtractPoints(p,ps)), vector);
-    float d = sqrt(dotProduct(perpendicular, perpendicular)) / sqrt(dotProduct(vector, vector));
-    return d;
-}
-
-// 1 if positive, 0 if zero, -1 if negative
-int sign(float a){
-    if (a == 0) return 0;
-    if (a > 0) return 1;
-    return -1;
-}
-
 
 // returns a value how similar vectors are to each other. close to 0 is very similar, 0.50 would not be similar anymore.
 float vectorSimilarity(pcl::PointXYZ support_point_1, pcl::PointXYZ support_point_2,
@@ -190,196 +77,12 @@ float vectorSimilarity(pcl::PointXYZ support_point_1, pcl::PointXYZ support_poin
     return distance*20.0 + angle/100.0;
 }
 
-// return > 0 -> counterclockwise, // return < 0 -> clockwise  // return = 0 -> neither nor
-float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3){
-    return (p2.x - p1.x)*(p3.y - p1.y) - (p2.y - p1.y)*(p3.x - p1.x);
-}
-
-
-float angleToGround(const pcl::PointXYZ s1, const pcl::PointXYZ s2, const pcl::PointXYZ s3){
-    Eigen::Vector3f normal = crossProductEigen(subtractPoints(s1, s2), subtractPoints(s1, s3));
-    float angle = angleBetween(normal, Eigen::Vector3f(0.0, 0.0, 1.0));
-    if (angle > 90.0)
-        angle = 180.0 - angle;
-    return angle;
-}
-
-float TerrainModel::planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p)
-{
-    float d=dotProduct(pcl::PointXYZ(testpoint.x-plane_p.x, testpoint.y-plane_p.y, testpoint.z-plane_p.z), plane_n) /
-            sqrt(plane_n.x*plane_n.x+plane_n.y*plane_n.y+plane_n.z*plane_n.z);
-    return fabs(d);
-}
-
-pcl::PointXYZ TerrainModel::planeProjection(const pcl::PointXYZ& projection_p, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p)
-{
-
-
-    Eigen::Vector3f x = Eigen::Vector3f(projection_p.x,projection_p.y,projection_p.z);
-    Eigen::Vector3f n = Eigen::Vector3f(plane_n.x,plane_n.y,plane_n.z);
-    Eigen::Vector3f r = Eigen::Vector3f(plane_p.x,plane_p.y,plane_p.z);
-    Eigen::Vector3f res = x - ((x-r).dot(n)/n.dot(n))*n;
-    pcl::PointXYZ ret = pcl::PointXYZ(res[0],res[1],res[2]);
-    return ret;
-}
-
-
-
-bool TerrainModel::atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p, const float& delta)
-{
-    return (abs(planeDistance(testpoint,plane_n,plane_p))<=delta);
-}
 
 
 /*--------------------------------------------------------------------------------------------*/
 /* --------------simple Helper Functoins end--------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------*/
 
-
-// not working properly
-void convex_hull_comp_pcl(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& fill){
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    for (unsigned int i = 0; i < ground_contact_pcl.size(); i++){
-        cloud->push_back(ground_contact_pcl.at(i));
-    }
-
-    pcl::ConvexHull<pcl::PointXYZ> cHull;
-    pcl::PointCloud<pcl::PointXYZ> cHull_points;
-    cHull.setInputCloud(cloud);
-    cHull.reconstruct (cHull_points);
-
-    for (unsigned int i = 0; i < cHull_points.size(); i++){
-        fill.push_back(cHull_points.at(i));
-    }
-    fill.push_back(cHull_points.at(0));
-}
-
-void convex_hull_comp_naiv_positivelist(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& fill){
-
-
-
-}
-
-//convex hull computation
-//  http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
-// first point is also last point
-void convex_hull_comp(pcl::PointCloud<pcl::PointXYZ>& ground_contact_pcl, std::vector<pcl::PointXYZ>& convex_hull_points)
-{
-
-    convex_hull_points.clear();
-
-    pcl::PointCloud<pcl::PointXYZ> cloud_2d;
-    cloud_2d.resize(0);
-
-    float x_min=ground_contact_pcl.at(0).x;
-    float y_min=ground_contact_pcl.at(0).y;
-    unsigned int point_on_hull=0;
-    pcl::PointXYZ& cur_hull_point = ground_contact_pcl.at(0);
-
-    //find minx and fill cloud2D
-    for (unsigned int i = 0; i < ground_contact_pcl.size(); i++)
-    {
-        pcl::PointXYZ p = ground_contact_pcl.at(i);
-        cloud_2d.push_back(pcl::PointXYZ(p.x,p.y,0.0));
-        if (p.x<x_min)
-        {
-            x_min=p.x;
-            y_min=p.y;
-            point_on_hull=i;
-            cur_hull_point = ground_contact_pcl.at(i);
-        }
-        if (p.x == x_min && p.y < y_min)
-        {
-            x_min=p.x;
-            y_min=p.y;
-            point_on_hull=i;
-            cur_hull_point = ground_contact_pcl.at(i);
-        }
-
-    }
-    std::vector<unsigned int>convex_hull_indices;
-    //build hull
-    unsigned int i=0;
-    unsigned int current_best;
-    while (true)
-    {
-       if(std::find(convex_hull_indices.begin(), convex_hull_indices.end(), point_on_hull) != convex_hull_indices.end())
-        {
-           ROS_WARN("convex_hull_comp is in endless loop quickfix");
-           // first point is also last point
-           convex_hull_indices.push_back(convex_hull_indices.at(0));
-           break;
-       }
-           convex_hull_indices.push_back(point_on_hull);
-
-        current_best=0;
-        //if((0==i)&&(0==point_on_hull)) current_best=1;
-        for(unsigned int current_candidate=1; current_candidate<cloud_2d.size();++current_candidate) //TODO: Why current = 1 not = 0?
-        {           
-            unsigned int lastHullElement=convex_hull_indices.at(i);
-            if(   (lastHullElement != current_best)
-                 && (lastHullElement != current_candidate)
-                 && (current_candidate != current_best))
-            {
-                pcl::PointXYZ& p0 =cloud_2d.at(convex_hull_indices.at(i)); // aktuell letzter hullpoint
-                pcl::PointXYZ& p1 =cloud_2d.at(current_best); // kandidat ( aktuell bester nächster )
-                pcl::PointXYZ& p2 =cloud_2d.at(current_candidate); // kandidat der gegen den aktuell besten verglichen wird)
-                float ccw_f=ccw(p0,p1,p2);
-                bool isleft=(ccw_f < 0.000); // < 0 did not work. this means this could also be an slightly unconvex hull see below
-                if(current_best==point_on_hull // for 2nd point only
-                        || isleft) // candidate is more left
-                {
-                    current_best=current_candidate;
-                }
-
-                else if(ccw_f < 0.00002) // straight or backwards or slightly right
-                {
-                    pcl::PointXYZ& p_before = cloud_2d.at(convex_hull_indices.at(i));
-                    pcl::PointXYZ direction_before = subtractPoints(p0, p_before);
-                    pcl::PointXYZ direction_current = subtractPoints(p0, p2);
-                    if (dotProduct(direction_before, direction_current) > 0)// selbe richtung vom kandidat und dem vorhergegangenen
-                    {
-                        float dist_endpoint = distanceXY(p0, p1);
-                        float dist_j = distanceXY(p0, p2);
-                        if (dist_j < dist_endpoint)
-                        {
-                            current_best = current_candidate;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if(lastHullElement == current_best)
-                {
-                    current_best++;
-                }
-               // ROS_WARN("CH same id %i %i %i .",lastHullElement,current_best,current_candidate);
-
-            }
-        }
-
-        i++;
-        point_on_hull=current_best;
-        if(current_best==convex_hull_indices.at(0))
-        {
-            // first point is also last point
-            convex_hull_indices.push_back(convex_hull_indices.at(0));
-            break;
-        }
-
-        if (i > 2*cloud_2d.size()){
-            ROS_WARN("convex_hull_comp is in endless loop");
-        }
-
-    }
-    // add points to the list
-    for(int i=0; i<(convex_hull_indices.size()); ++i)
-    {
-        convex_hull_points.push_back(ground_contact_pcl.at(convex_hull_indices.at(i)));
-    }
-
-}
 
 // computes the minimum Rating if standing flat on the ground
 float TerrainModel::bestPosRating(){
@@ -592,7 +295,29 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
     // convex hull build here
     // first point is also last point
     std::vector<pcl::PointXYZ> convex_hull_points;
-    convex_hull_comp(*ground_contact_points, convex_hull_points);
+   // convex_hull_comp(*ground_contact_points, convex_hull_points);
+
+
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::ConvexHull<pcl::PointXYZ> chull;
+
+    chull.setInputCloud(ground_contact_points);
+
+    chull.reconstruct(*cloud_hull);
+
+
+    for(unsigned int i = 0; i<cloud_hull->points.size(); ++i)
+    {
+        convex_hull_points.push_back(cloud_hull->at(i));
+    }
+
+    convex_hull_points.push_back(cloud_hull->at(0));    //for consistency with previous data structure
+
+
+
+
+
 /**
     ROS_INFO("convex_hull_points.size = %i , this should at least be 4 to have 3 points which is a valid triangle as area.", convex_hull_points.size());
    for (unsigned int i = 0; i < convex_hull_points.size(); i++){
@@ -908,6 +633,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                    #endif
                                          )
 {    
+
 #ifdef time_debug
     // times for debug / to see the speed of the algorithm
     double time_start_robotplcfind;
@@ -985,8 +711,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
         pcl::PointXYZ tip_over_direction;
 
-        float delta = 0.0000001;
-        if (tip_over_axis_vector.x < delta && tip_over_axis_vector.y < delta && tip_over_axis_vector.z < delta){
+
+        if (tip_over_axis_vector.x < MY_EPS && tip_over_axis_vector.y < MY_EPS && tip_over_axis_vector.z < MY_EPS){
 
             tip_over_axis_vector = pcl::PointXYZ(1.0, 0.0, 0.0); // this is random.
             tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90° from vector
@@ -1036,6 +762,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
         time_start_computeHull =ros::Time::now().toNSec();
 #endif
+
+
 
         convex_hull_points = buildConvexHull(robot_pcl,
                                              check_pos,

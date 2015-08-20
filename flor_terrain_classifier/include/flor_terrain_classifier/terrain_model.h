@@ -110,6 +110,7 @@ public:
     bool first_SP_around_mid;
     bool tip_over;
     bool check_each_axis;
+
 #ifdef viewer_on
     bool draw_convex_hull_first_polygon;
     bool draw_convex_hull_ground_points;
@@ -133,9 +134,7 @@ public:
 
 
 private:
-    float planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p);
     bool atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p, const float& delta);
-    pcl::PointXYZ planeProjection(const pcl::PointXYZ& projection_p, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p);
 
 };
 }
