@@ -52,10 +52,6 @@ void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
 }
 
 
-/*--------------------------------------------------------------------------------------------*/
-/* ---------------Helper Functions for Eigen Vector3 and PointXYZ ----------------------------*/
-/*--------------------------------------------------------------------------------------------*/
-
 
 // returns a value how similar vectors are to each other. close to 0 is very similar, 0.50 would not be similar anymore.
 float vectorSimilarity(pcl::PointXYZ support_point_1, pcl::PointXYZ support_point_2,
@@ -512,19 +508,19 @@ void TerrainModel::computeRobotEdgePoints(const pcl::PointXYZ check_pos, const f
                             pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3){
 
     p0=pcl::PointXYZ(+ 0.5*robot_length, + 0.5*robot_width, 0);
-    p0 = rotatePoint(p0, orientation);
+    p0 = rotatePointZ(p0, orientation);
     p0 = addPointVector(p0, check_pos);
 
     p1=pcl::PointXYZ(- 0.5*robot_length, + 0.5*robot_width, 0);
-    p1 = rotatePoint(p1, orientation);
+    p1 = rotatePointZ(p1, orientation);
     p1 = addPointVector(p1, check_pos);
 
     p2=pcl::PointXYZ(- 0.5*robot_length, - 0.5*robot_width, 0);
-    p2 = rotatePoint(p2, orientation);
+    p2 = rotatePointZ(p2, orientation);
     p2 = addPointVector(p2, check_pos);
 
     p3=pcl::PointXYZ(+ 0.5*robot_length, - 0.5*robot_width, 0);
-    p3 = rotatePoint(p3, orientation);
+    p3 = rotatePointZ(p3, orientation);
     p3 = addPointVector(p3, check_pos);
 }
 

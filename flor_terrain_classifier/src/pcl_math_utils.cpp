@@ -50,7 +50,7 @@ Eigen::Vector3f subtractPointsEigen(const pcl::PointXYZ& p1,const pcl::PointXYZ&
 }
 
 // z stays
-pcl::PointXYZ rotatePoint(pcl::PointXYZ p, float degree /*radiants*/){
+pcl::PointXYZ rotatePointZ(pcl::PointXYZ p, float degree /*radiants*/){
     return pcl::PointXYZ(cos(degree)*p.x - sin(degree)*p.y,
                          sin(degree)*p.x + cos(degree)*p.y,
                          p.z);
@@ -84,10 +84,10 @@ Eigen::Vector3f crossProductEigen(const pcl::PointXYZ& a,const  pcl::PointXYZ& b
 float angleBetween(Eigen::Vector3f v1, Eigen::Vector3f v2){
     float acosvalue = dotproductEigen(v1,v2)/
             (sqrt(dotproductEigen(v1,v1)) * sqrt(dotproductEigen(v2,v2)));
-    if (acosvalue > 0.9999999){
+    if (acosvalue > 1-MY_EPS){
         return 0.0;
     }
-    if (acosvalue < -0.999999){
+    if (acosvalue < -(1-MY_EPS)){
         return 180.0;
     }
     float result = acos(acosvalue) * (180.0 / M_PI);

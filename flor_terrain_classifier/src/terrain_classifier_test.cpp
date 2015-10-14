@@ -26,7 +26,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
 
+
+#include <std_msgs/Bool.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <sensor_msgs/PointCloud2.h>
+
 #include <pcl/io/pcd_io.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -41,11 +49,26 @@
 
 using namespace flor_terrain_classifier;
 using namespace hector_terrain_model;
-
-void test_normals()
+class TerrainClassifierTest
 {
-  ros::NodeHandle nh_("~");
-  flor_terrain_classifier::TerrainClassifierParams params(nh_);
+public:
+    TerrainClassifierTest()
+    {}
+    void initialPoseCb(geometry_msgs::PoseWithCovarianceStamped msg);
+    void test_terrain_classifier();
+};
+
+void TerrainClassifierTest::initialPoseCb(geometry_msgs::PoseWithCovarianceStamped msg)
+{
+ROS_INFO("reveiced pose");
+}
+
+void TerrainClassifierTest::test_terrain_classifier()
+{
+  ros::NodeHandle nh;
+  flor_terrain_classifier::TerrainClassifierParams params(nh);
+  ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
+  ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
 
   params.filter_mask = FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
   flor_terrain_classifier::TerrainClassifier::Ptr terrain_classifier(new flor_terrain_classifier::TerrainClassifier(params));
@@ -123,8 +146,32 @@ void test_normals()
 
   float xx=0.0;
 
+
+  sensor_msgs::PointCloud2 cloud_point_msg;
+  ROS_INFO("TerrainClassifierTest publishResult");
+  if (cloud_input_pub.getNumSubscribers() >= 0)
+  {
+    ROS_INFO("TerrainClassifierNode publish cloud input");
+    pcl::toROSMsg(*(terrain_classifier->getCloudInput()), cloud_point_msg);
+    cloud_point_msg.header.stamp = ros::Time::now();
+    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+    cloud_input_pub.publish(cloud_point_msg);
+  }
+  bool subscribed = false;
+
+
   while (!viewer.wasStopped())
   {
+
+      if (cloud_input_pub.getNumSubscribers() == 0)
+      {
+          cloud_input_pub.publish(cloud_point_msg);
+      }
+      else if(subscribed == false)
+      {
+          cloud_input_pub.publish(cloud_point_msg);
+          subscribed = true;
+      }
    //   viewer.removeAllPointClouds(4);
      // viewer.removeAllShapes(4);
       xx=xx+0.03;
@@ -139,7 +186,8 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "terrain_test");
   ros::Time::init();
 
-  test_normals();
+  TerrainClassifierTest test;
+  test.test_terrain_classifier();
 
   return 0;
 }

@@ -54,7 +54,7 @@ pcl::PointXYZ subtractPoints(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2);
 
 Eigen::Vector3f subtractPointsEigen(const pcl::PointXYZ& p1,const pcl::PointXYZ& p2);
 // z stays
-pcl::PointXYZ rotatePoint(pcl::PointXYZ p, float degree /*radiants*/);
+pcl::PointXYZ rotatePointZ(pcl::PointXYZ p, float degree /*radiants*/);
 
 float dotproductEigen(Eigen::Vector3f v1, Eigen::Vector3f v2);
 
