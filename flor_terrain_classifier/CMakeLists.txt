@@ -23,11 +23,12 @@ set(HEADERS
     include/flor_terrain_classifier/terrain_classifier.h
     include/flor_terrain_classifier/terrain_classifier_node.h
     include/flor_terrain_classifier/terrain_model.h
-)
+    include/flor_terrain_classifier/pcl_math_utils.h)
 
 set(SOURCES
     src/terrain_classifier.cpp
     src/terrain_model.cpp
+    src/pcl_math_utils.cpp
 )
 
 #uncomment if you have defined messages
