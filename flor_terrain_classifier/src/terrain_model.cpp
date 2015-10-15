@@ -2,6 +2,10 @@
 #include <flor_terrain_classifier/pcl_math_utils.h>
 
 #include <pcl/surface/convex_hull.h>
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
 //#define time_debug;
 
 
@@ -18,15 +22,15 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
     world_pcl_ptr= cloud.makeShared();
 
     // PARAMETER
-    robot_length = 0.50; // [m] x for Obelix 0.54
-    robot_width = 0.50; // [m] y for Obelix 0.56
+    robot_length = 0.55; // [m] x for Obelix 0.54
+    robot_width = 0.40; // [m] y for Obelix 0.56
     offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
     minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
     invalid_rating = 0.3; // default: 0.3 theoretically 0
     invalid_angle = 35; // [degree] highest considered stable angle
     delta_for_contact = 0.015; //  [m] +- delta for considering a ground point touching the robot
     first_SP_around_mid = false; // true means first polygon must contain the checkpos in it
-    tip_over = true;
+    tip_over = false;
     check_each_axis = true; // check each axis after tipping over to maybe improve the rating value
     //smoothing the supporting polygon - important if tip_over is active.
     distance_smoothing = true;
@@ -74,49 +78,31 @@ float vectorSimilarity(pcl::PointXYZ support_point_1, pcl::PointXYZ support_poin
 }
 
 
+// return the value of the least stable axis for the robot standing on flat ground
+float TerrainModel::optimalPossiblePositionRating(){
+    pcl::PointXYZ projected_robot_p0 = pcl::PointXYZ(0.0, 0.0, 0.0);
+    pcl::PointXYZ projected_robot_p1 = pcl::PointXYZ(robot_length, 0.0, 0.0);
+    pcl::PointXYZ projected_robot_p2 = pcl::PointXYZ(robot_length, robot_width, 0.0);
+    pcl::PointXYZ projected_robot_p3 = pcl::PointXYZ(0.0, robot_width, 0.0);
 
-/*--------------------------------------------------------------------------------------------*/
-/* --------------simple Helper Functoins end--------------------------------------------------*/
-/*--------------------------------------------------------------------------------------------*/
+    pcl::PointXYZ projected_robot_center = pcl::PointXYZ(robot_length / 2.0, robot_width / 2.0, 0.0);
+    pcl::PointXYZ center_mass = addPointVector(projected_robot_center, offset_CM);
 
+    std::vector<pcl::PointXYZ> projected_robot_hull;
+    projected_robot_hull.push_back(projected_robot_p0);
+    projected_robot_hull.push_back(projected_robot_p1);
+    projected_robot_hull.push_back(projected_robot_p2);
+    projected_robot_hull.push_back(projected_robot_p3);
+    projected_robot_hull.push_back(projected_robot_p0);
 
-// computes the minimum Rating if standing flat on the ground
-float TerrainModel::bestPosRating(){
-    pcl::PointXYZ p0 = pcl::PointXYZ(0.0, 0.0, 0.0);
-    pcl::PointXYZ p1 = pcl::PointXYZ(robot_length, 0.0, 0.0);
-    pcl::PointXYZ p2 = pcl::PointXYZ(robot_length, robot_width, 0.0);
-    pcl::PointXYZ p3 = pcl::PointXYZ(0.0, robot_width, 0.0);
-
-    pcl::PointXYZ mid = pcl::PointXYZ(robot_length / 2.0, robot_width / 2.0, 0.0);
-    pcl::PointXYZ center_mass = addPointVector(mid, offset_CM);
-
-    std::vector<pcl::PointXYZ> flat_points;
-    flat_points.push_back(p0);
-    flat_points.push_back(p1);
-    flat_points.push_back(p2);
-    flat_points.push_back(p3);
-    flat_points.push_back(p0);
-
-
-
-    std::vector<float> min_pos_rating = computeForceAngleStabilityMetric(center_mass, flat_points);
-    float min = min_pos_rating.at(0);
-
-    if (min_pos_rating.at(1) < min)
-        min = min_pos_rating.at(1);
-
-    if (min_pos_rating.at(2) < min)
-        min = min_pos_rating.at(2);
-
-    if (min_pos_rating.at(3) < min)
-        min = min_pos_rating.at(3);
-
-    return min;
+    std::vector<float> min_pos_rating = computeForceAngleStabilityMetric(center_mass, projected_robot_hull);
+    std::vector<float>::iterator it_res = std::min_element(min_pos_rating.begin(), min_pos_rating.end());
+    return *it_res;
 }
 
 
 //As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube
-// a low number is not stable. a high number is stable.
+// a low values indicated an instable condition, a high number inidicates a stable condition, 0 is the physical tip over value
 std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
 {
     const Eigen::Vector3f center_of_mass = Eigen::Vector3f(center_of_mass_pcl.x,center_of_mass_pcl.y,center_of_mass_pcl.z);
@@ -146,8 +132,6 @@ std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::Poi
         Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
         float theta_i=acos(li_norm.dot(fi_norm));
         float sigma_i=((fi_norm.cross(li_norm)).dot(ai))?1.0:-1.0 ;
-
-
         float beta=sigma_i*theta_i*di.norm()*f_r.norm();
         res.push_back(beta);
     }
@@ -625,7 +609,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                                          int &unstable_axis // of the first polygon
                    #ifdef viewer_on
                                          , pcl::visualization::PCLVisualizer &viewer,
-                                         int viewport
+                                         int viewport_1, int viewport_2, int viewport_3, int viewport_4
                    #endif
                                          )
 {    
@@ -778,7 +762,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         if (draw_convex_hull_ground_points){
             for (unsigned int j = 0; j < ground_contact_points->size(); ++j){
                 std::string name ="groundContactArea"+boost::lexical_cast<std::string>(j);
-                viewer.addSphere(ground_contact_points->at(j), 0.015,0.1 ,0.9,0.9, name, viewport);
+                viewer.addSphere(ground_contact_points->at(j), 0.015,0.1 ,0.9,0.9, name, viewport_4);
             }
         }
 #endif
@@ -893,9 +877,9 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     }
 
         viewer.addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2);
-        viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport);
-        viewer.addSphere(robot_point_center, 0.05,0,1,0, "proMidx", viewport);
-        viewer.addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport);
+        viewer.addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport_4);
+        viewer.addSphere(robot_point_center, 0.05,0,1,0, "proMidx", viewport_4);
+        viewer.addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport_4);
 
 
 #endif
@@ -991,23 +975,23 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                 }
 #ifdef viewer_on
                 // draw supporting points
-                viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1it_tippedOver"+boost::lexical_cast<std::string>(i), viewport);
-                viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2it_tippedOver"+boost::lexical_cast<std::string>(i), viewport);
-                viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3it_tippedOver"+boost::lexical_cast<std::string>(i), viewport);
+                viewer.addSphere(support_point_1, 0.02,1,0,0, "sp1it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
+                viewer.addSphere(support_point_2, 0.02,0,1,0, "sp2it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
+                viewer.addSphere(support_point_3, 0.02,0,0,1, "sp3it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
                 if (draw_convex_hull_iterative_ground_points){
                     for (unsigned int j = 0; j < cloud_positionRating_iterative->size(); ++j){
                         std::string name ="groundContactAreait"+boost::lexical_cast<std::string>(j)+"tippedOver"+boost::lexical_cast<std::string>(i);
-                        viewer.addSphere(cloud_positionRating_iterative->at(j), 0.01,0,1,1, name, viewport);
+                        viewer.addSphere(cloud_positionRating_iterative->at(j), 0.01,0,1,1, name, viewport_4);
                     }
                 }
 
                 // draw center
                 if (i == 0){
-                    viewer.addSphere(robot_point_mid_it, 0.04,0,1,0, "proMidxit", viewport);
-                    viewer.addSphere(center_of_mass_it, 0.04,0,0,1, "CMit", viewport);
+                    viewer.addSphere(robot_point_mid_it, 0.04,0,1,0, "proMidxit", viewport_4);
+                    viewer.addSphere(center_of_mass_it, 0.04,0,0,1, "CMit", viewport_4);
                     // draw normal
                     const pcl::PointXYZ p_uff(addPointVector(robot_point_center, normal));
-                    viewer.addLine(robot_point_center,p_uff,1.0,1.0,1.0,"fnormalit");
+                    viewer.addLine(robot_point_center,p_uff,1.0,1.0,1.0,"fnormalit",viewport_4);
                 }
 #endif
 
@@ -1031,9 +1015,9 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
                     if (draw_convex_hull_iterative){
 
                         if(c<invalid_rating)
-                            viewer.addLine(p1,p2,1,0,c/invalid_rating,name);
+                            viewer.addLine(p1,p2,1,0,c/invalid_rating,name,viewport_4);
                         else
-                            viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
+                            viewer.addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name,viewport_4);
 
 
                         // draw convex hull (points only)
@@ -1066,8 +1050,8 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     // draw groundpoints
 #ifdef viewer_on
     pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(robot_pcl, "intensity");
-    viewer.addPointCloud<pcl::PointXYZI>(robot_pcl,intensity_distribution, "positionRating_cloud", viewport);
-    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "positionRating" + std::string("_edges"), viewport);
+   // viewer.addPointCloud<pcl::PointXYZI>(robot_pcl,intensity_distribution, "positionRating_cloud", viewport);
+   // viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "positionRating" + std::string("_edges"), viewport);
     ROS_INFO("CPR done: position_rating = %f, unstable_axis = %i", position_rating, unstable_axis);
 #endif
 

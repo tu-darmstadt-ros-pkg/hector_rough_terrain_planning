@@ -85,7 +85,7 @@ public:
                                pcl::PointXYZ &robot_point_center,
                                pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
                            #ifdef viewer_on
-                               , pcl::visualization::PCLVisualizer &viewer, int viewport
+                               , pcl::visualization::PCLVisualizer &viewer, int viewport_1, int viewport_2, int viewport_3, int viewport_4
                            #endif
                                );
 
@@ -93,7 +93,7 @@ public:
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
 
-    float bestPosRating();
+    float optimalPossiblePositionRating();
 
     // Parameter initialized in contructor
     float robot_length;  // x

@@ -47,7 +47,7 @@ void EnvironmentNAVXYTHETASTAB::terrainModelCallback(const sensor_msgs::PointClo
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
         ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
-        flat_position_rating = terrainModel.bestPosRating()*0.70;
+        flat_position_rating = terrainModel.optimalPossiblePositionRating()*0.70;
 
         ROS_INFO("min_position_rating = %f", flat_position_rating);
         sleep(1);
@@ -89,7 +89,7 @@ void EnvironmentNAVXYTHETASTAB::octomap_point_cloud_centers_Callback(const senso
         pcl::fromPCLPointCloud2(pcl_pc, cloud);
         terrainModel = hector_terrain_model::TerrainModel(cloud);
         ROS_INFO("cloudPTR in terrainModel size %lu", terrainModel.cloud_processed.size());
-        flat_position_rating = terrainModel.bestPosRating()*0.95;
+        flat_position_rating = terrainModel.optimalPossiblePositionRating()*0.95;
 
         //ROS_INFO("min_position_rating = %f", flat_position_rating);
         //sleep(1);
@@ -122,7 +122,7 @@ void rotatePoint(pcl::PointXYZ& p, float degree /*radiants*/){
 
 void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
 
-    ROS_INFO("New path with %lu poses, bpr = %f", msg.poses.size(), terrainModel.bestPosRating());
+    ROS_INFO("New path with %lu poses, bpr = %f", msg.poses.size(), terrainModel.optimalPossiblePositionRating());
     if (receivedWorldmodelPC){
 
         int display_every_x_poses = 10; // display every x poses from the path.
@@ -131,7 +131,7 @@ void EnvironmentNAVXYTHETASTAB::pathCallback(const nav_msgs::Path msg){
         float w = terrainModel.robot_width / 2.0; // width of rectangle (y) / 2
         float tfz = 0.3; // transformation from world to fixframe
         float ivr = terrainModel.invalid_rating; // between 0 and 0.4
-        float br = terrainModel.bestPosRating();
+        float br = terrainModel.optimalPossiblePositionRating();
 
         visualization_msgs::Marker marker_linelist;
         marker_linelist.header.frame_id = "world";
@@ -407,7 +407,8 @@ int EnvironmentNAVXYTHETASTAB::GetActionCost(int SourceX, int SourceY, int Sourc
     cloud_point_msg.header.frame_id = "map";
     pubexpandedStates.publish(cloud_point_msg);
 
-    //  ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
+    if(addcost >0)
+     ROS_INFO("basecost:%i addcost:%i",basecost, addcost);
 
     if (addcost*basecost + basecost >= INFINITECOST)
         return INFINITECOST;
