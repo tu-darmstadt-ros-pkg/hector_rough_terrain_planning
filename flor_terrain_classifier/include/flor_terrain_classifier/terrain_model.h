@@ -25,7 +25,7 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 
-//#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/geometry/planar_polygon.h>
 
 //#include <pcl/surface/mls_omp.h>
@@ -74,20 +74,18 @@ public:
                                       const pcl::PointXYZ &mid,
                                       const Eigen::Vector3f &offset);
 
-    void computeRobotEdgePoints(const pcl::PointXYZ check_pos, float orientation,
+    void computeRobotCornerPoints(const pcl::PointXYZ& check_pos, float orientation,
                                 pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3);
 
     void fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3,
-                                           unsigned int& highest_Point_idx);
+                                           unsigned int highest_Point_idx);
 
     bool computePositionRating(const pcl::PointXYZ& checkPos,
                                const float orientation,
                                pcl::PointXYZ &robot_point_center,
                                pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
-                           #ifdef viewer_on
-                               , pcl::visualization::PCLVisualizer &viewer, int viewport_1, int viewport_2, int viewport_3, int viewport_4
-                           #endif
-                               );
+                                , boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = boost::make_shared<pcl::visualization::PCLVisualizer>(),
+                               int viewport_1=1, int viewport_2=2, int viewport_3=3, int viewport_4=4, bool use_visualization=false);
 
     std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl);
 
@@ -111,12 +109,12 @@ public:
     bool tip_over;
     bool check_each_axis;
 
-#ifdef viewer_on
+
     bool draw_convex_hull_first_polygon;
     bool draw_convex_hull_ground_points;
     bool draw_convex_hull_iterative;
     bool draw_convex_hull_iterative_ground_points;
-#endif
+
 
 
     //pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud_input;

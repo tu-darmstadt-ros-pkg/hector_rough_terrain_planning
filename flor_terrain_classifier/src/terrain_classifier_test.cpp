@@ -152,8 +152,9 @@ void TerrainClassifierTest::test_terrain_classifier()
     int unstable_axis = 10;
     pcl::PointXYZ pc, p0, p1, p2, p3;
 
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_ptr = boost::make_shared<pcl::visualization::PCLVisualizer>(viewer);
     terrain_model.computePositionRating(check_pos, orientation, pc, p0, p1, p2, p3,
-                                        position_rating, unstable_axis, viewer, view_port_1, view_port_2, view_port_3, view_port_4);
+                                        position_rating, unstable_axis, viewer_ptr, view_port_1, view_port_2, view_port_3, view_port_4, true);
 
     sensor_msgs::PointCloud2 cloud_point_msg;
     ROS_INFO("TerrainClassifierTest publishResult");
@@ -184,9 +185,9 @@ void TerrainClassifierTest::test_terrain_classifier()
         {
             new_position = false;
             viewer.removeAllShapes();
-/*          terrain_model.computePositionRating(check_pos, orientation, pc, p0, p1, p2, p3,
-                                                position_rating, unstable_axis, viewer, view_port_1, view_port_2, view_port_3, view_port_4);
-*/
+            terrain_model.computePositionRating(check_pos, orientation, pc, p0, p1, p2, p3,
+                                                position_rating, unstable_axis, viewer_ptr, view_port_1, view_port_2, view_port_3, view_port_4, true);
+
         }
         viewer.spinOnce(100);
         ros::spinOnce();
