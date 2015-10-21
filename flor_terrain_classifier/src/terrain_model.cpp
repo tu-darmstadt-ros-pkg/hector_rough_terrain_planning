@@ -118,21 +118,20 @@ std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::Poi
     for(unsigned int i=0; i<(p.size()-1);++i)
     {
         Eigen::Vector3f p_i1;
-        if(p.size()==1) p_i1 = p.at(0);
-        else p_i1 = p.at(i+1);
-        Eigen::Vector3f ai=p_i1-p.at(i);
-        ai.normalize();
-        Eigen::Matrix3f ident_mat =Eigen::Matrix3f::Identity();
-        Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p_i1-center_of_mass);
-        Eigen::Vector3f fi=(ident_mat-ai*ai.transpose())*f_r;
-        Eigen::Vector3f li_norm=li;
-        Eigen::Vector3f fi_norm=fi;
-        li_norm.normalize();
-        fi_norm.normalize();
-        Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
-        float theta_i=acos(li_norm.dot(fi_norm));
-        float sigma_i=((fi_norm.cross(li_norm)).dot(ai))?1.0:-1.0 ;
-        float beta=sigma_i*theta_i*di.norm()*f_r.norm();
+        if(p.size()==1)
+            p_i1 = p.at(0);
+        else
+            p_i1 = p.at(i+1);
+        const Eigen::Vector3f ai=(p_i1-p.at(i)).normalized();
+        const Eigen::Matrix3f ident_mat =Eigen::Matrix3f::Identity();
+        const Eigen::Vector3f li=(ident_mat-ai*ai.transpose())*(p_i1-center_of_mass);
+        const Eigen::Vector3f fi=(ident_mat-ai*ai.transpose())*f_r;
+        const Eigen::Vector3f li_norm=li.normalized();
+        const Eigen::Vector3f fi_norm=fi.normalized();
+        const Eigen::Vector3f di= (-li)+(li.dot(fi_norm))*fi_norm;
+        const float theta_i=acos(li_norm.dot(fi_norm));
+        const float sigma_i=((fi_norm.cross(li_norm)).dot(ai))?1.0:-1.0 ;
+        const float beta=sigma_i*theta_i*di.norm()*f_r.norm();
         res.push_back(beta);
     }
 
@@ -145,64 +144,56 @@ std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::Poi
 // if false is returned, there could not be a point found.
 bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
                                     const pcl::PointXYZ& tip_over_axis_vector,
-                                    const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robo,
+                                    const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robot,
                                     const pcl::PointXYZ& tip_over_direction,
                                     pcl::PointXYZ& support_point)
 {
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
-    cloud_projected.resize(pointcloud_robo.size());
+    cloud_projected.resize(pointcloud_robot.size());
     for(unsigned int i=0; i<cloud_projected.size();++i)
     {
         pcl::PointXYZ &p_pro= cloud_projected.at(i);
-        const pcl::PointXYZI &p_pos= pointcloud_robo.at(i);
+        const pcl::PointXYZI &p_pos= pointcloud_robot.at(i);
         p_pro.x=p_pos.x;
         p_pro.y=p_pos.y;
         p_pro.z=p_pos.z;
-        const  pcl::PointXYZ &p=p_pro;
-
-        cloud_projected.at(i)=planeProjection(p,tip_over_axis_vector,tip_over_axis_point);
+        cloud_projected.at(i)=planeProjection(p_pro,tip_over_axis_vector,tip_over_axis_point);
     }
 
-
-    //find supppoint
     float min_angle=360.0;
-
     int min_angle_idx = -1;
-    pcl::PointXYZ v1 = tip_over_direction;
-
 
     //states the direction of the points if on one side of the tip_over_axis, or on the other
     // 1 = counterclockwise, -1 = clockwise
-    const int directionccw = sign(ccw (tip_over_axis_point,
+    const int orientation_to_axis = sign(ccw (tip_over_axis_point,
                                        addPointVector(tip_over_axis_point, tip_over_axis_vector),
                                        addPointVector(tip_over_axis_point, tip_over_direction)));
-
 
     for(unsigned int i=0; i<cloud_projected.size();++i)
     {
         pcl::PointXYZ &p_pro= cloud_projected.at(i);
-        const pcl::PointXYZ v2 = pcl::PointXYZ(p_pro.x-tip_over_axis_point.x,p_pro.y-tip_over_axis_point.y,p_pro.z-tip_over_axis_point.z);
+        const pcl::PointXYZ axis_to_projected_point = pcl::PointXYZ(p_pro.x-tip_over_axis_point.x,p_pro.y-tip_over_axis_point.y,p_pro.z-tip_over_axis_point.z);
         //float angle= acos( dotProduct(v1,v2)/sqrt(dotProduct(v1,v1)*dotProduct(v2,v2))); // ERROR???? sqrt(dotproduct) * sqrt(dotproduct)
 
-        Eigen::Vector3f v1e(v1.x,v1.y,v1.z);
-        Eigen::Vector3f v2e(v2.x,v2.y,v2.z);
+        Eigen::Vector3f v1e(tip_over_direction.x,tip_over_direction.y,tip_over_direction.z);
+        Eigen::Vector3f v2e(axis_to_projected_point.x,axis_to_projected_point.y,axis_to_projected_point.z);
 
-        float angle = angleBetween(v1e,v2e);// angle * 360.0/(2.0*M_PI);
-        if(angle>180.0)
-            ROS_ERROR("[Terrain_model] angle = %f", angle);
+        float angle = angleBetween(v1e,v2e); //in degree
+        if(angle > 180.0)
+            ROS_ERROR("[Terrain_model] angle>180 = %f", angle);
+        if (angle > 90.0) angle = 180.0-angle;
 
-        if (angle>90.0) angle=180.0-angle;
         // which side to the axis
-        pcl::PointXYZ ps=pcl::PointXYZ( pointcloud_robo.at(i).x,pointcloud_robo.at(i).y,pointcloud_robo.at(i).z);
+        pcl::PointXYZ ps=pcl::PointXYZ(pointcloud_robot.at(i).x, pointcloud_robot.at(i).y, pointcloud_robot.at(i).z);
         const int side = sign(ccw(tip_over_axis_point,
                                   addPointVector(tip_over_axis_point, tip_over_axis_vector),
                                   ps));
 
-        if (angle<min_angle &&
-                side == directionccw)
+        if (angle < min_angle && side == orientation_to_axis)
         {
-            pcl::PointXYZ current = pcl::PointXYZ(pointcloud_robo.at(i).x,pointcloud_robo.at(i).y,pointcloud_robo.at(i).z);
-            if (distancePointStraight(tip_over_axis_point, tip_over_axis_vector, current) > minimum_distance){
+            pcl::PointXYZ current = pcl::PointXYZ(pointcloud_robot.at(i).x,pointcloud_robot.at(i).y,pointcloud_robot.at(i).z);
+            if (distancePointStraight(tip_over_axis_point, tip_over_axis_vector, current) > minimum_distance)
+            {
                 min_angle=angle;
                 min_angle_idx=i;
             }
@@ -220,7 +211,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
         return false;
     }
 
-    support_point=pcl::PointXYZ(pointcloud_robo.at(min_angle_idx).x,pointcloud_robo.at(min_angle_idx).y,pointcloud_robo.at(min_angle_idx).z);
+    support_point=pcl::PointXYZ(pointcloud_robot.at(min_angle_idx).x,pointcloud_robot.at(min_angle_idx).y,pointcloud_robot.at(min_angle_idx).z);
     return true;
 }
 
@@ -235,14 +226,14 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
                                                           const bool iterative, // if this is true, points on one side of supp1, supp2 will not be considerred
                                                           pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points) // empty before call
 {
-    const pcl::PointXYZ final_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
+    const pcl::PointXYZ support_plane_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
                                                    pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
     //Find ground contact points
     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
     {
         pcl::PointXYZI& p = cloud_positionRating->at(i);
-        const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),final_normal,support_point_1);
+        const float dist = planeDistance(pcl::PointXYZ(p.x,p.y,p.z),support_plane_normal,support_point_1);
         if(fabs(dist) < delta_for_contact)
         {
             if (iterative == false){
@@ -476,7 +467,7 @@ void TerrainModel::computeRobotCornerPoints(const pcl::PointXYZ& check_pos, cons
     p3 = addPointVector(p3, check_pos);
 }
 
-void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3, unsigned int highest_Point_idx){
+void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3, unsigned int& highest_Point_idx){
 
     robot_pcl.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
@@ -488,22 +479,16 @@ void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::Point
     projected_robot_hull.push_back(p2);
     projected_robot_hull.push_back(p3);
 
-    float maxX = p0.x;
-    float minX = p0.x;
-    float maxY = p0.y;
-    float minY = p0.y;
+    bool hull_is_cw= (ccw(p0,p1,p2)<0);
 
-
-
-    bool hull_cpp= (ccw(p0,p1,p2)<0);
     for (unsigned int i = 0; i < world_pcl_ptr->size(); i++)
     {
         const  pcl::PointXYZ& pp= world_pcl_ptr->at(i);
 
-        bool c0 = hull_cpp ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
-        bool c1 = hull_cpp ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
-        bool c2 = hull_cpp ? (ccw(p2,p3,pp)<0) : (ccw(p2,p3,pp)>0);
-        bool c3 = hull_cpp ? (ccw(p3,p0,pp)<0) : (ccw(p3,p0,pp)>0);
+        bool c0 = hull_is_cw ? (ccw(p0,p1,pp)<0) : (ccw(p0,p1,pp)>0);
+        bool c1 = hull_is_cw ? (ccw(p1,p2,pp)<0) : (ccw(p1,p2,pp)>0);
+        bool c2 = hull_is_cw ? (ccw(p2,p3,pp)<0) : (ccw(p2,p3,pp)>0);
+        bool c3 = hull_is_cw ? (ccw(p3,p0,pp)<0) : (ccw(p3,p0,pp)>0);
 
         if(c0 && c1 && c2 && c3) // point is in the area of the projected robot
         {
@@ -514,7 +499,7 @@ void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::Point
             p.intensity=0.0;
             robot_pcl->push_back(p);
             if(n_counter==0)
-                highest_Point_idx = 1;
+                highest_Point_idx = 0;
             else if(p.z>robot_pcl->at(highest_Point_idx).z)
                 highest_Point_idx=n_counter;
             ++n_counter;
@@ -532,7 +517,7 @@ void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::Point
 // -------------------------------------------------------------------------------------------------//
 
 // orientation in radiants
-bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
+bool TerrainModel::computePositionRating(const pcl::PointXYZ& flat_robot_center,
                                          const float orientation,
                                          pcl::PointXYZ& robot_point_center,
                                          pcl::PointXYZ& robot_point_0,
@@ -562,7 +547,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     // Points at the edges of the robot (flat ground)
     pcl::PointXYZ p0, p1, p2, p3; // Edge Points
-    computeRobotCornerPoints(check_pos, orientation, p0,p1,p2,p3);
+    computeRobotCornerPoints(flat_robot_center, orientation, p0,p1,p2,p3);
 
 #ifdef time_debug
     time_start_robotplcfind =ros::Time::now().toNSec();
@@ -573,7 +558,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     fillRobotPointcloud(p0, p1, p2, p3, highest_Point_idx);
 
     if(robot_pcl->size()==0) {
-        ROS_WARN("[flor terrain classifier] robot_pcl size is 0. this could be due to planning into space without points.");
+        ROS_WARN("[flor terrain classifier] No points for state estimation available. Planning into empty space?");
         return false;
     }
 #ifdef time_debug
@@ -583,16 +568,16 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     //ROS_INFO("cloud position rating size = %i", cloud_positionRating->size());
 
-    pcl::PointXYZI &p_max= robot_pcl->at(highest_Point_idx);//highest point
+    pcl::PointXYZI &p_max_height= robot_pcl->at(highest_Point_idx);
     int support_point_1_idx = -1;
     float min_dist=-1.0;
-    //choose highest point (+-delta), closest to CoM
+    //choose highest point (+-delta) that is closest to CoM
     for (unsigned int i = 0; i < robot_pcl->size(); i++)
     {
         pcl::PointXYZI& p = robot_pcl->at(i);
-        if(((p.z-p_max.z)<0.03)&&((p.z-p_max.z)>-0.03))
+        if(((p.z-p_max_height.z)<0.03)&&((p.z-p_max_height.z)>-0.03))
         {
-            float dist=sqrt((p.x-check_pos.x)*(p.x-check_pos.x)+(p.y-check_pos.y)*(p.y-check_pos.y));
+            float dist=sqrt((p.x-flat_robot_center.x)*(p.x-flat_robot_center.x)+(p.y-flat_robot_center.y)*(p.y-flat_robot_center.y));
             if(min_dist<0.0 || dist<min_dist)
             {
                 min_dist=dist;
@@ -603,7 +588,6 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
     }
     pcl::PointXYZ support_point_1 = pcl::PointXYZ(robot_pcl->at(support_point_1_idx).x,robot_pcl->at(support_point_1_idx).y,robot_pcl->at(support_point_1_idx).z);
 
-
     // is used after while loop, but initiated in it.
     pcl::PointXYZ support_point_2;
     pcl::PointXYZ support_point_3;
@@ -612,35 +596,29 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
     int counter = 0;
 
-    while (true){ // find SupportPoints ; run only once if center is in hull
+    while (true){ // find SupportPoints ; runs multiple times if unstable axis occur
 
 #ifdef time_debug
         time_start_findSupPoints23 =ros::Time::now().toNSec();
 #endif
         // find supp P 2
         const pcl::PointXYZ tip_over_axis_point = support_point_1;
-        pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-check_pos.x,support_point_1.y-check_pos.y,0),pcl::PointXYZ(0,0,1)));
+        pcl::PointXYZ tip_over_axis_vector = (crossProduct(pcl::PointXYZ(support_point_1.x-flat_robot_center.x,support_point_1.y-flat_robot_center.y,0),pcl::PointXYZ(0,0,1)));
         pcl::PointXYZ tip_over_direction;
 
-
-        if (tip_over_axis_vector.x < MY_EPS && tip_over_axis_vector.y < MY_EPS && tip_over_axis_vector.z < MY_EPS){
-
+        if (tip_over_axis_vector.x < MY_EPS && tip_over_axis_vector.y < MY_EPS && tip_over_axis_vector.z < MY_EPS) //todo think about appropriate solution
+        {
             tip_over_axis_vector = pcl::PointXYZ(1.0, 0.0, 0.0); // this is random.
             tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90° from vector
-
         }
-        else{
-            tip_over_direction = pcl::PointXYZ(check_pos.x - support_point_1.x, check_pos.y - support_point_1.y, 0);
+        else
+        {
+            tip_over_direction = pcl::PointXYZ(flat_robot_center.x - support_point_1.x, flat_robot_center.y - support_point_1.y, 0);
         }
-
-        //ROS_INFO("tip_over_direction x,y,z = %f, %f, %f", tip_over_direction.x, tip_over_direction.y, tip_over_direction.z);
-        //ROS_INFO("tip_over_axis_vector x,y,z = %f, %f, %f", tip_over_axis_vector.x, tip_over_axis_vector.y, tip_over_axis_vector.z);
-
-
 
         bool point_evaluated = findSupportPoint(tip_over_axis_point,
                                                 tip_over_axis_vector,
-                                                (*robot_pcl),
+                                                *robot_pcl,
                                                 tip_over_direction,
                                                 support_point_2);
         if (!point_evaluated){
@@ -653,7 +631,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         const pcl::PointXYZ tip_over_axis_point_3 = support_point_1;
         const pcl::PointXYZ tip_over_axis_vector_3= subtractPoints(support_point_2, support_point_1);
         pcl::PointXYZ tip_over_direction_3 ;
-        if(ccw(support_point_1,support_point_2,check_pos)>0)
+        if(ccw(support_point_1,support_point_2,flat_robot_center)>0)
             tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,-1));
         else
             tip_over_direction_3 = crossProduct(tip_over_axis_vector_3, pcl::PointXYZ(0,0,1));
@@ -677,7 +655,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
 
         convex_hull_points = buildConvexHull(robot_pcl,
-                                             check_pos,
+                                             flat_robot_center,
                                              support_point_1,
                                              support_point_2,
                                              support_point_3,
@@ -706,7 +684,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
 
         //ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
         for (unsigned int i = 0; i < convex_hull_points.size() -1; ++i){
-            if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), check_pos)) == -1){
+            if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), flat_robot_center)) == -1){
                 center_in_hull = false;
             }
         }
@@ -733,10 +711,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& check_pos,
         if (center_in_hull == false){
             //ROS_INFO("check in hull is false");
             // find closest point to checkpos
-            float dist = distanceXY(convex_hull_points.at(0), check_pos);
+            float dist = distanceXY(convex_hull_points.at(0), flat_robot_center);
             int index_of_closest_point = 0;
             for (unsigned int i = 1; i < convex_hull_points.size(); ++i){
-                float dist_to_check = distanceXY(convex_hull_points.at(i), check_pos);
+                float dist_to_check = distanceXY(convex_hull_points.at(i), flat_robot_center);
                 if (dist_to_check < dist){
                     dist = dist_to_check;
                     index_of_closest_point = i;
@@ -812,7 +790,7 @@ if(use_visualization)
     }
 
     viewer->addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2);
-    viewer->addSphere(check_pos, 0.05,1,0,0, "checkPosition", viewport_4);
+    viewer->addSphere(flat_robot_center, 0.05,1,0,0, "checkPosition", viewport_4);
     viewer->addSphere(robot_point_center, 0.05,0,1,0, "proMidx", viewport_4);
     viewer->addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport_4);
 
@@ -865,7 +843,7 @@ if(use_visualization)
                 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_positionRating_iterative(new pcl::PointCloud<pcl::PointXYZ>());
 
                 std::vector<pcl::PointXYZ> convex_hull_points_it = buildConvexHull(robot_pcl,
-                                                                                   check_pos,
+                                                                                   flat_robot_center,
                                                                                    support_point_1,
                                                                                    support_point_2,
                                                                                    support_point_3,

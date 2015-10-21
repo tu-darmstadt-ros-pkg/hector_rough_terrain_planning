@@ -49,7 +49,7 @@ public:
 
     bool findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
                           const pcl::PointXYZ& tip_over_axis_vector,
-                          const pcl::PointCloud<pcl::PointXYZI> &pointcloud_robo,
+                          const pcl::PointCloud<pcl::PointXYZI> &pointcloud_robot,
                           const pcl::PointXYZ& tip_over_direction,
                           pcl::PointXYZ& support_point);
 
@@ -78,7 +78,7 @@ public:
                                 pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3);
 
     void fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3,
-                                           unsigned int highest_Point_idx);
+                                           unsigned int& highest_Point_idx);
 
     bool computePositionRating(const pcl::PointXYZ& checkPos,
                                const float orientation,
