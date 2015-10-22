@@ -82,7 +82,7 @@ void TerrainClassifierTest::test_terrain_classifier()
     ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
     ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
 
-    params.filter_mask = FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
+    params.filter_mask = 0;// FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
     flor_terrain_classifier::TerrainClassifier::Ptr terrain_classifier(new flor_terrain_classifier::TerrainClassifier(params));
 
 
@@ -93,7 +93,7 @@ void TerrainClassifierTest::test_terrain_classifier()
     //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
-    pcl::io::loadPCDFile("../pointclouds/pc_small_step.pcd", *cloud_original);
+    pcl::io::loadPCDFile("../pointclouds/stairs_ramp_map.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
 
 
@@ -143,7 +143,8 @@ void TerrainClassifierTest::test_terrain_classifier()
     //x = 2.450002; y = 2.038902; orientation = 1.5708; // after 15 iterations position to check not in supporting polygon TOO STEEP
     //x = 2.4; y = 1.55; orientation = 1.570796; // too low pos rating
     //x = 3.600002; y = 3.000002; orientation = 1.570796; // posrating = 0.0 should not be!
-    x = 0.500002; y = 0.500002; orientation = 3.141593; // pos rating too low
+    //testpos     [ INFO] [1445513760.468928464]: reveiced pose x 4.420969 y 0.157174 orient 2.458588
+    x = 4.954349; y = 1.751206; orientation = 1.658275;
 
 
     check_pos = pcl::PointXYZ(x, y, 0.0);

@@ -26,12 +26,12 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
     robot_width = 0.40; // [m] y for Obelix 0.56
     offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
     minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
-    invalid_rating = 0.3; // default: 0.3 theoretically 0
-    invalid_angle = 35; // [degree] highest considered stable angle
-    delta_for_contact = 0.015; //  [m] +- delta for considering a ground point touching the robot
-    first_SP_around_mid = false; // true means first polygon must contain the checkpos in it
-    tip_over = false;
-    check_each_axis = true; // check each axis after tipping over to maybe improve the rating value
+    invalid_rating = 0.2; // default: 0.3 theoretically 0
+    invalid_angle = 65; // [degree] highest considered stable angle
+    delta_for_contact = 0.05; //  [m] +- delta for considering a ground point touching the robot
+    first_SP_around_mid = true; // true means first polygon must contain the checkpos in it
+    tip_over = true;
+    check_each_axis = false; // check each axis after tipping over to maybe improve the rating value
     //smoothing the supporting polygon - important if tip_over is active.
     distance_smoothing = true;
     angle_smoothing = true;
@@ -261,6 +261,7 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::ConvexHull<pcl::PointXYZ> chull;
     chull.setInputCloud(ground_contact_points);
+    chull.setDimension(2);
     chull.reconstruct(*cloud_hull);
     for(unsigned int i = 0; i<cloud_hull->points.size(); ++i)
     {
@@ -672,7 +673,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& flat_robot_center,
             if (draw_convex_hull_ground_points){
                 for (unsigned int j = 0; j < ground_contact_points->size(); ++j)
                 {
-                    std::string name ="groundContactArea"+boost::lexical_cast<std::string>(j);
+                    std::string name ="groundContactArea"+boost::lexical_cast<std::string>(j+1000*counter);
                     viewer->addSphere(ground_contact_points->at(j), 0.015,0.1 ,0.9,0.9, name, viewport_4);
                 }
             }
@@ -683,8 +684,10 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& flat_robot_center,
 
 
         //ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
-        for (unsigned int i = 0; i < convex_hull_points.size() -1; ++i){
-            if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), flat_robot_center)) == -1){
+        for (unsigned int i = 0; i < convex_hull_points.size() -1; ++i)
+        {
+            if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), flat_robot_center)) == 1)
+            {
                 center_in_hull = false;
             }
         }
@@ -709,7 +712,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& flat_robot_center,
 
         // checkpos is not in hull
         if (center_in_hull == false){
-            //ROS_INFO("check in hull is false");
+            ROS_INFO("check in hull is false");
             // find closest point to checkpos
             float dist = distanceXY(convex_hull_points.at(0), flat_robot_center);
             int index_of_closest_point = 0;
