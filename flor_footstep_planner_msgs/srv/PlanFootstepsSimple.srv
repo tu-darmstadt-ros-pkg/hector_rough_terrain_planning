@@ -1,9 +1,0 @@
-# Simple plan request that can be used if blocking is desired till planner finished
-uint8 planning_mode         # select planning mode (see FootstepPlan.msg)
-
-# The goal pose, should be given in /world frame
-geometry_msgs/PoseStamped goal_pose
----
-# Indicates planning success (true) or failure (false)
-bool result
-uint32 status_flags                                         # status flags of planner (see PlanFootsteps.srv)

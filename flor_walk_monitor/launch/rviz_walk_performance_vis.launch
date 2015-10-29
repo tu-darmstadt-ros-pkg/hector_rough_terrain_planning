@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find flor_walk_monitor)/rviz/walk_performance.rviz"/>
-</launch>

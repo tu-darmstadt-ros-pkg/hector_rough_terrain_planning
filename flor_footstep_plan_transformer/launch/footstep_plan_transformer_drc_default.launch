@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-
-  <node name="footstep_plan_transformer_node" pkg="flor_footstep_plan_transformer" type="footstep_plan_transformer_node" >
-  </node>
-
-</launch>
