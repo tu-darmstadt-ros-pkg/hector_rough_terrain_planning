@@ -1,0 +1,4 @@
+flor_footstep_planner_msgs/Stepping stepping
+---
+bool result
+uint32 status_flags                                         # status flags of planner (see PlanFootsteps.srv)

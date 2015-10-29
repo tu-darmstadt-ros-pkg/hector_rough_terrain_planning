@@ -147,7 +147,7 @@ protected:
 
   ros::ServiceServer exploration_plan_service_server_;
 
-  //costmap_2d::Costmap2DROS* costmap_2d_ros_;
+  costmap_2d::Costmap2DROS* costmap_2d_ros_;
   //tf::TransformListener tfl_;
 
   nav_msgs::Path path_;

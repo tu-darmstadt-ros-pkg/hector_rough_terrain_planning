@@ -1,0 +1,10 @@
+### upper body settings ########################################################
+upper_body:
+  size: {x: 0.5, y: 0.7}
+  origin_shift: {x: -0.1, y: 0.00} # transformation from center to shifted frame
+
+### foot settings ##############################################################
+foot:
+  size: {x: 0.26, y: 0.14, z: 0.0508}
+  origin_shift: {x: -0.01, y: 0.00, z: 0.00} # transformation from center to shifted frame
+  separation: 0.20

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- This launches the walk monitor node -->
+  <node name="flor_walk_monitor" pkg="flor_walk_monitor" type="walk_monitor_node" respawn="true">
+    <rosparam file="$(find flor_walk_monitor)/config/walk_monitor_params.yaml" command="load" />
+    <rosparam file="$(find flor_footstep_planner)/config/atlas_params.yaml" command="load" />
+    <param name="log_folder" value="$(find flor_walk_monitor)/results/" />
+    <remap from="/flor/footstep_planner/footstep_plan_walk" to="/flor/planner/footstep_plan_walk_world" />
+    <remap from="/flor/footstep_planner/footstep_plan_step" to="/flor/planner/footstep_plan_step_world" />
+    <remap from="/flor/footstep_planner/footstep_start" to="/flor/planner/footstep_start" />
+  </node>
+</launch>

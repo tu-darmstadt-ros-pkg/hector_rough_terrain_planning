@@ -1,45 +1,38 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(hector_sbpl_planner_test)
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS hector_sbpl_terrain_planner flor_terrain_classifier)
+cmake_minimum_required(VERSION 2.4.6)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
+# Set the build type.  Options are:
+#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
+#  Debug          : w/ debug symbols, w/o optimization
+#  Release        : w/o debug symbols, w/ optimization
+#  RelWithDebInfo : w/ debug symbols, w/ optimization
+#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
+#set(ROS_BUILD_TYPE RelWithDebInfo)
 
-## System dependencies are found with CMake's conventions
+rosbuild_init()
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-    INCLUDE_DIRS  
-    LIBRARIES planner_test
-    CATKIN_DEPENDS hector_sbpl_terrain_planner flor_terrain_classifier
-    DEPENDS
-)
+#set the default path for built executables to the "bin" directory
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+#set the default path for built libraries to the "lib" directory
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+#uncomment if you have defined messages
+#rosbuild_genmsg()
+#uncomment if you have defined services
+#rosbuild_gensrv()
 
-set(HEADERS
-)
+find_package(PCL REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+#common commands for building c++ executables and libraries
+#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
+#target_link_libraries(${PROJECT_NAME} another_library)
+#rosbuild_add_boost_directories()
+#rosbuild_link_boost(${PROJECT_NAME} thread)
+rosbuild_add_executable(planner_test src/planner_test.cpp)
+target_link_libraries(planner_test ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
 
-set(SOURCES
-    src/planner_test.cpp
-)
+#target_link_libraries(example ${PROJECT_NAME})
 
-
-## Declare a cpp executable
-add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})
-add_executable(planner_test src/planner_test.cpp)
-
-
-target_link_libraries(${PROJECT_NAME}  ${catkin_LIBRARIES} )
-target_link_libraries(planner_test  ${PROJECT_NAME})
-
-
-
+#target_link_libraries(example ${PROJECT_NAME})
+#target_link_libraries(terrain_classifier ${PROJECT_NAME} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
+#target_link_libraries(planner_test ${PROJECT_NAME} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)

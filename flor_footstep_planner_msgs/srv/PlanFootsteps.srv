@@ -1,0 +1,36 @@
+# Service messages for atlas footstep planner
+uint8 planning_mode         # select planning mode (see FootstepPlan.msg)
+
+# start/goal precision
+uint8 start_type            # start pose precision (see below)
+uint8 goal_type             # goal pose precision (see below)
+
+uint8 AREA = 0              # use given area
+uint8 POSE = 1              # use given pose as point
+uint8 FEET = 2              # use given feet poses
+
+geometry_msgs/Pose start
+flor_footstep_planner_msgs/FeetPoses feet_start_poses
+
+geometry_msgs/Pose goal
+flor_footstep_planner_msgs/FeetPoses feet_goal_poses
+---
+bool result                                                 # Indicates planning success (true) or failure (false)
+uint32 status_flags                                         # status flags of planner
+flor_footstep_planner_msgs/FootstepPlan footstep_plan       # resulting footstep plan
+flor_footstep_planner_msgs/FeetPoses feet_start_poses       # contains feet start poses used by planner
+float64 costs
+float64 final_eps
+float64 planning_time
+int64 expanded_states
+
+# status flags
+uint32 NONE                        =   0
+uint32 GOAL_POSE_INACCESSIBLE      =   1
+uint32 START_POSE_INACCESSIBLE     =   2
+uint32 NO_BODY_LEVEL_GRID_MAP      =   4
+uint32 NO_GROUND_LEVEL_GRID_MAP    =   8
+uint32 NO_TERRAIN_MODEL            =  16
+uint32 PLAN_SUBOPTIMAL             =  32
+uint32 LARGE_HEIGHT_DIFF           =  64
+uint32 MISC                        = 128

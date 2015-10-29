@@ -1,0 +1,25 @@
+<package>
+  <description brief="hector_sbpl_terrain_planner">
+
+     hector_sbpl_terrain_planner
+
+  </description>
+  <author>kohlbrecher</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hector_sbpl_terrain_planner</url>
+  
+  <depend package="roscpp"/>
+  <depend package="sbpl"/>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_msgs"/>
+  <depend package="flor_terrain_classifier"/>
+  <depend package="tf"/>
+  
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lsbpl_terrain_planner"/>
+  </export>
+
+</package>
+
+

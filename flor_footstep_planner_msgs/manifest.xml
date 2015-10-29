@@ -1,0 +1,20 @@
+<package>
+  <description brief="flor_footstep_planner_msgs">
+
+     flor_footstep_planner_msgs
+
+  </description>
+  <author>Alexander Stumpf</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/flor_footstep_planner_msgs</url>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lflor_footstep_planner_msgs" />
+  </export>
+
+  <depend package="roscpp" />
+  <depend package="std_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="tf" />
+</package>
