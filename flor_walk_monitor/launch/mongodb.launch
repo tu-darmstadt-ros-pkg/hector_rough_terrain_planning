@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-  <!-- This launches a mongo db server -->
-  <node name="flor_walk_monitor_mongodb" type="mongo_wrapper_ros.py" pkg="warehouse_ros" >
-    <param name="database_path" value="$(find flor_walk_monitor)/mongodb"/>
-  </node>
-  <param name="warehouse_port" value="27018"/>
-</launch>

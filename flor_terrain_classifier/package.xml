@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package>
+  <name>flor_terrain_classifier</name>
+  <version>0.0.0</version>
+  <description>flor_terrain_classifier </description>
+  <maintainer email="kevin.daun@stud.tu-darmstadt.de">Kevin Daun</maintainer>
+  <author>Alexander Stumpf, Kevin Daun und Johannes Schubert</author>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/flor_terrain_classifier</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>pcl_conversions</build_depend>
+
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>pcl_conversions</run_depend>
+
+  <export>
+   <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lflor_terrain_classifier"/> 
+  </export>
+</package>
+
+
