@@ -94,7 +94,7 @@ set(SBPL_LIBRARIES ${SBPL_LIBRARY})
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES hector_sbpl_terrain_planner
+  LIBRARIES sbpl_terrain_planner
   CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs tf pcl_conversions flor_terrain_classifier
   DEPENDS system_lib SBPL
 )

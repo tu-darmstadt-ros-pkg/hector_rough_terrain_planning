@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS hector_sbpl_terrain_planner flor_terrain
 
 
 ## System dependencies are found with CMake's conventions
+find_package(PCL REQUIRED)
 
 ###################################
 ## catkin specific configuration ##
@@ -19,11 +20,14 @@ find_package(catkin REQUIRED COMPONENTS hector_sbpl_terrain_planner flor_terrain
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
     INCLUDE_DIRS  
-    LIBRARIES planner_test
+    #LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS hector_sbpl_terrain_planner flor_terrain_classifier
-    DEPENDS
+  #  DEPENDS
 )
 
+include_directories(
+  ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
+)
 
 set(HEADERS
 )
@@ -32,14 +36,16 @@ set(SOURCES
     src/planner_test.cpp
 )
 
-
 ## Declare a cpp executable
-add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+#add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 add_executable(planner_test src/planner_test.cpp)
 
 
-target_link_libraries(${PROJECT_NAME}  ${catkin_LIBRARIES} )
-target_link_libraries(planner_test  ${PROJECT_NAME})
+#target_link_libraries(${PROJECT_NAME}  ${catkin_LIBRARIES} )
+#target_link_libraries(planner_test  ${PROJECT_NAME})
 
+ target_link_libraries(planner_test
+   ${catkin_LIBRARIES} 
+ )
 
 
