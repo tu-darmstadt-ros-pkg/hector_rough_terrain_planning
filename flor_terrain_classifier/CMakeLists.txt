@@ -67,6 +67,7 @@ set(HEADERS
     include/${PROJECT_NAME}/pcl_math_utils.h)
 
 set(SOURCES
+    src/terrain_classifier_test.cpp
     src/terrain_classifier.cpp
     src/terrain_model.cpp
     src/pcl_math_utils.cpp
@@ -81,7 +82,7 @@ add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 ## Declare a cpp executable
 #add_executable(terrain_classifier_node src/terrain_classifier_node.cpp)
-#add_executable(terrain_classifier_test src/terrain_classifier_test.cpp)
+add_executable(terrain_classifier_test src/terrain_classifier_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -92,4 +93,4 @@ add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gene
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
 #target_link_libraries(terrain_classifier_node ${PROJECT_NAME})
-#target_link_libraries(terrain_classifier_test ${PROJECT_NAME})
+target_link_libraries(terrain_classifier_test ${PROJECT_NAME})

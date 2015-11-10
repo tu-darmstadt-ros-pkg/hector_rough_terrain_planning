@@ -84,7 +84,7 @@ public:
                                const float orientation,
                                pcl::PointXYZ &robot_point_center,
                                pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
-                                , boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = boost::make_shared<pcl::visualization::PCLVisualizer>(),
+                                , pcl::visualization::PCLVisualizer* viewer = 0,
                                int viewport_1=1, int viewport_2=2, int viewport_3=3, int viewport_4=4, bool use_visualization=false);
 
     std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl);

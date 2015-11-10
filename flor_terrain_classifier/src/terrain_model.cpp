@@ -527,7 +527,7 @@ bool TerrainModel::computePositionRating(const pcl::PointXYZ& flat_robot_center,
                                          pcl::PointXYZ& robot_point_3,
                                          float &position_rating, // after tipping over
                                          int &unstable_axis // of the first polygon
-                                         , boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer,
+                                         , pcl::visualization::PCLVisualizer* viewer,
                                          int viewport_1, int viewport_2, int viewport_3, int viewport_4, bool use_visualization)
 {    
 

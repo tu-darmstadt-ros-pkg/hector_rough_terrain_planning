@@ -58,6 +58,7 @@ public:
 
     void initialPoseCb(geometry_msgs::PoseWithCovarianceStamped msg);
     void test_terrain_classifier();
+    void test_terrain_classifier_standalone();
     bool new_position;
     pcl::PointXYZ check_pos;
     float orientation;
@@ -153,9 +154,10 @@ void TerrainClassifierTest::test_terrain_classifier()
     int unstable_axis = 10;
     pcl::PointXYZ pc, p0, p1, p2, p3;
 
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_ptr = boost::make_shared<pcl::visualization::PCLVisualizer>(viewer);
+    pcl::visualization::PCLVisualizer* viewer_ptr = new pcl::visualization::PCLVisualizer(viewer);
     terrain_model.computePositionRating(check_pos, orientation, pc, p0, p1, p2, p3,
                                         position_rating, unstable_axis, viewer_ptr, view_port_1, view_port_2, view_port_3, view_port_4, true);
+
 
     sensor_msgs::PointCloud2 cloud_point_msg;
     ROS_INFO("TerrainClassifierTest publishResult");
@@ -196,13 +198,72 @@ void TerrainClassifierTest::test_terrain_classifier()
     }
 }
 
+void TerrainClassifierTest::test_terrain_classifier_standalone()
+{
+    ros::NodeHandle nh;
+    new_position = false;
+    flor_terrain_classifier::TerrainClassifierParams params(nh);
+    ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
+    ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
+
+    params.filter_mask = 0;// FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
+    flor_terrain_classifier::TerrainClassifier::Ptr terrain_classifier(new flor_terrain_classifier::TerrainClassifier(params));
+
+
+    ROS_INFO("Load point cloud");
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
+    //pcl::io::loadPCDFile("../pointclouds/left_obstacle_start_zero.pcd", *cloud_original);
+    //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
+    //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
+    //pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
+    //pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
+    pcl::io::loadPCDFile("../pointclouds/stairs_ramp_map.pcd", *cloud_original);
+    //pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
+
+
+
+    hector_terrain_model::TerrainModel terrain_model(*cloud_original);
+
+
+    // add filtered point cloud to classifier
+    terrain_classifier->addCloud(cloud_original);
+
+
+    // detect edges
+    ROS_INFO("Compute HeightRating...");
+    terrain_classifier->computeHeight();
+
+
+
+    // Position, Orientation (in radiants)
+    float x, y;
+    x = 4.954349; y = 1.751206; orientation = 1.658275;
+
+
+    check_pos = pcl::PointXYZ(x, y, 0.0);
+    //float orientation = (0.0)/180.0*3.14;
+    float position_rating = 10.0;
+    int unstable_axis = 10;
+    pcl::PointXYZ pc, p0, p1, p2, p3;
+
+
+    terrain_model.computePositionRating(check_pos, orientation, pc, p0, p1, p2, p3,
+                                        position_rating, unstable_axis);
+    ROS_INFO("Rating %f",position_rating);
+
+
+
+
+}
+
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "terrain_test");
     ros::Time::init();
 
-    TerrainClassifierTest test;
-    test.test_terrain_classifier();
+   TerrainClassifierTest test;
+    test.test_terrain_classifier_standalone();
 
     return 0;
 }
+
