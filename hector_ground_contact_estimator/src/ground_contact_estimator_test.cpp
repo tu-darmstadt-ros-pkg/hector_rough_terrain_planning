@@ -42,14 +42,12 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/intensity_gradient.h>
 
-#include <hector_ground_contact_estimator/terrain_classifier.h>
-#include <hector_ground_contact_estimator/terrain_model.h>
+#include <hector_ground_contact_estimator/ground_contact_estimator.h>
 
 #include <math.h>       /* acos */
 
 
 using namespace hector_ground_contact_estimator;
-using namespace hector_terrain_model;
 class TerrainClassifierTest
 {
 public:
@@ -79,12 +77,10 @@ void TerrainClassifierTest::test_terrain_classifier()
 {
     ros::NodeHandle nh;
     new_position = false;
-    hector_ground_contact_estimator::TerrainClassifierParams params(nh);
     ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
     ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
 
-    params.filter_mask = 0;// FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
-    hector_ground_contact_estimator::TerrainClassifier::Ptr terrain_classifier(new hector_ground_contact_estimator::TerrainClassifier(params));
+    //hector_ground_contact_estimator::TerrainClassifier::Ptr terrain_classifier(new hector_ground_contact_estimator::TerrainClassifier(params));
 
 
     ROS_INFO("Load point cloud");
@@ -93,22 +89,22 @@ void TerrainClassifierTest::test_terrain_classifier()
     //pcl::io::loadPCDFile("../pointclouds/konststeigend_x.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/zwei_ebenen_steigend.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/dach.pcd", *cloud_original);
-    //pcl::io::loadPCDFile("../pointclouds/ramp2_filtered.pcd", *cloud_original);
-    pcl::io::loadPCDFile("../pointclouds/stairs_ramp_map.pcd", *cloud_original);
+    pcl::io::loadPCDFile("../pointclouds/pc_barrier_left_close.pcd", *cloud_original);
+    //pcl::io::loadPCDFile("../pointclouds/stairs_ramp_map.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
 
 
 
-    hector_terrain_model::TerrainModel terrain_model(*cloud_original);
+    hector_ground_contact_estimator::GroundContactEstimator terrain_model(*cloud_original);
 
 
     // add filtered point cloud to classifier
-    terrain_classifier->addCloud(cloud_original);
+    //terrain_classifier->addCloud(cloud_original);
 
 
     // detect edges
     ROS_INFO("Compute HeightRating...");
-    terrain_classifier->computeHeight();
+   // terrain_classifier->computeHeight();
 
     // visualization
     pcl::visualization::PCLVisualizer viewer("Terrain classifier");
@@ -117,7 +113,7 @@ void TerrainClassifierTest::test_terrain_classifier()
     int view_port_1(0);
     viewer.createViewPort(0.0, 0.5, 0.5, 1.0, view_port_1);
     viewer.addCoordinateSystem(0.5, view_port_1);
-    viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getCloudInput(), "input cloud", view_port_1);
+    viewer.addPointCloud<pcl::PointXYZ>(cloud_original, "input cloud", view_port_1);
 
     int view_port_2(0);
     viewer.createViewPort(0.5, 0.5, 1.0, 1.0, view_port_2);
@@ -126,7 +122,7 @@ void TerrainClassifierTest::test_terrain_classifier()
     int view_port_3(0);
     viewer.createViewPort(0.0, 0.0, 0.5, 0.5, view_port_3);
     viewer.addCoordinateSystem(0.5, view_port_3);
-    terrain_classifier->showHeight(viewer, "heightDiff", view_port_3);
+ //   terrain_classifier->showHeight(viewer, "heightDiff", view_port_3);
 
 
     int view_port_4(0);
@@ -164,9 +160,9 @@ void TerrainClassifierTest::test_terrain_classifier()
     if (cloud_input_pub.getNumSubscribers() >= 0)
     {
         ROS_INFO("TerrainClassifierNode publish cloud input");
-        pcl::toROSMsg(*(terrain_classifier->getCloudInput()), cloud_point_msg);
+        pcl::toROSMsg(*(cloud_original), cloud_point_msg);
         cloud_point_msg.header.stamp = ros::Time::now();
-        cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+        cloud_point_msg.header.frame_id = "world";//terrain_classifier->getFrameId();
         cloud_input_pub.publish(cloud_point_msg);
     }
     bool subscribed = false;
@@ -202,12 +198,8 @@ void TerrainClassifierTest::test_terrain_classifier_standalone()
 {
     ros::NodeHandle nh;
     new_position = false;
-    hector_ground_contact_estimator::TerrainClassifierParams params(nh);
     ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
     ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
-
-    params.filter_mask = 0;// FILTER_PASS_THROUGH | FILTER_VOXEL_GRID | FILTER_MLS_SMOOTH;
-    hector_ground_contact_estimator::TerrainClassifier::Ptr terrain_classifier(new hector_ground_contact_estimator::TerrainClassifier(params));
 
 
     ROS_INFO("Load point cloud");
@@ -222,18 +214,7 @@ void TerrainClassifierTest::test_terrain_classifier_standalone()
 
 
 
-    hector_terrain_model::TerrainModel terrain_model(*cloud_original);
-
-
-    // add filtered point cloud to classifier
-    terrain_classifier->addCloud(cloud_original);
-
-
-    // detect edges
-    ROS_INFO("Compute HeightRating...");
-    terrain_classifier->computeHeight();
-
-
+    hector_ground_contact_estimator::GroundContactEstimator terrain_model(*cloud_original);
 
     // Position, Orientation (in radiants)
     float x, y;
@@ -262,7 +243,7 @@ int main(int argc, char** argv)
     ros::Time::init();
 
    TerrainClassifierTest test;
-    test.test_terrain_classifier_standalone();
+    test.test_terrain_classifier();
 
     return 0;
 }

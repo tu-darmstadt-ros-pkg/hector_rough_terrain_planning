@@ -1,8 +1,8 @@
-#include <hector_ground_contact_estimator/terrain_model.h>
+#include <hector_ground_contact_estimator/ground_contact_estimator.h>
 
 //#define time_debug;
 #define MY_EPS 1e-6
-namespace hector_terrain_model
+namespace hector_ground_contact_estimator
 {
 
 // normal adding, subtracting points

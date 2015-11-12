@@ -61,15 +61,12 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
 set(HEADERS
-    include/${PROJECT_NAME}/terrain_classifier.h
-    include/${PROJECT_NAME}/terrain_classifier_node.h
-    include/${PROJECT_NAME}/terrain_model.h
+    include/${PROJECT_NAME}/ground_contact_estimator.h
     include/${PROJECT_NAME}/pcl_math_utils.h)
 
 set(SOURCES
-    src/terrain_classifier_test.cpp
-    src/terrain_classifier.cpp
-    src/terrain_model.cpp
+    src/ground_contact_estimator_test.cpp
+    src/ground_contact_estimator.cpp
     src/pcl_math_utils.cpp
 )
 
@@ -82,7 +79,7 @@ add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 ## Declare a cpp executable
 #add_executable(terrain_classifier_node src/terrain_classifier_node.cpp)
-add_executable(ground_contact_estimator src/terrain_classifier_test.cpp)
+add_executable(ground_contact_estimator src/ground_contact_estimator_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

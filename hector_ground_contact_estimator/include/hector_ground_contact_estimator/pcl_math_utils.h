@@ -1,8 +1,6 @@
 #ifndef PCL_MATH_UTILS_H__
 #define PCL_MATH_UTILS_H__
 
-//#define viewer_on
-
 #include <ros/ros.h>
 
 #include <nav_msgs/OccupancyGrid.h>
@@ -15,7 +13,6 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d_omp.h>
 
-//#include <pcl/surface/mls_omp.h>
 #include <pcl/surface/mls.h>
 #include <pcl/surface/gp3.h>
 
@@ -25,7 +22,6 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 
-//#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/geometry/planar_polygon.h>
 
 //#include <pcl/surface/mls_omp.h>
@@ -37,7 +33,7 @@
 #include <pcl/io/pcd_io.h>
 
 
-namespace hector_terrain_model
+namespace hector_ground_contact_estimator
 {
 
 bool  pointsEqual(const pcl::PointXYZ& p1,const  pcl::PointXYZ& p2);

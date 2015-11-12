@@ -1,4 +1,4 @@
-#include <hector_ground_contact_estimator/terrain_model.h>
+#include <hector_ground_contact_estimator/ground_contact_estimator.h>
 #include <hector_ground_contact_estimator/pcl_math_utils.h>
 
 #include <pcl/surface/convex_hull.h>
@@ -10,14 +10,14 @@
 
 
 #define MY_EPS 1e-6
-namespace hector_terrain_model
+namespace hector_ground_contact_estimator
 {
 
-TerrainModel::TerrainModel()
+GroundContactEstimator::GroundContactEstimator()
 {
 }
 
-TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
+GroundContactEstimator::GroundContactEstimator(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
     world_pcl_ptr= cloud.makeShared();
 
@@ -45,12 +45,12 @@ TerrainModel::TerrainModel(pcl::PointCloud<pcl::PointXYZ> cloud)
 
 }
 
-TerrainModel::~TerrainModel()
+GroundContactEstimator::~GroundContactEstimator()
 {
 
 }
 
-void TerrainModel::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
+void GroundContactEstimator::updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
     world_pcl_ptr= cloud.makeShared();
 }
@@ -79,7 +79,7 @@ float vectorSimilarity(pcl::PointXYZ support_point_1, pcl::PointXYZ support_poin
 
 
 // return the value of the least stable axis for the robot standing on flat ground
-float TerrainModel::optimalPossiblePositionRating(){
+float GroundContactEstimator::optimalPossiblePositionRating(){
     pcl::PointXYZ projected_robot_p0 = pcl::PointXYZ(0.0, 0.0, 0.0);
     pcl::PointXYZ projected_robot_p1 = pcl::PointXYZ(robot_length, 0.0, 0.0);
     pcl::PointXYZ projected_robot_p2 = pcl::PointXYZ(robot_length, robot_width, 0.0);
@@ -103,7 +103,7 @@ float TerrainModel::optimalPossiblePositionRating(){
 
 //As proposed in "Modeling the manipulator and flipper pose effects on tip over stability of a tracked mobile manipulator" by Chioniso Dube
 // a low values indicated an instable condition, a high number inidicates a stable condition, 0 is the physical tip over value
-std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
+std::vector<float> GroundContactEstimator::computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl)
 {
     const Eigen::Vector3f center_of_mass = Eigen::Vector3f(center_of_mass_pcl.x,center_of_mass_pcl.y,center_of_mass_pcl.z);
     std::vector<Eigen::Vector3f> p;
@@ -142,7 +142,7 @@ std::vector<float> TerrainModel::computeForceAngleStabilityMetric(const pcl::Poi
 
 // evaluates the second or third point of the supporting plane
 // if false is returned, there could not be a point found.
-bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
+bool GroundContactEstimator::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
                                     const pcl::PointXYZ& tip_over_axis_vector,
                                     const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robot,
                                     const pcl::PointXYZ& tip_over_direction,
@@ -218,7 +218,7 @@ bool TerrainModel::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
 
 
 /* builds the convex hull with the given supportpoints */
-std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
+std::vector<pcl::PointXYZ> GroundContactEstimator:: buildConvexHull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
                                                           const pcl::PointXYZ& check_pos,
                                                           const pcl::PointXYZ& support_point_1,
                                                           const pcl::PointXYZ& support_point_2,
@@ -382,7 +382,7 @@ std::vector<pcl::PointXYZ> TerrainModel:: buildConvexHull(const pcl::PointCloud<
     return convex_hull_points;
 }
 
-void TerrainModel::computeRobotPosition(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
+void GroundContactEstimator::computeRobotPosition(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
                                         const pcl::PointXYZ p0, const pcl::PointXYZ p1, const pcl::PointXYZ p2, const pcl::PointXYZ p3,
                                         const Eigen::Vector3f& offset_CM,
                                         pcl::PointXYZ& normal,
@@ -429,7 +429,7 @@ void TerrainModel::computeRobotPosition(const pcl::PointXYZ support_point_1, con
 
 }
 
-pcl::PointXYZ TerrainModel::computeCenterOfMass(const pcl::PointXYZ &p1_left,
+pcl::PointXYZ GroundContactEstimator::computeCenterOfMass(const pcl::PointXYZ &p1_left,
                                                 const pcl::PointXYZ &p2_left,
                                                 const Eigen::Vector3f &normal,
                                                 const pcl::PointXYZ &mid,
@@ -448,7 +448,7 @@ pcl::PointXYZ TerrainModel::computeCenterOfMass(const pcl::PointXYZ &p1_left,
     return center_of_mass;
 }
 
-void TerrainModel::computeRobotCornerPoints(const pcl::PointXYZ& check_pos, const float orientation,
+void GroundContactEstimator::computeRobotCornerPoints(const pcl::PointXYZ& check_pos, const float orientation,
                                             pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3)
 {
     p0 = pcl::PointXYZ(+ 0.5*robot_length, + 0.5*robot_width, 0);
@@ -468,7 +468,7 @@ void TerrainModel::computeRobotCornerPoints(const pcl::PointXYZ& check_pos, cons
     p3 = addPointVector(p3, check_pos);
 }
 
-void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3, unsigned int& highest_Point_idx){
+void GroundContactEstimator::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3, unsigned int& highest_Point_idx){
 
     robot_pcl.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
@@ -518,7 +518,7 @@ void TerrainModel::fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::Point
 // -------------------------------------------------------------------------------------------------//
 
 // orientation in radiants
-bool TerrainModel::computePositionRating(const pcl::PointXYZ& flat_robot_center,
+bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_robot_center,
                                          const float orientation,
                                          pcl::PointXYZ& robot_point_center,
                                          pcl::PointXYZ& robot_point_0,
