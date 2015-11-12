@@ -1,6 +1,8 @@
 #include <hector_ground_contact_estimator/ground_contact_estimator.h>
+
 #include <hector_ground_contact_estimator/pcl_math_utils.h>
 
+#include <ros/ros.h>
 #include <pcl/surface/convex_hull.h>
 
 #include <algorithm>

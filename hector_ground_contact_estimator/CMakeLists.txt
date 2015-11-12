@@ -15,33 +15,6 @@ find_package(PCL REQUIRED)
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 # catkin_python_setup()
 
-#######################################
-## Declare ROS messages and services ##
-#######################################
-
-add_message_files(
-  FILES
-  TestModel.msg
-  TerrainModel.msg
-  TerrainModelRequest.msg
-)
-
-## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  TerrainModelService.srv
-  TestModelService.srv
-)
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-  sensor_msgs
-  nav_msgs
-)
-
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -83,7 +56,7 @@ add_executable(ground_contact_estimator src/ground_contact_estimator_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} )
 
 
 

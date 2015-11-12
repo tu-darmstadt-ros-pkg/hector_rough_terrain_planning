@@ -1,51 +1,13 @@
-//=================================================================================================
-// Copyright (c) 2013, Alexander Stumpf, TU Darmstadt
-// All rights reserved.
+#include <hector_ground_contact_estimator/ground_contact_estimator.h>
 
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//     * Neither the name of the Simulation, Systems Optimization and Robotics
-//       group, TU Darmstadt nor the names of its contributors may be used to
-//       endorse or promote products derived from this software without
-//       specific prior written permission.
-
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
-// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//=================================================================================================
-
-
-#include <std_msgs/Bool.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
-
+#include <ros/ros.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/features/intensity_gradient.h>
-
-#include <hector_ground_contact_estimator/ground_contact_estimator.h>
-
-#include <math.h>       /* acos */
-
+#include <pcl/io/pcd_io.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 using namespace hector_ground_contact_estimator;
 class TerrainClassifierTest
@@ -80,9 +42,6 @@ void TerrainClassifierTest::test_terrain_classifier()
     ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
     ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
 
-    //hector_ground_contact_estimator::TerrainClassifier::Ptr terrain_classifier(new hector_ground_contact_estimator::TerrainClassifier(params));
-
-
     ROS_INFO("Load point cloud");
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
     //pcl::io::loadPCDFile("../pointclouds/left_obstacle_start_zero.pcd", *cloud_original);
@@ -93,18 +52,7 @@ void TerrainClassifierTest::test_terrain_classifier()
     //pcl::io::loadPCDFile("../pointclouds/stairs_ramp_map.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
 
-
-
     hector_ground_contact_estimator::GroundContactEstimator terrain_model(*cloud_original);
-
-
-    // add filtered point cloud to classifier
-    //terrain_classifier->addCloud(cloud_original);
-
-
-    // detect edges
-    ROS_INFO("Compute HeightRating...");
-   // terrain_classifier->computeHeight();
 
     // visualization
     pcl::visualization::PCLVisualizer viewer("Terrain classifier");
@@ -122,8 +70,6 @@ void TerrainClassifierTest::test_terrain_classifier()
     int view_port_3(0);
     viewer.createViewPort(0.0, 0.0, 0.5, 0.5, view_port_3);
     viewer.addCoordinateSystem(0.5, view_port_3);
- //   terrain_classifier->showHeight(viewer, "heightDiff", view_port_3);
-
 
     int view_port_4(0);
     viewer.createViewPort(0.5, 0.0, 1.0, 0.5, view_port_4);
@@ -201,7 +147,6 @@ void TerrainClassifierTest::test_terrain_classifier_standalone()
     ros::Publisher cloud_input_pub = nh.advertise<sensor_msgs::PointCloud2>("/flor/terrain_classifier/cloud_input", 3);
     ros::Subscriber initialpose_sub = nh.subscribe("/initialpose", 100, &TerrainClassifierTest::initialPoseCb, this);
 
-
     ROS_INFO("Load point cloud");
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_original(new pcl::PointCloud<pcl::PointXYZ>);
     //pcl::io::loadPCDFile("../pointclouds/left_obstacle_start_zero.pcd", *cloud_original);
@@ -212,29 +157,20 @@ void TerrainClassifierTest::test_terrain_classifier_standalone()
     pcl::io::loadPCDFile("../pointclouds/stairs_ramp_map.pcd", *cloud_original);
     //pcl::io::loadPCDFile("../pointclouds/big_sim.pcd", *cloud_original);
 
-
-
     hector_ground_contact_estimator::GroundContactEstimator terrain_model(*cloud_original);
 
     // Position, Orientation (in radiants)
     float x, y;
     x = 4.954349; y = 1.751206; orientation = 1.658275;
-
-
     check_pos = pcl::PointXYZ(x, y, 0.0);
     //float orientation = (0.0)/180.0*3.14;
     float position_rating = 10.0;
     int unstable_axis = 10;
     pcl::PointXYZ pc, p0, p1, p2, p3;
 
-
     terrain_model.computePositionRating(check_pos, orientation, pc, p0, p1, p2, p3,
                                         position_rating, unstable_axis);
     ROS_INFO("Rating %f",position_rating);
-
-
-
-
 }
 
 int main(int argc, char** argv)

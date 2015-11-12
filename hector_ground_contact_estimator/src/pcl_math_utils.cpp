@@ -1,4 +1,4 @@
-#include <hector_ground_contact_estimator/ground_contact_estimator.h>
+#include <hector_ground_contact_estimator/pcl_math_utils.h>
 
 //#define time_debug;
 #define MY_EPS 1e-6
@@ -146,8 +146,6 @@ float planeDistance(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n
 
 pcl::PointXYZ planeProjection(const pcl::PointXYZ& projection_p, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p)
 {
-
-
     Eigen::Vector3f x = Eigen::Vector3f(projection_p.x,projection_p.y,projection_p.z);
     Eigen::Vector3f n = Eigen::Vector3f(plane_n.x,plane_n.y,plane_n.z);
     Eigen::Vector3f r = Eigen::Vector3f(plane_p.x,plane_p.y,plane_p.z);

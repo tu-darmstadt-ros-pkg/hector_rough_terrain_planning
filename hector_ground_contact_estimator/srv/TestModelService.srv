@@ -1,5 +1,0 @@
-hector_ground_contact_estimator/TestModel testmodel_in
-int64 a_srvc_in
----
-hector_ground_contact_estimator/TestModel testmodel_out
-int64 a_srvc_out

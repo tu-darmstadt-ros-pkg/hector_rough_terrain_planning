@@ -1,37 +1,7 @@
 #ifndef PCL_MATH_UTILS_H__
 #define PCL_MATH_UTILS_H__
 
-#include <ros/ros.h>
-
-#include <nav_msgs/OccupancyGrid.h>
-
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/point_cloud.h>
-#include <pcl/surface/convex_hull.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/features/normal_3d_omp.h>
-
-#include <pcl/surface/mls.h>
-#include <pcl/surface/gp3.h>
-
-#include <pcl/surface/vtk_smoothing/vtk.h>
-#include <pcl/surface/vtk_smoothing/vtk_mesh_smoothing_laplacian.h>
-#include <pcl/surface/vtk_smoothing/vtk_utils.h>
-
-#include <nav_msgs/OccupancyGrid.h>
-
-#include <pcl/geometry/planar_polygon.h>
-
-//#include <pcl/surface/mls_omp.h>
-#include <pcl/surface/mls.h>
-#include <pcl/surface/gp3.h>
-
-
-#include <iostream>
-#include <pcl/io/pcd_io.h>
-
+#include <pcl/common/common.h>
 
 namespace hector_ground_contact_estimator
 {
