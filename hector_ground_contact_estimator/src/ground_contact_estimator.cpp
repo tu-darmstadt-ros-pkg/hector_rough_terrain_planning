@@ -15,6 +15,7 @@
 namespace hector_ground_contact_estimator
 {
 
+
 GroundContactEstimator::GroundContactEstimator()
 {
 }
@@ -23,28 +24,26 @@ GroundContactEstimator::GroundContactEstimator(pcl::PointCloud<pcl::PointXYZ> cl
 {
     world_pcl_ptr= cloud.makeShared();
 
-    // PARAMETER
-    robot_length = 0.55; // [m] x for Obelix 0.54
-    robot_width = 0.40; // [m] y for Obelix 0.56
-    offset_CM = Eigen::Vector3f(0.0,0.0,0.12); // [m] offset of the center of mass
-    minimum_distance = 0.08; // [m] default 0.8 minimum distance in which a support point can be found from the last one. causes problems, might not find supp3 even if it would be a valid polygon
-    invalid_rating = 0.2; // default: 0.3 theoretically 0
-    invalid_angle = 65; // [degree] highest considered stable angle
-    delta_for_contact = 0.05; //  [m] +- delta for considering a ground point touching the robot
-    first_SP_around_mid = true; // true means first polygon must contain the checkpos in it
-    tip_over = true;
-    check_each_axis = false; // check each axis after tipping over to maybe improve the rating value
-    //smoothing the supporting polygon - important if tip_over is active.
-    distance_smoothing = true;
-    angle_smoothing = true;
-    smooth_max_angle = 20.0;
-    smooth_max_distance = 0.045; // not needed for octomap with gridsize 5 cm
-
-    draw_convex_hull_first_polygon = true;
-    draw_convex_hull_ground_points = true;
-    draw_convex_hull_iterative = true;
-    draw_convex_hull_iterative_ground_points= true;
-
+    ros::param::param<float>("/robot_length", robot_length, 0.55);
+    ros::param::param<float>("/robot_width", robot_width, 0.40);
+    ros::param::param<float>("/offset_CM/x", offset_CM[0], 0.0);
+    ros::param::param<float>("/offset_CM/y", offset_CM[1], 0.0);
+    ros::param::param<float>("/offset_CM/z", offset_CM[2], 0.12);
+    ros::param::param<float>("/minimum_distance", minimum_distance, 0.08);
+    ros::param::param<float>("/invalid_rating", invalid_rating, 0.20);
+    ros::param::param<float>("/invalid_angle", invalid_angle, 65);
+    ros::param::param<float>("/delta_for_contact", delta_for_contact, 0.05);
+    ros::param::param<bool>("/first_SP_around_mid", first_SP_around_mid, true);
+    ros::param::param<bool>("/tip_over", tip_over, true);
+    ros::param::param<bool>("/check_each_axis", check_each_axis, false);
+    ros::param::param<bool>("/distance_smoothing", distance_smoothing, true);
+    ros::param::param<bool>("/angle_smoothing", angle_smoothing, true);
+    ros::param::param<float>("/smooth_max_angle", smooth_max_angle, 20.0);
+    ros::param::param<float>("/smooth_max_distance", smooth_max_distance, 0.045);
+    ros::param::param<bool>("/draw_convex_hull_first_polygon", draw_convex_hull_first_polygon, true);
+    ros::param::param<bool>("/draw_convex_hull_ground_points", draw_convex_hull_ground_points, true);
+    ros::param::param<bool>("/draw_convex_hull_iterative", draw_convex_hull_iterative, true);
+    ros::param::param<bool>("/draw_convex_hull_iterative_ground_points", draw_convex_hull_iterative_ground_points, true);
 }
 
 GroundContactEstimator::~GroundContactEstimator()
