@@ -144,10 +144,10 @@ std::vector<float> GroundContactEstimator::computeForceAngleStabilityMetric(cons
 // evaluates the second or third point of the supporting plane
 // if false is returned, there could not be a point found.
 bool GroundContactEstimator::findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
-                                    const pcl::PointXYZ& tip_over_axis_vector,
-                                    const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robot,
-                                    const pcl::PointXYZ& tip_over_direction,
-                                    pcl::PointXYZ& support_point)
+                                              const pcl::PointXYZ& tip_over_axis_vector,
+                                              const pcl::PointCloud<pcl::PointXYZI>& pointcloud_robot,
+                                              const pcl::PointXYZ& tip_over_direction,
+                                              pcl::PointXYZ& support_point)
 {
     pcl::PointCloud<pcl::PointXYZ> cloud_projected;
     cloud_projected.resize(pointcloud_robot.size());
@@ -167,8 +167,8 @@ bool GroundContactEstimator::findSupportPoint(const pcl::PointXYZ& tip_over_axis
     //states the direction of the points if on one side of the tip_over_axis, or on the other
     // 1 = counterclockwise, -1 = clockwise
     const int orientation_to_axis = sign(ccw (tip_over_axis_point,
-                                       addPointVector(tip_over_axis_point, tip_over_axis_vector),
-                                       addPointVector(tip_over_axis_point, tip_over_direction)));
+                                              addPointVector(tip_over_axis_point, tip_over_axis_vector),
+                                              addPointVector(tip_over_axis_point, tip_over_direction)));
 
     for(unsigned int i=0; i<cloud_projected.size();++i)
     {
@@ -220,15 +220,15 @@ bool GroundContactEstimator::findSupportPoint(const pcl::PointXYZ& tip_over_axis
 
 /* builds the convex hull with the given supportpoints */
 std::vector<pcl::PointXYZ> GroundContactEstimator:: buildConvexHull(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_positionRating,
-                                                          const pcl::PointXYZ& check_pos,
-                                                          const pcl::PointXYZ& support_point_1,
-                                                          const pcl::PointXYZ& support_point_2,
-                                                          const pcl::PointXYZ& support_point_3,
-                                                          const bool iterative, // if this is true, points on one side of supp1, supp2 will not be considerred
-                                                          pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points) // empty before call
+                                                                    const pcl::PointXYZ& check_pos,
+                                                                    const pcl::PointXYZ& support_point_1,
+                                                                    const pcl::PointXYZ& support_point_2,
+                                                                    const pcl::PointXYZ& support_point_3,
+                                                                    const bool iterative, // if this is true, points on one side of supp1, supp2 will not be considerred
+                                                                    pcl::PointCloud<pcl::PointXYZ>::Ptr ground_contact_points) // empty before call
 {
     const pcl::PointXYZ support_plane_normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
-                                                   pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
+                                                           pcl::PointXYZ(support_point_1.x-support_point_3.x,support_point_1.y-support_point_3.y,support_point_1.z-support_point_3.z));
 
     //Find ground contact points
     for (unsigned int i = 0; i < cloud_positionRating->size(); i++)
@@ -264,6 +264,11 @@ std::vector<pcl::PointXYZ> GroundContactEstimator:: buildConvexHull(const pcl::P
     chull.setInputCloud(ground_contact_points);
     chull.setDimension(2);
     chull.reconstruct(*cloud_hull);
+    if(cloud_hull->points.size()==0)
+    {
+        ROS_WARN("Could not generate convex hull");
+        return convex_hull_points;
+    }
     for(unsigned int i = 0; i<cloud_hull->points.size(); ++i)
     {
         convex_hull_points.push_back(cloud_hull->at(i));
@@ -384,11 +389,11 @@ std::vector<pcl::PointXYZ> GroundContactEstimator:: buildConvexHull(const pcl::P
 }
 
 void GroundContactEstimator::computeRobotPosition(const pcl::PointXYZ support_point_1, const pcl::PointXYZ support_point_2, const pcl::PointXYZ support_point_3,
-                                        const pcl::PointXYZ p0, const pcl::PointXYZ p1, const pcl::PointXYZ p2, const pcl::PointXYZ p3,
-                                        const Eigen::Vector3f& offset_CM,
-                                        pcl::PointXYZ& normal,
-                                        pcl::PointXYZ& robot_point_0, pcl::PointXYZ& robot_point_1, pcl::PointXYZ& robot_point_2, pcl::PointXYZ& robot_point_3,
-                                        pcl::PointXYZ& robot_point_mid, pcl::PointXYZ& robot_center_of_mass)
+                                                  const pcl::PointXYZ p0, const pcl::PointXYZ p1, const pcl::PointXYZ p2, const pcl::PointXYZ p3,
+                                                  const Eigen::Vector3f& offset_CM,
+                                                  pcl::PointXYZ& normal,
+                                                  pcl::PointXYZ& robot_point_0, pcl::PointXYZ& robot_point_1, pcl::PointXYZ& robot_point_2, pcl::PointXYZ& robot_point_3,
+                                                  pcl::PointXYZ& robot_point_mid, pcl::PointXYZ& robot_center_of_mass)
 {
 
     normal= crossProduct(pcl::PointXYZ(support_point_1.x-support_point_2.x,support_point_1.y-support_point_2.y,support_point_1.z-support_point_2.z),
@@ -431,10 +436,10 @@ void GroundContactEstimator::computeRobotPosition(const pcl::PointXYZ support_po
 }
 
 pcl::PointXYZ GroundContactEstimator::computeCenterOfMass(const pcl::PointXYZ &p1_left,
-                                                const pcl::PointXYZ &p2_left,
-                                                const Eigen::Vector3f &normal,
-                                                const pcl::PointXYZ &mid,
-                                                const Eigen::Vector3f &offset){
+                                                          const pcl::PointXYZ &p2_left,
+                                                          const Eigen::Vector3f &normal,
+                                                          const pcl::PointXYZ &mid,
+                                                          const Eigen::Vector3f &offset){
 
     Eigen::Vector3f axis_left = Eigen::Vector3f(p2_left.x - p1_left.x, p2_left.y - p1_left.y, p2_left.z - p1_left.z);
     axis_left.normalize();
@@ -450,7 +455,7 @@ pcl::PointXYZ GroundContactEstimator::computeCenterOfMass(const pcl::PointXYZ &p
 }
 
 void GroundContactEstimator::computeRobotCornerPoints(const pcl::PointXYZ& check_pos, const float orientation,
-                                            pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3)
+                                                      pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3)
 {
     p0 = pcl::PointXYZ(+ 0.5*robot_length, + 0.5*robot_width, 0);
     p0 = rotatePointZ(p0, orientation);
@@ -520,16 +525,16 @@ void GroundContactEstimator::fillRobotPointcloud(const pcl::PointXYZ& p0, const 
 
 // orientation in radiants
 bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_robot_center,
-                                         const float orientation,
-                                         pcl::PointXYZ& robot_point_center,
-                                         pcl::PointXYZ& robot_point_0,
-                                         pcl::PointXYZ& robot_point_1,
-                                         pcl::PointXYZ& robot_point_2,
-                                         pcl::PointXYZ& robot_point_3,
-                                         float &position_rating, // after tipping over
-                                         int &unstable_axis // of the first polygon
-                                         , pcl::visualization::PCLVisualizer* viewer,
-                                         int viewport_1, int viewport_2, int viewport_3, int viewport_4, bool use_visualization)
+                                                   const float orientation,
+                                                   pcl::PointXYZ& robot_point_center,
+                                                   pcl::PointXYZ& robot_point_0,
+                                                   pcl::PointXYZ& robot_point_1,
+                                                   pcl::PointXYZ& robot_point_2,
+                                                   pcl::PointXYZ& robot_point_3,
+                                                   float &position_rating, // after tipping over
+                                                   int &unstable_axis // of the first polygon
+                                                   , pcl::visualization::PCLVisualizer* viewer,
+                                                   int viewport_1, int viewport_2, int viewport_3, int viewport_4, bool use_visualization)
 {    
 
 #ifdef time_debug
@@ -713,7 +718,7 @@ bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_rob
 
         // checkpos is not in hull
         if (center_in_hull == false){
-            ROS_INFO("check in hull is false");
+            //ROS_INFO("check in hull is false");
             // find closest point to checkpos
             float dist = distanceXY(convex_hull_points.at(0), flat_robot_center);
             int index_of_closest_point = 0;
@@ -734,7 +739,7 @@ bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_rob
     // check if the position is instable due to an invalid steap angle
     float angle_of_area = angleToGround(support_point_1, support_point_2, support_point_3);
     if (angle_of_area > invalid_angle){
-        ROS_INFO("the angle of the position is over %f degree, computePositionRating returned false", invalid_angle);
+        ROS_WARN("the angle of the position is over %f degree, computePositionRating returned false", invalid_angle);
         return false;
     }
 
@@ -747,14 +752,14 @@ bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_rob
                          normal,
                          robot_point_0, robot_point_1, robot_point_2, robot_point_3,
                          robot_point_center, center_of_mass);
-if(use_visualization)
-{
-    // draw robot lines
-    viewer->addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0");
-    viewer->addLine(robot_point_1,robot_point_2,1.0,1.0,1.0,"f1");
-    viewer->addLine(robot_point_2,robot_point_3,1.0,1.0,1.0,"f2");
-    viewer->addLine(robot_point_3,robot_point_0,1.0,1.0,1.0,"f3");
-}
+    if(use_visualization)
+    {
+        // draw robot lines
+        viewer->addLine(robot_point_0,robot_point_1,1.0,1.0,1.0,"f0");
+        viewer->addLine(robot_point_1,robot_point_2,1.0,1.0,1.0,"f1");
+        viewer->addLine(robot_point_2,robot_point_3,1.0,1.0,1.0,"f2");
+        viewer->addLine(robot_point_3,robot_point_0,1.0,1.0,1.0,"f3");
+    }
 
     //Compute Force Angle Stability Metric
 #ifdef time_debug
@@ -770,36 +775,36 @@ if(use_visualization)
 
     if(use_visualization)
     {
-    for (unsigned int i=0; i<rating.size();++i)
-    {
-        // rating between convex_hull_point (i and i+1)
-        float c =rating.at(i);
-        std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(i);
-        const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
-        const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
+        for (unsigned int i=0; i<rating.size();++i)
+        {
+            // rating between convex_hull_point (i and i+1)
+            float c =rating.at(i);
+            std::string name ="convex_hull_rating"+boost::lexical_cast<std::string>(i);
+            const pcl::PointXYZ p1(convex_hull_points[i].x,convex_hull_points[i].y,convex_hull_points[i].z);
+            const pcl::PointXYZ p2(convex_hull_points[i+1].x,convex_hull_points[i+1].y,convex_hull_points[i+1].z);
 
-        //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
-        ROS_INFO("Rating num %i = %f", i, rating.at(i));
+            //ROS_INFO("RATING r: %f p1: %f %f %f p2:%f %f %f", c,p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+            ROS_INFO("Rating num %i = %f", i, rating.at(i));
 
-        if (draw_convex_hull_first_polygon){
-            if(c<invalid_rating)
-                viewer->addLine(p1,p2,1,0,c/invalid_rating,name);
-            else
-                viewer->addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
+            if (draw_convex_hull_first_polygon){
+                if(c<invalid_rating)
+                    viewer->addLine(p1,p2,1,0,c/invalid_rating,name);
+                else
+                    viewer->addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name);
 
-            // draw convex hull (points only)
-            std::string namech ="convexhullstart"+boost::lexical_cast<std::string>(i);
-            viewer->addSphere(convex_hull_points[i], 0.025,0,1,0, namech,2 /*viewport*/);
+                // draw convex hull (points only)
+                std::string namech ="convexhullstart"+boost::lexical_cast<std::string>(i);
+                viewer->addSphere(convex_hull_points[i], 0.025,0,1,0, namech,2 /*viewport*/);
+            }
         }
+
+        viewer->addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2);
+        viewer->addSphere(flat_robot_center, 0.05,1,0,0, "checkPosition", viewport_4);
+        viewer->addSphere(robot_point_center, 0.05,0,1,0, "proMidx", viewport_4);
+        viewer->addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport_4);
+
+
     }
-
-    viewer->addSphere(convex_hull_points[0], 0.025,1,0,0, "convexhullstart", 2);
-    viewer->addSphere(flat_robot_center, 0.05,1,0,0, "checkPosition", viewport_4);
-    viewer->addSphere(robot_point_center, 0.05,0,1,0, "proMidx", viewport_4);
-    viewer->addSphere(center_of_mass, 0.05,0,0,1, "CM", viewport_4);
-
-
-}
 
     for (unsigned int j = 0; j < rating.size(); j++){
         if (rating.at(j) < invalid_rating){
@@ -817,8 +822,8 @@ if(use_visualization)
             if (check_each_axis || rating.at(i) < invalid_rating){ // instabil
                 if(use_visualization)
                 {
-                ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
-}
+                    ROS_INFO("Roboter kippt ueber Kante mit rating %f", rating.at(i));
+                }
                 support_point_1 = convex_hull_points.at(i);
                 support_point_2 = convex_hull_points.at(i+1);
 
@@ -893,26 +898,26 @@ if(use_visualization)
                 }
                 if(use_visualization)
                 {
-                // draw supporting points
-                viewer->addSphere(support_point_1, 0.02,1,0,0, "sp1it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
-                viewer->addSphere(support_point_2, 0.02,0,1,0, "sp2it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
-                viewer->addSphere(support_point_3, 0.02,0,0,1, "sp3it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
-                if (draw_convex_hull_iterative_ground_points){
-                    for (unsigned int j = 0; j < cloud_positionRating_iterative->size(); ++j){
-                        std::string name ="groundContactAreait"+boost::lexical_cast<std::string>(j)+"tippedOver"+boost::lexical_cast<std::string>(i);
-                        viewer->addSphere(cloud_positionRating_iterative->at(j), 0.01,0,1,1, name, viewport_4);
+                    // draw supporting points
+                    viewer->addSphere(support_point_1, 0.02,1,0,0, "sp1it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
+                    viewer->addSphere(support_point_2, 0.02,0,1,0, "sp2it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
+                    viewer->addSphere(support_point_3, 0.02,0,0,1, "sp3it_tippedOver"+boost::lexical_cast<std::string>(i), viewport_4);
+                    if (draw_convex_hull_iterative_ground_points){
+                        for (unsigned int j = 0; j < cloud_positionRating_iterative->size(); ++j){
+                            std::string name ="groundContactAreait"+boost::lexical_cast<std::string>(j)+"tippedOver"+boost::lexical_cast<std::string>(i);
+                            viewer->addSphere(cloud_positionRating_iterative->at(j), 0.01,0,1,1, name, viewport_4);
+                        }
+                    }
+
+                    // draw center
+                    if (i == 0){
+                        viewer->addSphere(robot_point_mid_it, 0.04,0,1,0, "proMidxit", viewport_4);
+                        viewer->addSphere(center_of_mass_it, 0.04,0,0,1, "CMit", viewport_4);
+                        // draw normal
+                        const pcl::PointXYZ p_uff(addPointVector(robot_point_center, normal));
+                        viewer->addLine(robot_point_center,p_uff,1.0,1.0,1.0,"fnormalit",viewport_4);
                     }
                 }
-
-                // draw center
-                if (i == 0){
-                    viewer->addSphere(robot_point_mid_it, 0.04,0,1,0, "proMidxit", viewport_4);
-                    viewer->addSphere(center_of_mass_it, 0.04,0,0,1, "CMit", viewport_4);
-                    // draw normal
-                    const pcl::PointXYZ p_uff(addPointVector(robot_point_center, normal));
-                    viewer->addLine(robot_point_center,p_uff,1.0,1.0,1.0,"fnormalit",viewport_4);
-                }
-}
 
 
                 //Compute Force Angle Stability Metric
@@ -920,37 +925,37 @@ if(use_visualization)
 
                 if(use_visualization)
                 {
-                for (unsigned int k=0; k<rating_iterative.size();++k)
-                {
+                    for (unsigned int k=0; k<rating_iterative.size();++k)
+                    {
 
-                    // rating between convex_hull_point (i and i+1)
-                    float c =rating_iterative.at(k);
+                        // rating between convex_hull_point (i and i+1)
+                        float c =rating_iterative.at(k);
 
-                    std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(k)+"tippedOver"+boost::lexical_cast<std::string>(i);
-                    const pcl::PointXYZ p1(convex_hull_points_it[k].x,convex_hull_points_it[k].y,convex_hull_points_it[k].z);
-                    const pcl::PointXYZ p2(convex_hull_points_it[k+1].x,convex_hull_points_it[k+1].y,convex_hull_points_it[k+1].z);
-
-
-                    ROS_INFO("Rating %f", rating_iterative.at(k));
-                    if (draw_convex_hull_iterative){
-
-                        if(c<invalid_rating)
-                            viewer->addLine(p1,p2,1,0,c/invalid_rating,name,viewport_4);
-                        else
-                            viewer->addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name,viewport_4);
+                        std::string name ="convex_hull_rating_it"+boost::lexical_cast<std::string>(k)+"tippedOver"+boost::lexical_cast<std::string>(i);
+                        const pcl::PointXYZ p1(convex_hull_points_it[k].x,convex_hull_points_it[k].y,convex_hull_points_it[k].z);
+                        const pcl::PointXYZ p2(convex_hull_points_it[k+1].x,convex_hull_points_it[k+1].y,convex_hull_points_it[k+1].z);
 
 
-                        // draw convex hull (points only)
-                        std::string namech ="convexhullstart_it"+boost::lexical_cast<std::string>(k)+"tippedOver"+boost::lexical_cast<std::string>(i);
-                        viewer->addSphere(convex_hull_points_it[k+1], 0.015,0,1,0, namech,2 /*viewport*/);
+                        ROS_INFO("Rating %f", rating_iterative.at(k));
+                        if (draw_convex_hull_iterative){
+
+                            if(c<invalid_rating)
+                                viewer->addLine(p1,p2,1,0,c/invalid_rating,name,viewport_4);
+                            else
+                                viewer->addLine(p1,p2,0,(c-invalid_rating)/invalid_rating,(invalid_rating*2-c)/invalid_rating,name,viewport_4);
+
+
+                            // draw convex hull (points only)
+                            std::string namech ="convexhullstart_it"+boost::lexical_cast<std::string>(k)+"tippedOver"+boost::lexical_cast<std::string>(i);
+                            viewer->addSphere(convex_hull_points_it[k+1], 0.015,0,1,0, namech,2 /*viewport*/);
+                        }
+
                     }
 
+                    if (draw_convex_hull_iterative){
+                        viewer->addSphere(convex_hull_points_it[0], 0.015,1,0,0, "convexhullstart_it_tippedOver"+boost::lexical_cast<std::string>(i), 2 /*viewport*/);
+                    }
                 }
-
-                if (draw_convex_hull_iterative){
-                    viewer->addSphere(convex_hull_points_it[0], 0.015,1,0,0, "convexhullstart_it_tippedOver"+boost::lexical_cast<std::string>(i), 2 /*viewport*/);
-                }
-}
 
 
                 float min_rating_iterative =*std::min_element(rating_iterative.begin(),rating_iterative.end());
@@ -970,11 +975,11 @@ if(use_visualization)
     // draw groundpoints
     if(use_visualization)
     {
-    pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(robot_pcl, "intensity");
-    // viewer->addPointCloud<pcl::PointXYZI>(robot_pcl,intensity_distribution, "positionRating_cloud", viewport);
-    // viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "positionRating" + std::string("_edges"), viewport);
-    ROS_INFO("CPR done: position_rating = %f, unstable_axis = %i", position_rating, unstable_axis);
-}
+        pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> intensity_distribution(robot_pcl, "intensity");
+        // viewer->addPointCloud<pcl::PointXYZI>(robot_pcl,intensity_distribution, "positionRating_cloud", viewport);
+        // viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "positionRating" + std::string("_edges"), viewport);
+        ROS_INFO("CPR done: position_rating = %f, unstable_axis = %i", position_rating, unstable_axis);
+    }
 
 
 #ifdef time_debug
