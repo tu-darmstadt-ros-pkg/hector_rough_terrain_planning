@@ -264,6 +264,7 @@ std::vector<pcl::PointXYZ> GroundContactEstimator:: buildConvexHull(const pcl::P
     chull.setInputCloud(ground_contact_points);
     chull.setDimension(2);
     chull.reconstruct(*cloud_hull);
+
     if(cloud_hull->points.size()==0)
     {
         ROS_WARN("Could not generate convex hull");
@@ -668,11 +669,14 @@ bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_rob
                                              support_point_3,
                                              false,
                                              ground_contact_points);
+
 #ifdef time_debug
         time_duration_computeHull = (ros::Time::now().toNSec() - time_start_computeHull)/1000;
         ROS_INFO("time for computeHull [mikrosec] = %i", (int)time_duration_computeHull);
 #endif
 
+        if(convex_hull_points.size() == 0)
+            return false;
 
         if(use_visualization) // draw ground contact
         {
@@ -688,15 +692,15 @@ bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_rob
         // check if check_pos is in hull
         bool center_in_hull = true;
 
-
         //ROS_INFO("Elements in convex hull %i", convex_hull_points.size());
-        for (unsigned int i = 0; i < convex_hull_points.size() -1; ++i)
+        for (int i = 0; i < convex_hull_points.size() -1 ; ++i)
         {
             if (sign(ccw(convex_hull_points.at(i), convex_hull_points.at(i+1), flat_robot_center)) == 1)
             {
                 center_in_hull = false;
             }
         }
+
 
 
         if (center_in_hull == true || first_SP_around_mid == false){
