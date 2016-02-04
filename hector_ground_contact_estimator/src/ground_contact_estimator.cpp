@@ -650,7 +650,7 @@ bool GroundContactEstimator::computePositionRating(const pcl::PointXYZ& flat_rob
         if (tip_over_axis_direction.x < MY_EPS && tip_over_axis_direction.y < MY_EPS && tip_over_axis_direction.z < MY_EPS) //todo think about appropriate solution
         {
             tip_over_axis_direction = pcl::PointXYZ(1.0, 0.0, 0.0); // this is random.
-            tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90° from vector
+            tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90ï¿½ from vector
         }
         else
         {
@@ -1081,7 +1081,7 @@ bool GroundContactEstimator::computePositionRatingRefactoring(const pcl::PointXY
         if (tip_over_axis_vector.x < MY_EPS && tip_over_axis_vector.y < MY_EPS && tip_over_axis_vector.z < MY_EPS) //todo think about appropriate solution
         {
             tip_over_axis_vector = pcl::PointXYZ(1.0, 0.0, 0.0); // this is random.
-            tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90° from vector
+            tip_over_direction = pcl::PointXYZ(0.0, 1.0, 0.0); // 90ï¿½ from vector
         }
         else
         {
