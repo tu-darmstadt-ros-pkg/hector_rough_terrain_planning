@@ -17,8 +17,8 @@ public:
     {}
 
     void initialPoseCb(geometry_msgs::PoseWithCovarianceStamped msg);
-    void test_terrain_classifier();
-    void test_terrain_classifier_standalone();
+    void testTerrainClassifier();
+    void testTerrainClassifierStandalone();
     bool new_position;
     pcl::PointXYZ check_pos;
     float orientation;
@@ -35,7 +35,8 @@ void TerrainClassifierTest::initialPoseCb(geometry_msgs::PoseWithCovarianceStamp
 
 }
 
-void TerrainClassifierTest::test_terrain_classifier()
+
+void TerrainClassifierTest::testTerrainClassifier()
 {
     ros::NodeHandle nh;
     new_position = false;
@@ -140,7 +141,7 @@ void TerrainClassifierTest::test_terrain_classifier()
     }
 }
 
-void TerrainClassifierTest::test_terrain_classifier_standalone()
+void TerrainClassifierTest::testTerrainClassifierStandalone()
 {
     ros::NodeHandle nh;
     new_position = false;
@@ -179,7 +180,7 @@ int main(int argc, char** argv)
     ros::Time::init();
 
    TerrainClassifierTest test;
-    test.test_terrain_classifier();
+    test.testTerrainClassifier();
 
     return 0;
 }

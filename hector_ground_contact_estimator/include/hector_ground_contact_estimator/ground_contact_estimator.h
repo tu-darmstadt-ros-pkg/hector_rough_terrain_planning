@@ -3,6 +3,7 @@
 
 #include <pcl/common/common.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 namespace hector_ground_contact_estimator
 {
@@ -14,6 +15,23 @@ public:
     GroundContactEstimator(pcl::PointCloud<pcl::PointXYZ> cloud);
     virtual ~GroundContactEstimator();
 
+    void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
+    bool computePositionRating(const pcl::PointXYZ& checkPos,
+                               const float orientation,
+                               pcl::PointXYZ &robot_point_center,
+                               pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
+                               , pcl::visualization::PCLVisualizer* viewer = 0,
+                               int viewport_1=1, int viewport_2=2, int viewport_3=3, int viewport_4=4, bool use_visualization=false);
+
+    bool computePositionRatingRefactoring(const pcl::PointXYZ& checkPos,
+                                          const float orientation,
+                                          pcl::PointXYZ &robot_point_center,
+                                          pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
+                                          , pcl::visualization::PCLVisualizer* viewer = 0,
+                                          int viewport_1=1, int viewport_2=2, int viewport_3=3, int viewport_4=4, bool use_visualization=false);
+
+
+private:
     bool findSupportPoint(const pcl::PointXYZ& tip_over_axis_point,
                           const pcl::PointXYZ& tip_over_axis_vector,
                           const pcl::PointCloud<pcl::PointXYZI> &pointcloud_robot,
@@ -42,23 +60,19 @@ public:
                                       const Eigen::Vector3f &offset);
 
     void computeRobotCornerPoints(const pcl::PointXYZ& check_pos, float orientation,
-                                pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3);
+                                  pcl::PointXYZ& p0, pcl::PointXYZ& p1, pcl::PointXYZ& p2, pcl::PointXYZ& p3);
 
-    void fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3,
-                                           unsigned int& highest_Point_idx);
+    bool fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3, unsigned int& highest_Point_idx);
+    bool fillRobotPointcloud(const pcl::PointXYZ& p0, const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3, float& max_height);
 
-    bool computePositionRating(const pcl::PointXYZ& checkPos,
-                               const float orientation,
-                               pcl::PointXYZ &robot_point_center,
-                               pcl::PointXYZ &robot_point_0, pcl::PointXYZ &robot_point_1, pcl::PointXYZ &robot_point_2, pcl::PointXYZ &robot_point_3, float &position_rating, int &unstable_axis
-                                , pcl::visualization::PCLVisualizer* viewer = 0,
-                               int viewport_1=1, int viewport_2=2, int viewport_3=3, int viewport_4=4, bool use_visualization=false);
 
     std::vector<float> computeForceAngleStabilityMetric(const pcl::PointXYZ& center_of_mass_pcl, std::vector<pcl::PointXYZ>& convex_hull_points_pcl);
 
-    void updateCloud(pcl::PointCloud<pcl::PointXYZ> cloud);
+    float flatGroundPositionRating();
 
-    float optimalPossiblePositionRating();
+    void extractRobotPointcloud(const pcl::PointXYZ& flat_robot_center, const float orientation, float &max_height);
+
+    void computeSupportPoint1(const pcl::PointXYZ &flat_robot_center, float max_height, pcl::PointXYZ& support_point_1);
 
     // Parameter initialized in contructor
     float robot_length;  // x
@@ -86,8 +100,8 @@ public:
     pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pcl;
     pcl::PlanarPolygon<pcl::PointXYZ> supportingPolygon;
 
+    pcl::KdTreeFLANN<pcl::PointXYZ> world_kdtree;
 
-private:
     bool atPlaneTest(const pcl::PointXYZ& testpoint, const pcl::PointXYZ& plane_n, const pcl::PointXYZ& plane_p, const float& delta);
 
 };

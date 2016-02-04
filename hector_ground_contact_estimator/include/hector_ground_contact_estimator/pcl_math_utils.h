@@ -38,14 +38,14 @@ float distanceXY(const pcl::PointXYZ p1, const pcl::PointXYZ p2);
 
 // distance between 2 points - 3D
 float distanceXYZ(const pcl::PointXYZ p1, const pcl::PointXYZ p2);
+
 // computes distance between straight / axis (ps, vector) and the point p
-
 float distancePointStraight(pcl::PointXYZ ps, pcl::PointXYZ vector, pcl::PointXYZ p);
+
 // 1 if positive, 0 if zero, -1 if negative
-
 int sign(float a);
-// return > 0 -> counterclockwise, // return < 0 -> clockwise  // return = 0 -> neither nor
 
+// return > 0 -> counterclockwise, // return < 0 -> clockwise  // return = 0 -> neither nor
 float ccw(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2, const pcl::PointXYZ& p3);
 
 float angleToGround(const pcl::PointXYZ s1, const pcl::PointXYZ s2, const pcl::PointXYZ s3);
